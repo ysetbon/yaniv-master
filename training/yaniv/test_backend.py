@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import random
 import unittest
+from unittest import mock
 
 import numpy as np
 
@@ -50,6 +51,17 @@ class DeviceChoice(unittest.TestCase):
 
     def test_auto_never_fails(self):
         self.assertIn(resolve_device("auto").kind, ("cuda", "mps", "numpy"))
+
+    def test_broken_pytorch_falls_back_or_explains(self):
+        # The Windows failure: torch is installed but c10.dll will not load.
+        broken = (None, "OSError: [WinError 1114] Error loading c10.dll")
+        with mock.patch("training.yaniv.backend._torch", return_value=broken):
+            auto = resolve_device("auto")
+            self.assertEqual(auto.kind, "numpy")
+            self.assertIn("WinError 1114", auto.note)
+            with self.assertRaises(SystemExit) as stop:
+                resolve_device("cuda")
+            self.assertIn("vc_redist", str(stop.exception.code))
 
 
 if __name__ == "__main__":
