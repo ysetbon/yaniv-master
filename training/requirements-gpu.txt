@@ -1,0 +1,6 @@
+# Optional: train on a GPU with `python main.py`.
+# On Linux, the PyPI build of torch includes CUDA. On Windows the PyPI build is
+# CPU-only, so take the CUDA install command from
+# https://pytorch.org/get-started/locally/ instead of using this file.
+-r requirements.txt
+torch>=2.2

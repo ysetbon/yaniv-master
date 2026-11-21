@@ -17,6 +17,7 @@ import argparse
 import json
 import random
 import time
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 import numpy as np
@@ -35,7 +36,8 @@ from .engine import (
 )
 from .features import ACTION_DIM, INPUT_DIM, STATE_DIM, action_matrix, state_features
 from .heuristic import choose_greedy, choose_heuristic, choose_random
-from .network import MLP, default_net, save_net
+from .backend import Device, as_numpy, build_net, resolve_device
+from .network import MLP, save_net
 
 ROOT = Path(__file__).resolve().parents[2]
 MODEL_PATH = ROOT / "public" / "model" / "yaniv-net.json"
@@ -78,10 +80,17 @@ def net_chooser(net: MLP, temperature: float):
     return choose
 
 
-def collect_expert(n_rounds: int, seed: int) -> list[tuple[View, int]]:
+def _tick(progress, done: int, total: int) -> None:
+    """Report progress about fifty times per job, plus the last step."""
+    if progress is not None and (done == total or done % max(1, total // 50) == 0):
+        progress(done, total)
+
+
+def collect_expert(n_rounds: int, seed: int, progress=None) -> list[tuple[View, int]]:
     rng = random.Random(seed)
     rows: list[tuple[View, int]] = []
     for i in range(n_rounds):
+        _tick(progress, i + 1, n_rounds)
         scores = [rng.randint(0, 90), rng.randint(0, 90)] if rng.random() < 0.4 else [0, 0]
         state = new_round(scores, i % 2, rng)
         while not state.terminal:
@@ -128,7 +137,9 @@ def concat_datasets(parts: list[Dataset]) -> Dataset:
     return Dataset(states, actions, np.asarray(offsets, dtype=np.int32), labels)
 
 
-def train_dataset(net: MLP, data: Dataset, lr: float, batch_size: int, rng: random.Random) -> tuple[float, float]:
+def train_dataset(net, data: Dataset, lr: float, batch_size: int, rng: random.Random, progress=None) -> tuple[float, float]:
+    if not isinstance(net, MLP):
+        return net.train_epoch(data, lr, batch_size, rng, progress)
     count = len(data)
     order = list(range(count))
     rng.shuffle(order)
@@ -136,7 +147,9 @@ def train_dataset(net: MLP, data: Dataset, lr: float, batch_size: int, rng: rand
     total_acc = 0.0
     seen = 0
     input_dim = STATE_DIM + ACTION_DIM
-    for start in range(0, count, batch_size):
+    batches = max(1, (count + batch_size - 1) // batch_size)
+    for batch_index, start in enumerate(range(0, count, batch_size)):
+        _tick(progress, batch_index + 1, batches)
         ids = order[start : start + batch_size]
         sizes = [int(data.offsets[i + 1] - data.offsets[i]) for i in ids]
         total = sum(sizes)
@@ -177,7 +190,8 @@ def train_dataset(net: MLP, data: Dataset, lr: float, batch_size: int, rng: rand
     return total_ce / seen, total_acc / seen
 
 
-def agreement(net: MLP, data: Dataset, limit: int = 800) -> float:
+def agreement(net, data: Dataset, limit: int = 800) -> float:
+    net = as_numpy(net)
     step = max(1, len(data) // limit)
     correct = 0
     checked = 0
@@ -194,12 +208,13 @@ def agreement(net: MLP, data: Dataset, limit: int = 800) -> float:
     return correct / max(1, checked)
 
 
-def collect_self_play(net: MLP, n_games: int, seed: int, temperature: float) -> list[tuple[View, int]]:
+def collect_self_play(net, n_games: int, seed: int, temperature: float, progress=None) -> list[tuple[View, int]]:
     """Decisions from rounds the net won, against itself and against the bench."""
     rng = random.Random(seed)
-    policy = net_chooser(net, temperature)
+    policy = net_chooser(as_numpy(net), temperature)
     rows: list[tuple[View, int]] = []
     for i in range(n_games):
+        _tick(progress, i + 1, n_games)
         hero = i % 2
         versus_bench = i % 4 == 0
         traces: list[list[tuple[View, int]]] = [[], []]
@@ -230,12 +245,13 @@ def collect_self_play(net: MLP, n_games: int, seed: int, temperature: float) -> 
     return rows
 
 
-def round_duel(hero, villain, n: int, seed: int) -> dict:
+def round_duel(hero, villain, n: int, seed: int, progress=None) -> dict:
     rng = random.Random(seed)
     wins = losses = ties = 0
     hero_points = villain_points = 0
     calls = assafs = 0
     for i in range(n):
+        _tick(progress, i + 1, n)
         called = {"flag": False}
 
         def hero_tracked(view, actions, rng_):
@@ -277,10 +293,11 @@ def round_duel(hero, villain, n: int, seed: int) -> dict:
     }
 
 
-def match_duel(hero, villain, n: int, seed: int) -> dict:
+def match_duel(hero, villain, n: int, seed: int, progress=None) -> dict:
     rng = random.Random(seed)
     wins = losses = ties = 0
     for i in range(n):
+        _tick(progress, i + 1, n)
         if i % 2 == 0:
             mine, theirs = play_match(hero, villain, rng)
         else:
@@ -294,12 +311,9 @@ def match_duel(hero, villain, n: int, seed: int) -> dict:
     return {"wins": wins, "losses": losses, "ties": ties, "win_rate": wins / max(1, n)}
 
 
-def snapshot(net: MLP) -> MLP:
-    copy = MLP(net.dims, seed=0)
-    for i in range(len(net.W)):
-        copy.W[i] = net.W[i].copy()
-        copy.b[i] = net.b[i].copy()
-    return copy
+def snapshot(net) -> MLP:
+    """A NumPy copy of the current weights, whatever device trains them."""
+    return as_numpy(net).clone()
 
 
 def _cards(mask: int) -> list[int]:
@@ -315,10 +329,10 @@ def _card(card: int) -> str:
     return "A23456789TJQK"[card % 13] + "cdhs"[card // 13]
 
 
-def print_sample() -> None:
+def print_sample(log=print) -> None:
     rng = random.Random(1)
     state = new_round([0, 0], 0, rng)
-    print("Sample round, card counter versus card counter", flush=True)
+    log("Sample round, card counter versus card counter")
     shown = 0
     while not state.terminal and shown < 8:
         view = make_view(state, state.turn)
@@ -333,123 +347,231 @@ def print_sample() -> None:
             thrown = " ".join(_card(c) for c in _cards(choice.discard_mask))
             source = "the deck" if choice.draw == "stock" else _card(view.discard[-1])
             played = f"throws {thrown}, draws {source}"
-        print(f"  seat {state.turn} [{names}] {played}", flush=True)
+        log(f"  seat {state.turn} [{names}] {played}")
         apply_action(state, choice)
         shown += 1
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--quick", action="store_true")
-    args = parser.parse_args()
-    if args.quick:
-        expert_rounds, epochs = 220, 2
-        self_iters, self_games = 1, 30
-        eval_rounds, eval_matches = 30, 6
-        lrs = [1e-3, 4e-4]
-        batch = 256
-    else:
-        expert_rounds, epochs = 2400, 6
-        self_iters, self_games = 4, 800
-        eval_rounds, eval_matches = 180, 48
-        lrs = [1.2e-3, 8e-4, 5e-4, 3e-4, 2e-4, 1.2e-4]
-        batch = 72
+@dataclass
+class TrainConfig:
+    expert_rounds: int = 2400
+    holdout_rounds: int = 240
+    epochs: int = 6
+    generations: int = 4  # self-play passes after the imitation clone
+    games_per_generation: int = 800
+    eval_rounds: int = 180
+    eval_matches: int = 48
+    bench_rounds: int = 160
+    lrs: list[float] = field(default_factory=lambda: [1.2e-3, 8e-4, 5e-4, 3e-4, 2e-4, 1.2e-4])
+    fine_tune_lr: float = 8e-5
+    batch: int = 72
+    temperature: float = 0.32
+    ladder_rounds: int = 0  # rounds per pair of generations; 0 skips the ladder
+
+    @classmethod
+    def quick(cls) -> "TrainConfig":
+        return cls(
+            expert_rounds=220,
+            holdout_rounds=40,
+            epochs=2,
+            generations=1,
+            games_per_generation=30,
+            eval_rounds=30,
+            eval_matches=6,
+            bench_rounds=40,
+            lrs=[1e-3, 4e-4],
+            batch=256,
+        )
+
+    def lr_for(self, epoch: int) -> float:
+        return self.lrs[min(epoch, len(self.lrs)) - 1]
+
+
+class Observer:
+    """Hooks a run reports to. The default prints to the console like the old script."""
+
+    def log(self, message: str) -> None:
+        print(message, flush=True)
+
+    def phase(self, name: str, label: str) -> None:
+        pass
+
+    def progress(self, name: str, done: int, total: int) -> None:
+        pass
+
+    def history(self, entry: dict) -> None:
+        pass
+
+    def generation(self, gen: dict, net: MLP) -> None:
+        pass
+
+    def ladder(self, row: int, col: int, record: dict) -> None:
+        pass
+
+    def done(self, report: dict, paths: dict) -> None:
+        pass
+
+
+def run_training(
+    cfg: TrainConfig,
+    observer: Observer | None = None,
+    device: Device | None = None,
+    model_path: Path | None = MODEL_PATH,
+    report_path: Path | None = REPORT_PATH,
+    run_dir: Path | None = None,
+) -> dict:
+    """Clone the card counter, then improve by self-play. Returns the report.
+
+    Every generation is handed to the observer and, with `run_dir`, saved as
+    gen-NN.json. Only the gated best is written to `model_path`.
+    """
+    obs = observer or Observer()
+    device = device or resolve_device("numpy")
+    log = obs.log
+
+    def job(name: str):
+        return lambda done, total: obs.progress(name, done, total)
 
     started = time.time()
-    print_sample()
-    bench = round_duel(choose_heuristic, choose_greedy, 160 if not args.quick else 40, 100)
-    print(
+    log(f"Training on {device.label()}")
+    if device.note:
+        log(device.note)
+    if run_dir is not None:
+        run_dir.mkdir(parents=True, exist_ok=True)
+        (run_dir / "config.json").write_text(json.dumps(asdict(cfg), indent=2), encoding="utf-8")
+
+    print_sample(log)
+    obs.phase("bench", "Card counter against the greedy player")
+    bench = round_duel(choose_heuristic, choose_greedy, cfg.bench_rounds, 100, job("bench"))
+    log(
         f"Bench vs greedy {bench['wins']}-{bench['losses']}-{bench['ties']} "
-        f"avg {bench['hero_avg']:.2f}-{bench['villain_avg']:.2f} assaf {bench['assaf_rate']:.2f}",
-        flush=True,
+        f"avg {bench['hero_avg']:.2f}-{bench['villain_avg']:.2f} assaf {bench['assaf_rate']:.2f}"
     )
-    print(f"Collecting {expert_rounds} expert rounds", flush=True)
+
+    obs.phase("expert", f"Card counter plays {cfg.expert_rounds:,} rounds to copy")
+    log(f"Collecting {cfg.expert_rounds} expert rounds")
     t0 = time.time()
-    expert_rows = collect_expert(expert_rounds, 2024)
-    hold_rows = collect_expert(240 if not args.quick else 40, 909)
-    print(f"Decisions {len(expert_rows)} collected in {time.time()-t0:.1f}s", flush=True)
+    expert_rows = collect_expert(cfg.expert_rounds, 2024, job("expert"))
+    hold_rows = collect_expert(cfg.holdout_rounds, 909)
+    log(f"Decisions {len(expert_rows)} collected in {time.time()-t0:.1f}s")
     t0 = time.time()
     expert = materialize(expert_rows)
     holdout = materialize(hold_rows)
-    print(f"Features packed in {time.time()-t0:.1f}s, action rows {expert.actions.shape[0]}", flush=True)
+    log(f"Features packed in {time.time()-t0:.1f}s, action rows {expert.actions.shape[0]}")
 
-    net = default_net(11)
-    history = []
+    net = build_net(device, 11)
+    history: list[dict] = []
     rng = random.Random(3)
-    for epoch, lr in enumerate(lrs[:epochs], start=1):
+    for epoch in range(1, cfg.epochs + 1):
+        lr = cfg.lr_for(epoch)
+        obs.phase("imitation", f"Copying the counter, epoch {epoch} of {cfg.epochs}")
         t0 = time.time()
-        ce, acc = train_dataset(net, expert, lr, batch, rng)
+        ce, acc = train_dataset(net, expert, lr, cfg.batch, rng, job("imitation"))
         hold = agreement(net, holdout)
-        print(
-            f"Epoch {epoch}/{epochs} ce {ce:.3f} acc {acc:.3f} holdout {hold:.3f} in {time.time()-t0:.1f}s",
-            flush=True,
-        )
-        history.append({"phase": "imitation", "epoch": epoch, "accuracy": acc, "holdout": hold, "ce": ce})
+        log(f"Epoch {epoch}/{cfg.epochs} ce {ce:.3f} acc {acc:.3f} holdout {hold:.3f} in {time.time()-t0:.1f}s")
+        entry = {"phase": "imitation", "epoch": epoch, "accuracy": acc, "holdout": hold, "ce": ce,
+                 "seconds": round(time.time() - t0, 2)}
+        history.append(entry)
+        obs.history(entry)
+
+    generations: list[MLP] = []
+
+    def evaluate(gen_index: int, label: str, seed_round: int, seed_match: int):
+        obs.phase("eval", f"Gen {gen_index} plays the counter: {cfg.eval_rounds} rounds, {cfg.eval_matches} matches")
+        policy = net_chooser(snapshot(net), 0.0)
+        rounds = round_duel(policy, choose_heuristic, cfg.eval_rounds, seed_round, job("eval_rounds"))
+        matches = match_duel(policy, choose_heuristic, cfg.eval_matches, seed_match, job("eval_matches"))
+        return rounds, matches
+
+    def publish_generation(index: int, label: str, rounds: dict, matches: dict, kept: bool, extra: dict) -> None:
+        current = snapshot(net)
+        generations.append(current)
+        if run_dir is not None:
+            save_net(current, run_dir / f"gen-{index:02d}.json", {"generation": index, "label": label})
+        gen = {"index": index, "label": label, "rounds": rounds, "matches": matches, "kept": kept,
+               "elapsed": round(time.time() - started, 1), **extra}
+        obs.generation(gen, current)
+        if cfg.ladder_rounds > 0 and index > 0:
+            obs.phase("ladder", f"Gen {index} plays every earlier generation, {cfg.ladder_rounds} rounds each")
+            hero = net_chooser(current, 0.0)
+            for older in range(index):
+                record = round_duel(hero, net_chooser(generations[older], 0.0), cfg.ladder_rounds,
+                                    5000 + 31 * index + older, job("ladder"))
+                obs.ladder(index, older, record)
+                log(f"  ladder gen {index} vs gen {older}: rounds {record['win_rate']:.3f}")
 
     best = snapshot(net)
-    best_round = round_duel(net_chooser(best, 0.0), choose_heuristic, eval_rounds, 500)
-    best_match = match_duel(net_chooser(best, 0.0), choose_heuristic, eval_matches, 600)
+    best_round, best_match = evaluate(0, "Copied the counter", 500, 600)
     best_key = (best_match["win_rate"], best_round["win_rate"], -best_round["hero_avg"])
-    print(
+    best_index = 0
+    log(
         f"After imitation rounds {best_round['win_rate']:.3f} ({best_round['hero_avg']:.2f} pts, "
-        f"assaf {best_round['assaf_rate']:.2f}) matches {best_match['win_rate']:.3f}",
-        flush=True,
+        f"assaf {best_round['assaf_rate']:.2f}) matches {best_match['win_rate']:.3f}"
     )
-    history.append({"phase": "eval", "iteration": 0, "rounds": best_round, "matches": best_match})
+    entry = {"phase": "eval", "iteration": 0, "rounds": best_round, "matches": best_match}
+    history.append(entry)
+    obs.history(entry)
+    publish_generation(0, "Copied the counter", best_round, best_match, True, {})
 
     self_play_games = 0
     self_play_decisions = 0
-    for iteration in range(1, self_iters + 1):
+    for iteration in range(1, cfg.generations + 1):
+        obs.phase("self_play", f"Gen {iteration}: {cfg.games_per_generation} self-play games")
         t0 = time.time()
-        fresh_rows = collect_self_play(net, self_games, 4000 + iteration, 0.32)
-        self_play_games += self_games
+        fresh_rows = collect_self_play(net, cfg.games_per_generation, 4000 + iteration, cfg.temperature,
+                                       job("self_play"))
+        self_play_games += cfg.games_per_generation
         self_play_decisions += len(fresh_rows)
         fresh = materialize(fresh_rows) if fresh_rows else None
-        print(
-            f"Self-play {iteration}: {len(fresh_rows)} winning decisions in {time.time()-t0:.1f}s",
-            flush=True,
-        )
+        log(f"Self-play {iteration}: {len(fresh_rows)} winning decisions in {time.time()-t0:.1f}s")
         mixed = concat_datasets([expert, fresh]) if fresh is not None and len(fresh) else expert
+        obs.phase("fine_tune", f"Gen {iteration}: fine-tune on {len(mixed):,} decisions")
         t0 = time.time()
-        ce, acc = train_dataset(net, mixed, 8e-5, batch, rng)
-        rounds = round_duel(net_chooser(net, 0.0), choose_heuristic, eval_rounds, 700 + iteration)
-        matches = match_duel(net_chooser(net, 0.0), choose_heuristic, eval_matches, 800 + iteration)
+        ce, acc = train_dataset(net, mixed, cfg.fine_tune_lr, cfg.batch, rng, job("fine_tune"))
+        tune_seconds = time.time() - t0
+        rounds, matches = evaluate(iteration, f"Self-play pass {iteration}", 700 + iteration, 800 + iteration)
         key = (matches["win_rate"], rounds["win_rate"], -rounds["hero_avg"])
-        print(
-            f"  fine-tune {time.time()-t0:.1f}s ce {ce:.3f} rounds {rounds['win_rate']:.3f} "
-            f"assaf {rounds['assaf_rate']:.2f} matches {matches['win_rate']:.3f}",
-            flush=True,
+        log(
+            f"  fine-tune {tune_seconds:.1f}s ce {ce:.3f} rounds {rounds['win_rate']:.3f} "
+            f"assaf {rounds['assaf_rate']:.2f} matches {matches['win_rate']:.3f}"
         )
-        history.append(
-            {
-                "phase": "self_play",
-                "iteration": iteration,
-                "winning_decisions": len(fresh_rows),
-                "rounds": rounds,
-                "matches": matches,
-            }
-        )
-        if key > best_key:
+        entry = {
+            "phase": "self_play",
+            "iteration": iteration,
+            "winning_decisions": len(fresh_rows),
+            "rounds": rounds,
+            "matches": matches,
+        }
+        history.append(entry)
+        obs.history(entry)
+        kept = key > best_key
+        if kept:
             best_key = key
             best = snapshot(net)
             best_round = rounds
             best_match = matches
-            print("  new best checkpoint", flush=True)
+            best_index = iteration
+            log("  new best checkpoint")
+        publish_generation(iteration, f"Self-play pass {iteration}", rounds, matches, kept,
+                           {"winning_decisions": len(fresh_rows), "ce": ce})
 
-    greedy = round_duel(net_chooser(best, 0.0), choose_greedy, eval_rounds, 910)
-    randoms = round_duel(net_chooser(best, 0.0), choose_random, max(40, eval_rounds // 2), 911)
+    obs.phase("final", "Shipped checkpoint against the greedy and random players")
+    greedy = round_duel(net_chooser(best, 0.0), choose_greedy, cfg.eval_rounds, 910, job("final"))
+    randoms = round_duel(net_chooser(best, 0.0), choose_random, max(40, cfg.eval_rounds // 2), 911)
     report = {
         "state_dim": STATE_DIM,
         "action_dim": ACTION_DIM,
         "input_dim": INPUT_DIM,
         "layers": best.dims,
-        "expert_rounds": expert_rounds,
+        "expert_rounds": cfg.expert_rounds,
         "expert_decisions": len(expert),
         "self_play_games": self_play_games,
         "self_play_winning_decisions": self_play_decisions,
-        "self_play_iterations": self_iters,
-        "imitation_epochs": epochs,
+        "self_play_iterations": cfg.generations,
+        "imitation_epochs": cfg.epochs,
         "seconds": round(time.time() - started, 1),
+        "device": device.label(),
+        "best_generation": best_index,
         "match_win_rate_vs_benchmark": best_match["win_rate"],
         "match_record_vs_benchmark": best_match,
         "round_win_rate_vs_benchmark": best_round["win_rate"],
@@ -461,23 +583,40 @@ def main() -> None:
         "history": history,
         "rules": {"yaniv_max": 5, "assaf_penalty": 30, "match_limit": 100, "deal": 5, "max_plies": MAX_PLIES},
     }
-    save_net(
-        best,
-        MODEL_PATH,
-        {
-            "match_win_rate_vs_benchmark": best_match["win_rate"],
-            "self_play_games": self_play_games,
-            "expert_decisions": len(expert),
-        },
-    )
-    REPORT_PATH.write_text(json.dumps(report, indent=2), encoding="utf-8")
-    print(
+    meta = {
+        "match_win_rate_vs_benchmark": best_match["win_rate"],
+        "self_play_games": self_play_games,
+        "expert_decisions": len(expert),
+    }
+    paths: dict[str, str] = {}
+    if run_dir is not None:
+        save_net(best, run_dir / "best.json", meta)
+        (run_dir / "report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+        paths["run_dir"] = str(run_dir)
+    if model_path is not None:
+        save_net(best, model_path, meta)
+        paths["model"] = str(model_path)
+    if report_path is not None:
+        report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+        paths["report"] = str(report_path)
+    log(
         f"Best vs bench matches {best_match['wins']}-{best_match['losses']}-{best_match['ties']} "
         f"rounds {best_round['win_rate']:.3f} vs greedy {greedy['win_rate']:.3f} "
-        f"vs random {randoms['win_rate']:.3f}",
-        flush=True,
+        f"vs random {randoms['win_rate']:.3f}"
     )
-    print(f"Saved {MODEL_PATH}", flush=True)
+    for where in paths.values():
+        log(f"Saved {where}")
+    obs.done(report, paths)
+    return report
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--quick", action="store_true")
+    parser.add_argument("--device", default="numpy", help="numpy (default), auto, cuda, mps or cpu")
+    args = parser.parse_args()
+    cfg = TrainConfig.quick() if args.quick else TrainConfig()
+    run_training(cfg, device=resolve_device(args.device))
 
 
 if __name__ == "__main__":

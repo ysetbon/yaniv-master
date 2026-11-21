@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yaniv Training Live</title>
+<style>
+/* Card-table look from the game: walnut ground, felt panels, gold for the net. Works offline: no fonts or libraries from the web. */
+:root{
+  --bg:#15100c; --panel:#1f1812; --raised:#2a2119; --felt:#1d3a2c; --felt-2:#173024;
+  --line:rgba(246,237,217,.12); --line-strong:rgba(246,237,217,.26);
+  --ink:#f6edd9; --ink-2:#d9cbb0; --muted:#a8977a;
+  --gold:#e6c27a; --s1:#b88424; --s2:#3d9be0; --bad:#e5786a; --good:#7cc48a;
+  --display:"Fraunces","Iowan Old Style","Palatino Linotype",Georgia,serif;
+  --body:"Outfit",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);padding:0 20px 40px}
+h1,h2{font-family:var(--display);font-weight:500;margin:0;line-height:1.2}
+h1{font-size:1.6rem}
+h2{font-size:1.05rem;font-family:var(--body);font-weight:600}
+p{margin:0}
+.mono{font-family:var(--mono);font-size:.85em}
+.muted{color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:14px 0 12px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.toprow{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;border:1px solid var(--line-strong);border-radius:999px;padding:3px 10px;white-space:nowrap}
+.chip .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.chip.gpu{border-color:var(--gold);color:var(--gold)} .chip.gpu .dot{background:var(--gold)}
+.chip.st-training .dot{background:var(--s2);animation:pulse 1.4s infinite}
+.chip.st-done .dot{background:var(--good)} .chip.st-error .dot{background:var(--bad)}
+@keyframes pulse{50%{opacity:.3}}
+@media (prefers-reduced-motion:reduce){.chip .dot{animation:none!important}}
+.spacer{flex:1}
+.phase{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.phase-label{font-size:.92rem;color:var(--ink-2);min-width:0}
+.bar{flex:1;min-width:160px;height:6px;background:var(--raised);border-radius:3px;overflow:hidden}
+.bar>div{height:100%;width:0;background:var(--gold);transition:width .3s}
+.note{background:var(--raised);border:1px solid var(--line-strong);border-radius:8px;padding:8px 12px;font-size:.85rem;color:var(--ink-2)}
+.note.err{border-color:var(--bad);color:var(--ink)}
+
+main{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px;margin-top:16px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.span-12{grid-column:span 12}.span-8{grid-column:span 8}.span-7{grid-column:span 7}.span-6{grid-column:span 6}.span-5{grid-column:span 5}.span-4{grid-column:span 4}
+@media (max-width:1100px){.span-8,.span-7,.span-6,.span-5,.span-4{grid-column:span 12}}
+.panel-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.panel-head span{font-size:.82rem;color:var(--muted)}
+
+/* table */
+.felt{background:radial-gradient(ellipse at center,var(--felt) 0%,var(--felt-2) 100%);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:14px;min-height:430px}
+.seat{display:flex;flex-direction:column;gap:8px}
+.seat-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.seat-name{font-family:var(--display);font-size:1.15rem}
+.tag{width:10px;height:10px;border-radius:2px;display:inline-block}
+.tag.a{background:var(--s1)} .tag.b{background:var(--s2)}
+.score{font-family:var(--mono);font-size:.85rem;color:var(--ink-2);background:rgba(0,0,0,.25);border-radius:6px;padding:2px 8px}
+.turn{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.hand{display:flex;gap:8px;flex-wrap:wrap;min-height:76px}
+.card{width:50px;height:72px;border-radius:7px;background:#f6edd9;color:#1d1712;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;font-size:1.1rem;line-height:1.05;box-shadow:0 2px 0 rgba(0,0,0,.4);position:relative}
+.card.red{color:#b8382a}
+.card.new{outline:3px solid var(--gold);outline-offset:1px}
+.card.seen::after{content:"seen";position:absolute;bottom:-15px;font:600 .6rem var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+.card.back{background:repeating-linear-gradient(45deg,#7a2e24 0 6px,#8c3a2e 6px 12px);color:#f6edd9;font-family:var(--mono);font-size:.85rem;font-weight:600;border:2px solid #f6edd9}
+.card.sm{width:34px;height:48px;font-size:.8rem;justify-content:flex-start;align-items:flex-start;padding:3px 4px;line-height:1}
+.card.open{outline:3px solid var(--gold);outline-offset:2px}
+@media (prefers-reduced-motion:no-preference){.card.fresh{animation:deal .25s ease-out}}
+@keyframes deal{from{transform:translateY(-8px);opacity:.2}}
+.middle{display:flex;align-items:center;gap:22px;flex-wrap:wrap;padding:6px 0}
+.pile{display:flex;align-items:flex-end}
+.pile .card{margin-left:-18px}.pile .card:first-child{margin-left:0}
+.middle .lbl{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);margin-bottom:4px}
+.action{flex:1;min-width:200px;background:rgba(0,0,0,.28);border-radius:10px;padding:10px 12px;font-size:.92rem}
+.action b{font-weight:600}
+.pts{font-family:var(--mono);font-size:.8rem;color:var(--ink-2)}
+
+.side{display:flex;flex-direction:column;gap:14px}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.controls label{display:flex;flex-direction:column;gap:4px;font-size:.78rem;color:var(--muted)}
+select{background:var(--raised);border:1px solid var(--line-strong);border-radius:8px;padding:6px 8px}
+input[type=range]{accent-color:var(--gold);width:100%}
+.btn{background:var(--raised);border:1px solid var(--line-strong);border-radius:8px;padding:6px 14px;cursor:pointer}
+.btn:hover{border-color:var(--gold)}
+.think{display:flex;flex-direction:column;gap:6px}
+.think-row{display:grid;grid-template-columns:1fr 70px 54px;gap:8px;align-items:center;font-size:.84rem;padding:4px 6px;border-radius:6px}
+.think-row.chosen{background:rgba(230,194,122,.1)}
+.think-row .track{height:7px;background:var(--raised);border-radius:4px;overflow:hidden}
+.think-row .fill{height:100%;background:var(--s2)}
+.think-row .v{font-family:var(--mono);font-size:.76rem;text-align:right;color:var(--ink-2)}
+.tally{display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:4px 12px;font-size:.85rem;font-variant-numeric:tabular-nums}
+.tally .h{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.movelog{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;max-height:210px;overflow-y:auto;font-size:.83rem}
+.movelog li{display:flex;gap:8px;align-items:baseline;padding:2px 0;border-bottom:1px solid var(--line)}
+.movelog .who{flex:none;min-width:96px;white-space:nowrap;color:var(--ink-2)}
+
+/* charts */
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;color:var(--ink-2)}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.chart{position:relative;width:100%;min-height:200px}
+.chart svg{display:block;width:100%;overflow:visible}
+.chart text{font-family:var(--mono);font-size:11px;fill:var(--muted)}
+.chart .lab{fill:var(--ink-2)}
+.empty{display:grid;place-items:center;min-height:200px;color:var(--muted);font-size:.88rem;text-align:center;border:1px dashed var(--line-strong);border-radius:10px;padding:16px}
+.tip{position:absolute;pointer-events:none;background:var(--raised);border:1px solid var(--line-strong);border-radius:8px;padding:7px 10px;font-size:.78rem;line-height:1.45;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.45);z-index:3}
+.tip i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+
+.heat{overflow-x:auto}
+.heat table{border-collapse:separate;border-spacing:3px;font-size:.8rem;font-variant-numeric:tabular-nums}
+.heat th{font-weight:500;color:var(--muted);padding:4px 6px;white-space:nowrap}
+.heat td{width:62px;height:40px;text-align:center;border-radius:6px;color:var(--ink);font-family:var(--mono);font-size:.78rem}
+.heat td.na{background:transparent;color:var(--line-strong)}
+
+.datatable{overflow-x:auto}
+.datatable table{width:100%;border-collapse:collapse;font-size:.85rem;font-variant-numeric:tabular-nums;min-width:720px}
+.datatable th{text-align:right;font-weight:500;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line)}
+.datatable td{text-align:right;padding:8px 10px;border-bottom:1px solid var(--line)}
+.datatable th:nth-child(-n+2),.datatable td:nth-child(-n+2){text-align:left}
+.datatable tr.best td{background:rgba(230,194,122,.08)}
+.pill{display:inline-block;font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.pill.keep{background:var(--gold);color:var(--bg)} .pill.drop{border:1px solid var(--line-strong);color:var(--muted)}
+.logbox{font-family:var(--mono);font-size:.76rem;line-height:1.55;color:var(--ink-2);background:#0f0b08;border-radius:10px;padding:10px 12px;height:260px;overflow-y:auto;white-space:pre-wrap;word-break:break-word}
+.logbox .t{color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <div class="toprow">
+    <h1>Yaniv training · live</h1>
+    <span class="chip" id="status"><span class="dot"></span><span id="status-text">Connecting</span></span>
+    <span class="chip" id="device"><span class="dot"></span><span id="device-text">Device</span></span>
+    <span class="spacer"></span>
+    <span class="mono muted" id="elapsed">0:00</span>
+  </div>
+  <div class="phase">
+    <span class="phase-label" id="phase-label">Waiting for the trainer</span>
+    <div class="bar" role="progressbar" aria-label="Current step progress" aria-valuemin="0" aria-valuemax="100" id="bar"><div id="bar-fill"></div></div>
+    <span class="mono muted" id="bar-count"></span>
+  </div>
+  <p class="note" id="device-note" hidden></p>
+  <p class="note err" id="error" hidden></p>
+</header>
+
+<main>
+  <section class="panel span-8" aria-labelledby="table-title">
+    <div class="panel-head"><h2 id="table-title">Live table</h2><span id="match-info">Dealing…</span></div>
+    <div class="felt">
+      <div class="seat" id="seat-1"></div>
+      <div class="middle">
+        <div><p class="lbl">Deck</p><div class="card back" id="stock">40</div></div>
+        <div><p class="lbl">Discard · open card ringed</p><div class="pile" id="pile"></div></div>
+        <div class="action" id="action">The first hand is being dealt.</div>
+      </div>
+      <div class="seat" id="seat-0"></div>
+    </div>
+  </section>
+
+  <section class="panel span-4 side" aria-labelledby="ctl-title">
+    <div class="panel-head"><h2 id="ctl-title">Who plays</h2><span>Auto seats the newest generation against the one before</span></div>
+    <div class="controls">
+      <label for="seat-a">Seat A (bottom)<select id="seat-a"></select></label>
+      <label for="seat-b">Seat B (top)<select id="seat-b"></select></label>
+      <label for="speed">Pause between moves <span class="mono" id="speed-v">0.9 s</span><input type="range" id="speed" min="0.05" max="3" step="0.05" value="0.9"></label>
+      <div style="display:flex;align-items:flex-end"><button class="btn" id="pause" type="button" aria-pressed="false">Pause</button></div>
+    </div>
+    <div>
+      <h2 style="margin-bottom:6px">What the net weighed</h2>
+      <p class="muted" style="font-size:.8rem;margin-bottom:6px" id="think-who">Top moves by score for the last net move, with softmax probability.</p>
+      <div class="think" id="think"></div>
+    </div>
+    <div>
+      <h2 style="margin-bottom:6px">This pairing so far</h2>
+      <div class="tally" id="tally"></div>
+    </div>
+    <div>
+      <h2 style="margin-bottom:6px">Moves this round</h2>
+      <ul class="movelog" id="movelog"></ul>
+    </div>
+  </section>
+
+  <section class="panel span-7" aria-labelledby="wr-title">
+    <div class="panel-head"><h2 id="wr-title">Win rate against the card counter, by generation</h2><span>The ringed point is the checkpoint the gate keeps</span></div>
+    <div class="legend"><span><i style="background:var(--s1)"></i>Rounds won</span><span><i style="background:var(--s2)"></i>Matches won</span></div>
+    <div class="chart" id="c-wr"></div>
+  </section>
+
+  <section class="panel span-5" aria-labelledby="lad-title">
+    <div class="panel-head"><h2 id="lad-title">Generation ladder</h2><span>Rounds the row generation wins against the column</span></div>
+    <div class="heat" id="ladder"></div>
+    <p class="muted" style="font-size:.82rem" id="ladder-sum"></p>
+  </section>
+
+  <section class="panel span-4" aria-labelledby="acc-title">
+    <div class="panel-head"><h2 id="acc-title">Copying the counter</h2><span>Top move matches the counter's</span></div>
+    <div class="legend"><span><i style="background:var(--s1)"></i>Training</span><span><i style="background:var(--s2)"></i>Held-out</span></div>
+    <div class="chart" id="c-acc"></div>
+  </section>
+  <section class="panel span-4" aria-labelledby="ce-title">
+    <div class="panel-head"><h2 id="ce-title">Training loss</h2><span>Cross-entropy, lower is better</span></div>
+    <div class="legend"><span><i style="background:var(--s1)"></i>Imitation epochs, then one fine-tune per generation</span></div>
+    <div class="chart" id="c-ce"></div>
+  </section>
+  <section class="panel span-4" aria-labelledby="pts-title">
+    <div class="panel-head"><h2 id="pts-title">Points per round</h2><span>Against the counter, lower is better</span></div>
+    <div class="legend"><span><i style="background:var(--s1)"></i>Net</span><span><i style="background:var(--s2)"></i>Card counter</span></div>
+    <div class="chart" id="c-pts"></div>
+  </section>
+
+  <section class="panel span-8" aria-labelledby="gen-title">
+    <div class="panel-head"><h2 id="gen-title">Generations</h2><span id="run-dir"></span></div>
+    <div class="datatable"><table>
+      <thead><tr><th>Gen</th><th>How it was made</th><th>New winning moves</th><th>Rounds vs counter</th><th>Matches vs counter</th><th>Avg pts net : counter</th><th>Assaf</th><th>Gate</th><th>At</th></tr></thead>
+      <tbody id="gens"><tr><td colspan="9" class="muted" style="text-align:left">Generation 0 appears once the net has copied the counter.</td></tr></tbody>
+    </table></div>
+  </section>
+  <section class="panel span-4" aria-labelledby="log-title">
+    <div class="panel-head"><h2 id="log-title">Trainer log</h2></div>
+    <div class="logbox" id="log" aria-live="polite"></div>
+  </section>
+</main>
+
+<script>
+(function(){
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const C = {s1:css('--s1'), s2:css('--s2'), line:css('--line'), lineS:css('--line-strong'), ink:css('--ink'), ink2:css('--ink-2'), muted:css('--muted'), gold:css('--gold'), panel:css('--panel'), raised:css('--raised')};
+const RANKS = 'A23456789TJQK', SUITS = '♣♦♥♠';
+const pct = v => (v*100).toFixed(1)+'%';
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtTime = s => { s = Math.max(0, Math.round(s)); const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60; return (h ? h+':'+String(m).padStart(2,'0') : m)+':'+String(x).padStart(2,'0'); };
+let S = null, clockOffset = 0, lastBoardKey = '', moveLog = [], prevHands = [[],[]];
+
+/* ---------- cards ---------- */
+function cardEl(c, cls){
+  const r = RANKS[c%13], s = SUITS[Math.floor(c/13)], red = s==='♦'||s==='♥';
+  return '<div class="card'+(red?' red':'')+(cls?' '+cls:'')+'" aria-label="'+(r==='T'?'10':r)+s+'"><span>'+(r==='T'?'10':r)+'</span><span>'+s+'</span></div>';
+}
+const cardText = c => (RANKS[c%13]==='T'?'10':RANKS[c%13])+SUITS[Math.floor(c/13)];
+
+/* ---------- header ---------- */
+const PHASE_NAMES = {bench:'games', expert:'rounds', imitation:'batches', self_play:'games', fine_tune:'batches', eval_rounds:'rounds', eval_matches:'matches', ladder:'rounds', final:'rounds'};
+function renderHeader(){
+  const st = S.status;
+  const chip = $('status'); chip.className = 'chip st-'+st;
+  $('status-text').textContent = {starting:'Starting', training:'Training', done:'Finished', error:'Stopped by an error'}[st] || st;
+  $('device').className = 'chip'+(S.device.gpu ? ' gpu' : '');
+  $('device-text').textContent = S.device.label;
+  $('device-note').hidden = !S.device.note; $('device-note').textContent = S.device.note || '';
+  $('error').hidden = !S.error; $('error').textContent = S.error ? 'Training stopped: '+S.error+'. The full traceback is in the trainer log.' : '';
+  $('phase-label').textContent = S.phase.label;
+  renderProgress();
+  const paths = S.paths || {};
+  $('run-dir').textContent = paths.run_dir ? 'Saved to '+paths.run_dir+(paths.model ? ' and '+paths.model : '') : (S.config.run_dir ? 'Saving each generation to '+S.config.run_dir : '');
+}
+function renderProgress(){
+  const p = S.progress, f = p.total ? p.done/p.total : 0;
+  $('bar-fill').style.width = (S.status==='done' ? 100 : f*100)+'%';
+  $('bar').setAttribute('aria-valuenow', Math.round(f*100));
+  $('bar-count').textContent = p.total ? p.done.toLocaleString()+' / '+p.total.toLocaleString()+' '+(PHASE_NAMES[p.name]||'') : '';
+}
+setInterval(()=>{ if(!S) return; const end = S.finished || (Date.now()/1000 - clockOffset); $('elapsed').textContent = fmtTime(end - S.started); }, 500);
+
+/* ---------- live table ---------- */
+function renderBoard(){
+  const b = S.board; if(!b) return;
+  const seats = [0,1].map(i => {
+    const p = b.players[i], known = new Set(b.known[i]), prev = new Set(prevHands[i]);
+    const drawn = b.last && b.last.seat===i ? b.last.drawn : null;
+    const hand = b.hands[i].map(c => cardEl(c, (c===drawn?'new ':'')+(known.has(c)?'seen ':'')+(prev.has(c)?'':'fresh'))).join('');
+    return '<div class="seat-head"><span class="tag '+(i?'b':'a')+'"></span><span class="seat-name">'+esc(p.label)+'</span><span class="score">match '+b.scores[i]+' / '+b.limit+'</span><span class="pts">hand '+b.points[i]+' pts</span>'+(!b.result && b.turn===i ? '<span class="turn">to play</span>' : '')+'</div><div class="hand">'+hand+'</div>';
+  });
+  $('seat-0').innerHTML = seats[0]; $('seat-1').innerHTML = seats[1];
+  prevHands = [b.hands[0].slice(), b.hands[1].slice()];
+  $('stock').textContent = b.stock;
+  $('pile').innerHTML = b.pile.map((c,i) => cardEl(c, 'sm'+(i===b.pile.length-1?' open':''))).join('');
+  let action;
+  if (b.note) action = '<b>'+esc(b.note)+'</b>';
+  else if (b.last) action = '<span class="tag '+(b.last.seat?'b':'a')+'"></span> <b>'+esc(b.players[b.last.seat].label)+'</b> '+esc(b.last.text)+'.';
+  else action = 'Cards dealt.';
+  $('action').innerHTML = action;
+  $('match-info').textContent = 'Match '+b.match+' · round '+b.round+' · throw '+b.ply;
+  const key = b.match+':'+b.round;
+  if (key !== lastBoardKey){ moveLog = []; lastBoardKey = key; }
+  if (b.last && !b.note && !moveLog.some(m => m.ply === b.ply)){ moveLog.push({ply:b.ply, seat:b.last.seat, who:b.players[b.last.seat].label, text:b.last.text}); }
+  $('movelog').innerHTML = moveLog.slice().reverse().map(m => '<li><span class="who"><span class="tag '+(m.seat?'b':'a')+'"></span> '+esc(m.who)+'</span><span>'+esc(m.text)+'</span></li>').join('') || '<li class="muted">No throws yet this round.</li>';
+  if (b.thinking){
+    const who = b.players[b.thinking.seat].label;
+    $('think-who').textContent = who+"'s top moves by score, with softmax probability.";
+    $('think').innerHTML = b.thinking.moves.map(m => '<div class="think-row'+(m.chosen?' chosen':'')+'"><span>'+esc(m.text)+(m.chosen?' <span class="pill keep">played</span>':'')+'</span><div class="track"><div class="fill" style="width:'+(m.p*100)+'%"></div></div><span class="v">'+(m.p>=0.001?(m.p*100).toFixed(1)+'%':'<0.1%')+'</span></div>').join('');
+  } else if (b.last && !b.note) {
+    $('think-who').textContent = b.players[b.last.seat].label+' follows fixed rules, so there are no scores to show.';
+    $('think').innerHTML = '';
+  }
+}
+
+/* ---------- controls ---------- */
+function renderControls(){
+  const sc = S.showcase; const gens = S.generations.map(g => g.index);
+  const opts = [['auto','Auto']].concat(gens.map(i => ['gen:'+i, 'Gen '+i+(S.generations[i]&&S.generations[i].kept?' · kept':'')]), [['counter','Card counter'],['greedy','Greedy dumper'],['random','Random']]);
+  [['seat-a','a'],['seat-b','b']].forEach(([id,k]) => {
+    const sel = $(id), want = sc ? sc.control[k] : 'auto';
+    const html = opts.map(([v,l]) => '<option value="'+v+'"'+(v===want?' selected':'')+'>'+esc(l)+'</option>').join('');
+    if (sel.dataset.html !== html){ sel.innerHTML = html; sel.dataset.html = html; }
+  });
+  if (sc){
+    if (document.activeElement !== $('speed')){ $('speed').value = sc.control.delay; }
+    $('speed-v').textContent = Number(sc.control.delay).toFixed(2)+' s';
+    $('pause').textContent = sc.control.paused ? 'Resume' : 'Pause';
+    $('pause').setAttribute('aria-pressed', sc.control.paused);
+    const players = sc.players || [];
+    const t = players.length ? sc.tally[players[0].id+'|'+players[1].id] : null;
+    $('tally').innerHTML = t ? '<span class="h"></span><span class="h">'+esc(t.a)+'</span><span class="h">'+esc(t.b)+'</span><span class="h">Tied</span>'
+      + '<span>Rounds</span><span>'+t.rounds[0]+'</span><span>'+t.rounds[1]+'</span><span>'+t.rounds[2]+'</span>'
+      + '<span>Matches</span><span>'+t.matches[0]+'</span><span>'+t.matches[1]+'</span><span>'+t.matches[2]+'</span>' : '<span class="muted">No rounds finished yet.</span>';
+  }
+}
+function control(update){ fetch('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(update)}).catch(()=>{}); }
+$('seat-a').addEventListener('change', e => control({a:e.target.value}));
+$('seat-b').addEventListener('change', e => control({b:e.target.value}));
+$('speed').addEventListener('input', e => { $('speed-v').textContent = Number(e.target.value).toFixed(2)+' s'; });
+$('speed').addEventListener('change', e => control({delay:Number(e.target.value)}));
+$('pause').addEventListener('click', () => control({paused: !(S.showcase && S.showcase.control.paused)}));
+
+/* ---------- charts ---------- */
+const charts = {};
+function lineChart(id, o){
+  charts[id] = o; drawChart(id);
+}
+function drawChart(id){
+  const o = charts[id], host = $(id); if(!o) return;
+  if (!o.x.length){ host.innerHTML = '<div class="empty">'+esc(o.empty)+'</div>'; return; }
+  const W = host.clientWidth || 500, H = o.h || 220, m = {l:46, r:18, t:14, b:30};
+  const iw = W-m.l-m.r, ih = H-m.t-m.b, n = o.x.length;
+  const all = o.series.flatMap(s => s.v).filter(v => v!=null);
+  let y0 = o.y0 != null ? o.y0 : Math.min(...all), y1 = o.y1 != null ? o.y1 : Math.max(...all);
+  if (o.pad){ const span = (y1-y0)||1; y0 = Math.max(o.floor ?? -Infinity, y0-span*.15); y1 = y1+span*.15; }
+  if (y1 === y0) y1 = y0+1;
+  const ticks = o.ticks || niceTicks(y0, y1);
+  y0 = Math.min(y0, ticks[0]); y1 = Math.max(y1, ticks[ticks.length-1]);
+  const X = i => m.l + (n===1 ? iw/2 : i*iw/(n-1)), Y = v => m.t + ih - (v-y0)/(y1-y0)*ih;
+  let s = '<svg viewBox="0 0 '+W+' '+H+'" height="'+H+'" role="img" aria-label="'+esc(o.aria)+'">';
+  ticks.forEach(t => { s += '<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+Y(t)+'" y2="'+Y(t)+'" stroke="'+C.line+'"/><text x="'+(m.l-8)+'" y="'+(Y(t)+4)+'" text-anchor="end">'+o.fmt(t)+'</text>'; });
+  if (o.ref != null) s += '<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+Y(o.ref)+'" y2="'+Y(o.ref)+'" stroke="'+C.ink2+'" stroke-dasharray="4 4" opacity=".7"/><text class="lab" x="'+(W-m.r)+'" y="'+(Y(o.ref)-6)+'" text-anchor="end">'+esc(o.refLab)+'</text>';
+  const every = Math.ceil(n / Math.max(1, Math.floor(iw/56)));
+  o.x.forEach((l,i) => { if (i % every === 0 || i === n-1) s += '<text x="'+X(i)+'" y="'+(H-8)+'" text-anchor="middle">'+esc(o.xs ? o.xs[i] : l)+'</text>'; });
+  o.series.forEach(se => {
+    const pts = se.v.map((v,i) => v==null ? null : X(i)+','+Y(v)).filter(Boolean);
+    if (pts.length > 1) s += '<polyline fill="none" stroke="'+se.c+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="'+pts.join(' ')+'"/>';
+    se.v.forEach((v,i) => { if (v!=null) s += '<circle cx="'+X(i)+'" cy="'+Y(v)+'" r="'+(n>30?2.5:4)+'" fill="'+se.c+'" stroke="'+C.panel+'" stroke-width="2"/>'; });
+  });
+  if (o.ring != null && o.series[1].v[o.ring] != null){ const cx = X(o.ring), cy = Y(o.series[1].v[o.ring]); s += '<circle cx="'+cx+'" cy="'+cy+'" r="10" fill="none" stroke="'+C.gold+'" stroke-width="2"/>'; }
+  s += '<line class="xh" y1="'+m.t+'" y2="'+(m.t+ih)+'" stroke="'+C.lineS+'" visibility="hidden"/><rect class="hit" x="'+m.l+'" y="0" width="'+iw+'" height="'+H+'" fill="transparent"/></svg>';
+  host.innerHTML = s;
+  const tip = document.createElement('div'); tip.className = 'tip'; tip.hidden = true; host.appendChild(tip);
+  const hit = host.querySelector('.hit'), xl = host.querySelector('.xh');
+  const move = e => { const r = host.getBoundingClientRect(), px = (e.clientX-r.left)*(W/r.width);
+    let i = n===1 ? 0 : Math.round((px-m.l)/(iw/(n-1))); i = Math.max(0, Math.min(n-1, i));
+    xl.setAttribute('x1', X(i)); xl.setAttribute('x2', X(i)); xl.setAttribute('visibility','visible');
+    tip.innerHTML = '<b>'+esc(o.x[i])+'</b>'+o.series.map(se => se.v[i]==null ? '' : '<br><i style="background:'+se.c+'"></i>'+esc(se.n)+' <span class="mono">'+(o.tipFmt||o.fmt)(se.v[i])+'</span>').join('');
+    tip.hidden = false; const tx = X(i)/W*r.width;
+    tip.style.left = Math.min(Math.max(tx - tip.offsetWidth/2, 0), r.width - tip.offsetWidth)+'px';
+    const top = Math.min(...o.series.map(se => se.v[i]==null ? H : Y(se.v[i])));
+    tip.style.top = Math.max(0, top/H*r.height - tip.offsetHeight - 12)+'px'; };
+  hit.addEventListener('pointermove', move); hit.addEventListener('pointerdown', move);
+  hit.addEventListener('pointerleave', () => { tip.hidden = true; xl.setAttribute('visibility','hidden'); });
+}
+function niceTicks(a, b){
+  const span = b-a, raw = span/4, mag = Math.pow(10, Math.floor(Math.log10(raw))), step = [1,2,2.5,5,10].map(k => k*mag).find(k => span/k <= 5);
+  const out = []; for (let v = Math.floor(a/step)*step; v <= b+step*0.001; v += step) out.push(+v.toFixed(6));
+  if (out[out.length-1] < b) out.push(+(out[out.length-1]+step).toFixed(6));
+  return out;
+}
+new ResizeObserver(() => Object.keys(charts).forEach(drawChart)).observe(document.querySelector('main'));
+
+function renderCharts(){
+  const gens = S.generations;
+  const best = bestIndex();
+  lineChart('c-wr', {x:gens.map(g=>'Gen '+g.index), xs:gens.map(g=>String(g.index)), y0:0, y1:1, ticks:[0,.25,.5,.75,1], fmt:v=>Math.round(v*100)+'%', tipFmt:pct, ref:.5, refLab:'even with the counter', h:240, ring: best,
+    empty:'Each generation is tested against the card counter. The first point appears after imitation finishes.', aria:'Round and match win rate against the card counter for each generation',
+    series:[{n:'Rounds', c:C.s1, v:gens.map(g=>g.rounds.win_rate)}, {n:'Matches', c:C.s2, v:gens.map(g=>g.matches.win_rate)}]});
+  const im = S.history.filter(h => h.phase==='imitation');
+  lineChart('c-acc', {x:im.map(h=>'Epoch '+h.epoch), xs:im.map(h=>String(h.epoch)), pad:true, fmt:v=>Math.round(v*100)+'%', tipFmt:pct,
+    empty:'Agreement shows up after the first epoch of copying the counter.', aria:'Agreement with the card counter per epoch',
+    series:[{n:'Training', c:C.s1, v:im.map(h=>h.accuracy)}, {n:'Held-out', c:C.s2, v:im.map(h=>h.holdout)}]});
+  const ceX = im.map(h=>'Epoch '+h.epoch).concat(gens.filter(g=>g.ce!=null).map(g=>'Gen '+g.index+' fine-tune'));
+  const ceV = im.map(h=>h.ce).concat(gens.filter(g=>g.ce!=null).map(g=>g.ce));
+  lineChart('c-ce', {x:ceX, xs:ceX.map(l=>l.replace('Epoch ','E').replace(' fine-tune','').replace('Gen ','G')), pad:true, floor:0, fmt:v=>v.toFixed(2), tipFmt:v=>v.toFixed(3),
+    empty:'Loss appears after the first epoch.', aria:'Cross-entropy loss per epoch and per fine-tune', series:[{n:'Cross-entropy', c:C.s1, v:ceV}]});
+  lineChart('c-pts', {x:gens.map(g=>'Gen '+g.index), xs:gens.map(g=>String(g.index)), pad:true, floor:0, fmt:v=>v.toFixed(1), tipFmt:v=>v.toFixed(2)+' pts',
+    empty:'Average points per round against the counter, once generation 0 is tested.', aria:'Average points per round, net and card counter, per generation',
+    series:[{n:'Net', c:C.s1, v:gens.map(g=>g.rounds.hero_avg)}, {n:'Card counter', c:C.s2, v:gens.map(g=>g.rounds.villain_avg)}]});
+}
+function bestIndex(){ let b = null; S.generations.forEach(g => { if (g.kept) b = g.index; }); return b; }
+
+/* ---------- ladder ---------- */
+function heatColor(v){
+  const d = Math.min(1, Math.abs(v-.5)*2.4), col = v >= .5 ? [184,132,36] : [61,155,224], base = [42,33,25];
+  return 'rgb('+base.map((b,i) => Math.round(b + (col[i]-b)*d)).join(',')+')';
+}
+function renderLadder(){
+  const L = S.ladder, n = S.generations.length;
+  if (!S.config.ladder_rounds){ $('ladder').innerHTML = '<div class="empty">The ladder is off. Run with --ladder-rounds 100 to compare generations head to head.</div>'; $('ladder-sum').textContent=''; return; }
+  if (!L.length){ $('ladder').innerHTML = '<div class="empty">From generation 1 on, each new generation plays every older one for '+S.config.ladder_rounds+' rounds.</div>'; $('ladder-sum').textContent=''; return; }
+  const cell = {}; L.forEach(r => cell[r.row+':'+r.col] = r);
+  let h = '<table><thead><tr><th></th>'; for (let c = 0; c < n-1; c++) h += '<th>vs Gen '+c+'</th>'; h += '</tr></thead><tbody>';
+  for (let r = 1; r < n; r++){
+    h += '<tr><th>Gen '+r+'</th>';
+    for (let c = 0; c < n-1; c++){ const x = cell[r+':'+c];
+      h += x ? '<td style="background:'+heatColor(x.win_rate)+'" title="Gen '+r+' vs Gen '+c+': '+x.wins+'–'+x.losses+'–'+x.ties+', '+x.hero_avg.toFixed(2)+' to '+x.villain_avg.toFixed(2)+' pts">'+Math.round(x.win_rate*100)+'%</td>' : '<td class="na">·</td>'; }
+    h += '</tr>';
+  }
+  $('ladder').innerHTML = h+'</tbody></table>';
+  const last = L.filter(r => r.col === r.row-1).pop();
+  $('ladder-sum').textContent = last ? 'Gen '+last.row+' beats Gen '+last.col+' in '+pct(last.win_rate)+' of rounds ('+last.wins+'–'+last.losses+'–'+last.ties+'). Gold means the newer generation is ahead, blue means it is behind.' : '';
+}
+
+/* ---------- generations table ---------- */
+function renderGens(){
+  const gens = S.generations; if (!gens.length) return;
+  const best = bestIndex();
+  $('gens').innerHTML = gens.map(g => '<tr'+(g.index===best?' class="best"':'')+'><td>'+g.index+'</td><td>'+esc(g.label)+'</td><td>'+(g.winning_decisions!=null ? g.winning_decisions.toLocaleString() : '—')+'</td><td>'+g.rounds.wins+'–'+g.rounds.losses+'–'+g.rounds.ties+' <span class="muted">('+pct(g.rounds.win_rate)+')</span></td><td>'+g.matches.wins+'–'+g.matches.losses+' <span class="muted">('+pct(g.matches.win_rate)+')</span></td><td>'+g.rounds.hero_avg.toFixed(2)+' : '+g.rounds.villain_avg.toFixed(2)+'</td><td>'+g.rounds.assafs+' / '+g.rounds.calls+'</td><td><span class="pill '+(g.kept?'keep':'drop')+'">'+(g.index===best?'current best':g.kept?'was best':'not kept')+'</span></td><td class="mono">'+fmtTime(g.elapsed)+'</td></tr>').join('');
+}
+
+/* ---------- log ---------- */
+function addLog(l){ const box = $('log'), stick = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
+  const d = document.createElement('div'); d.innerHTML = '<span class="t">'+fmtTime(l.t)+'</span> '+esc(l.text); box.appendChild(d);
+  while (box.childNodes.length > 400) box.removeChild(box.firstChild);
+  if (stick) box.scrollTop = box.scrollHeight; }
+
+/* ---------- wiring ---------- */
+function renderAll(){ renderHeader(); renderBoard(); renderControls(); renderCharts(); renderLadder(); renderGens(); }
+async function sync(){
+  const r = await fetch('/api/state'); S = await r.json(); clockOffset = Date.now()/1000 - S.now;
+  $('log').innerHTML = ''; S.logs.forEach(addLog); renderAll();
+}
+function handle(msg){
+  const {type, data} = msg;
+  switch(type){
+    case 'log': addLog(data); break;
+    case 'phase': S.phase = data; renderHeader(); break;
+    case 'progress': S.progress = data; renderProgress(); break;
+    case 'history': S.history.push(data); renderCharts(); break;
+    case 'generation': S.generations.push(data); renderCharts(); renderGens(); renderControls(); renderLadder(); break;
+    case 'ladder': S.ladder.push(data); renderLadder(); break;
+    case 'board': S.board = data; renderBoard(); break;
+    case 'showcase': S.showcase = data; renderControls(); break;
+    case 'status': S.status = data; renderHeader(); break;
+    case 'error': S.error = data; renderHeader(); break;
+    case 'paths': S.paths = data; renderHeader(); break;
+    case 'finished': S.finished = data; break;
+    case 'report': S.report = data; break;
+  }
+}
+function connect(){
+  const es = new EventSource('/api/events');
+  es.onopen = () => sync().catch(()=>{});
+  es.onmessage = e => { if (S) handle(JSON.parse(e.data)); };
+  es.onerror = () => { $('status-text').textContent = 'Reconnecting'; };
+}
+sync().then(connect).catch(() => { $('status-text').textContent = 'Cannot reach the trainer'; setTimeout(() => location.reload(), 2000); });
+})();
+</script>
+</body>
+</html>
