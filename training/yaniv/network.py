@@ -54,6 +54,14 @@ class MLP:
             self._pres = pres
         return h
 
+    def clone(self) -> "MLP":
+        """A copy of the weights only, for checkpoints and inference."""
+        copy = MLP(self.dims, seed=0)
+        for i in range(len(self.W)):
+            copy.W[i] = self.W[i].copy()
+            copy.b[i] = self.b[i].copy()
+        return copy
+
     def zero_grad(self) -> None:
         for grad in self.gW:
             grad.fill(0)
