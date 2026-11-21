@@ -28,11 +28,23 @@ class Device:
 
 
 def _torch():
+    """PyTorch, or None and the reason it could not be used."""
     try:
         import torch
     except ImportError:
-        return None
-    return torch
+        return None, "missing"
+    except OSError as exc:  # installed, but a DLL or shared library failed to load
+        return None, f"{type(exc).__name__}: {exc}"
+    return torch, ""
+
+
+BROKEN_HINT = (
+    "PyTorch is installed but failed to load:\n  {error}\n"
+    "On Windows this usually means the Microsoft Visual C++ Redistributable (x64) is missing or old: "
+    "install the latest from https://aka.ms/vs/17/release/vc_redist.x64.exe and open a new terminal. "
+    "If that does not fix it, reinstall PyTorch with `python -m pip uninstall -y torch`, "
+    "`python -m pip cache purge`, then the install command from https://pytorch.org/get-started/locally/"
+)
 
 
 def resolve_device(choice: str = "auto") -> Device:
@@ -40,7 +52,13 @@ def resolve_device(choice: str = "auto") -> Device:
         raise SystemExit(f"--device must be one of {', '.join(CHOICES)}")
     if choice == "numpy":
         return Device("numpy", "NumPy")
-    torch = _torch()
+    torch, problem = _torch()
+    if torch is None and problem != "missing":
+        message = BROKEN_HINT.format(error=problem)
+        if choice == "auto":
+            return Device("numpy", "NumPy", message.replace("\n  ", " ").replace("\n", " ")
+                          + " Training runs on the CPU with NumPy until then.")
+        raise SystemExit(message)
     if torch is None:
         if choice == "auto":
             return Device(

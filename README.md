@@ -54,3 +54,8 @@ python main.py --device cuda
 ```
 
 `--device auto`, the default, uses CUDA, then Apple MPS, then NumPy. The dashboard header shows which one is in use. The GPU runs the gradient steps. Self-play and evaluation stay on the CPU, because they score about twenty moves at a time and the game rules are plain Python.
+
+If the GPU check fails on Windows:
+
+- `OSError: [WinError 1114] ... c10.dll` means Windows could not load PyTorch. Install the latest [Visual C++ Redistributable (x64)](https://aka.ms/vs/17/release/vc_redist.x64.exe), open a new terminal, and try again. If that does not help, uninstall torch, run `python -m pip cache purge`, and reinstall it.
+- RTX 50-series cards need a PyTorch build for CUDA 12.8 or newer, for example the `cu128` build. Older builds install, then fail with "no kernel image is available". The build's CUDA version must also be no higher than the one `nvidia-smi` reports for your driver.
