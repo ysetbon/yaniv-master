@@ -435,6 +435,8 @@ function bestGen(){
 }
 const isGA = () => S && S.config && S.config.recipe === 'genetic';
 const isSearch = () => S && S.config && S.config.recipe === 'search';
+const started = () => !!(S && S.config && S.config.start_from);
+const zeroName = () => started() ? 'the starting net' : 'the copy';
 function freshFor(i){ const f = S.report && S.report.fresh_test; return f ? f[String(i)] : null; }
 function renderHeader(){
   const st = S.stopping && S.status === 'training' ? 'stopping' : S.status;
@@ -520,10 +522,10 @@ setInterval(() => { if(!S) return; const end = S.finished || (Date.now()/1000 - 
 function renderKpis(){
   const gens = S.generations, b = bestGen(), g0 = gens[0], last = gens[gens.length-1];
   if (!b){ return; }
-  $('k-best').innerHTML = 'Gen '+b.index+(b.index===0?'<small>the copy</small>':'');
+  $('k-best').innerHTML = 'Gen '+b.index+(b.index===0?'<small>'+zeroName()+'</small>':'');
   const passes = gens.length - 1;
   const ft = S.report && S.report.fresh_test && Object.keys(S.report.fresh_test).length > 1;
-  $('k-best-sub').textContent = S.report ? (b.index === 0 ? (ft ? 'The gate\'s pick did worse than the copy on new games, so the copy ships.' : 'No generation beat the copy.') : 'Kept by the gate and confirmed on new games.')
+  $('k-best-sub').textContent = S.report ? (b.index === 0 ? (ft ? 'The gate\'s pick did worse than '+zeroName()+' on new games, so '+zeroName()+' ships.' : 'No generation beat the copy.') : 'Kept by the gate and confirmed on new games.')
     : b.index === 0 ? (passes ? 'No generation has beaten the copy yet ('+passes+' tried).' : (isGA() ? 'Evolution starts next.' : isSearch() ? 'Search passes start next.' : 'Self-play passes start next.')) : 'Kept by the gate. '+passes+' of '+S.config.generations+' generations done.';
   const fresh = freshFor(b.index), fresh0 = freshFor(0);
   const m = fresh ? fresh.matches : b.matches, mn = m.wins+m.losses+m.ties, [lo, hi] = wilson(m.wins, mn);
@@ -531,7 +533,7 @@ function renderKpis(){
   $('k-match-sub').textContent = (fresh ? 'Final check on new games. ' : '')+'95% range '+pct0(lo)+' to '+pct0(hi)+'. 50% would be even with the counter.';
   const r = fresh ? fresh.rounds : b.rounds, r0 = fresh0 ? fresh0.rounds : g0 ? g0.rounds : null, d = r0 ? (r.win_rate - r0.win_rate)*100 : 0;
   $('k-round').innerHTML = pct(r.win_rate)+' <span class="delta '+(d>0.05?'up':d<-0.05?'down':'')+'">'+(d>=0?'+':'')+d.toFixed(1)+' pts</span>';
-  $('k-round-sub').textContent = b.index === 0 ? 'This is the copy itself.' : 'Change since Gen 0, the copy of the counter. '+r.hero_avg.toFixed(1)+' to '+r.villain_avg.toFixed(1)+' points per round.';
+  $('k-round-sub').textContent = b.index === 0 ? 'This is '+zeroName()+' itself.' : 'Change since Gen 0, '+(started() ? 'the starting net' : 'the copy of the counter')+'. '+r.hero_avg.toFixed(1)+' to '+r.villain_avg.toFixed(1)+' points per round.';
   if (isGA()){
     const P = S.population || [], lp = P[P.length-1];
     document.querySelector('#k-exp').previousElementSibling.textContent = 'Population';
@@ -770,11 +772,11 @@ function renderFinal(){
   $('final-sub').textContent = cfg.final_rounds.toLocaleString()+' rounds and '+cfg.final_matches+' matches each, on games training never saw';
   if (!ft){ $('final').innerHTML = replay + '<p class="caption">The gate ranks each generation by rounds won on its own test. With many generations, some score well by luck, so when training ends the top '+(cfg.gate_finalists || 1)+' replay the same games and the best of them is the gate\'s pick. Then the pick and Gen 0 both play fresh games, and the better of the two ships.</p>'; return; }
   const rows = Object.keys(ft).map(k => { const t = ft[k], m = t.matches, n = m.wins+m.losses+m.ties, [lo, hi] = wilson(m.wins, n), g = S.generations[+k];
-    return '<tr'+(+k === S.report.best_generation ? ' class="best"' : '')+'><td>Gen '+k+'</td><td>'+(+k === 0 ? 'Copy of the counter' : 'Gate\'s pick')+'</td><td>'+pct(t.rounds.win_rate)+'</td><td>'+m.wins+'–'+m.losses+' <span class="muted">('+pct(m.win_rate)+', range '+pct0(lo)+'–'+pct0(hi)+')</span></td><td>'+(g ? pct(g.rounds.win_rate) : '–')+'</td><td>'+(+k === S.report.best_generation ? '<span class="pill keep">ships</span>' : '')+'</td></tr>'; }).join('');
+    return '<tr'+(+k === S.report.best_generation ? ' class="best"' : '')+'><td>Gen '+k+'</td><td>'+(+k === 0 ? (started() ? 'The starting net' : 'Copy of the counter') : 'Gate\'s pick')+'</td><td>'+pct(t.rounds.win_rate)+'</td><td>'+m.wins+'–'+m.losses+' <span class="muted">('+pct(m.win_rate)+', range '+pct0(lo)+'–'+pct0(hi)+')</span></td><td>'+(g ? pct(g.rounds.win_rate) : '–')+'</td><td>'+(+k === S.report.best_generation ? '<span class="pill keep">ships</span>' : '')+'</td></tr>'; }).join('');
   const b = S.report.best_generation, pick = Object.keys(ft).map(Number).find(k => k !== 0);
   let verdict;
-  if (pick == null) verdict = 'No generation beat the copy in the gate, so the copy ships.';
-  else if (b === 0) verdict = 'Gen '+pick+' looked better during training, but on new games the copy won as many rounds or more, so the copy ships. Its training score was partly luck.';
+  if (pick == null) verdict = 'No generation beat '+zeroName()+' in the gate, so '+zeroName()+' ships.';
+  else if (b === 0) verdict = 'Gen '+pick+' looked better during training, but on new games '+zeroName()+' did as well or better, so it ships. Its training score was partly luck.';
   else { const dr = (ft[String(pick)].rounds.win_rate - ft['0'].rounds.win_rate)*100, dm = (ft[String(pick)].matches.win_rate - ft['0'].matches.win_rate)*100;
     verdict = 'On the same new games, Gen '+pick+' won '+Math.abs(dr).toFixed(1)+' points '+(dr>=0?'more':'fewer')+' rounds and '+Math.abs(dm).toFixed(1)+' points '+(dm>=0?'more':'fewer')+' matches than the copy. Rounds decide which ships. '+(Math.abs(dm) < 7 ? 'The matches gap is within chance for '+cfg.final_matches+' matches.' : 'The matches gap is larger than chance.'); }
   $('final').innerHTML = replay + '<h3 class="caption" style="margin:12px 0 6px">Fresh test</h3><div class="datatable"><table style="min-width:620px"><thead><tr><th>Gen</th><th>What</th><th>Rounds won</th><th>Matches won</th><th>Rounds on its training test</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div><p class="caption">'+esc(verdict)+'</p>';
@@ -850,7 +852,7 @@ function renderGens(){
   const b = bestGen();
   $('gens').innerHTML = gens.map(g => {
     const status = b && g.index === b.index ? '<span class="pill keep">current best</span>' : g.kept ? '<span class="pill was">was best</span>' : '<span class="pill drop">not kept</span>';
-    const trained = g.index === 0 ? 'copied moves' : g.member ? 'net '+g.member+', '+({elite:'elite', cross:'crossover', mutant:'mutant', copy:'the copy'}[g.op]||g.op) : (g.copied != null ? g.copied.toLocaleString()+' + '+(g.replay||0).toLocaleString() : (g.winning_decisions||0).toLocaleString()+' new');
+    const trained = g.index === 0 ? (started() ? 'the starting net' : 'copied moves') : g.member ? 'net '+g.member+', '+({elite:'elite', cross:'crossover', mutant:'mutant', copy:'the copy'}[g.op]||g.op) : (g.copied != null ? g.copied.toLocaleString()+' + '+(g.replay||0).toLocaleString() : (g.winning_decisions||0).toLocaleString()+' new');
     return '<tr'+(b && g.index===b.index?' class="best"':'')+'><td>'+g.index+'</td><td>'+esc(g.label)+'</td><td>'+trained+'</td><td>'+g.rounds.wins+'–'+g.rounds.losses+'–'+g.rounds.ties+' <span class="muted">('+pct(g.rounds.win_rate)+')</span></td><td>'+g.matches.wins+'–'+g.matches.losses+' <span class="muted">('+pct(g.matches.win_rate)+')</span></td><td>'+g.rounds.hero_avg.toFixed(2)+' : '+g.rounds.villain_avg.toFixed(2)+'</td><td>'+g.rounds.assafs+' / '+g.rounds.calls+'</td><td>'+status+'</td><td class="mono">'+(g.seconds != null ? fmtDur(g.seconds) : '–')+'</td><td><button class="btn watch" type="button" data-gen="'+g.index+'" aria-label="Watch Gen '+g.index+' play the counter">Watch</button></td></tr>';
   }).join('');
   $('gens').querySelectorAll('.watch').forEach(btn => btn.onclick = () => { control({a:'gen:'+btn.dataset.gen, b:'counter'}); $('table-title').scrollIntoView({behavior:'smooth', block:'start'}); });
