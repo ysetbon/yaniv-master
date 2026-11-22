@@ -43,8 +43,9 @@ def describe(view: View, action: Action) -> str:
 
 
 class Player:
-    def __init__(self, pid: str, label: str, net=None, bot=None):
+    def __init__(self, pid: str, label: str, net=None, bot=None, tag: str | None = None):
         self.id = pid
+        self.tag = tag or pid  # which network exactly; for "pop" the member id
         self.label = label
         self.net = net
         self.bot = bot
@@ -74,10 +75,10 @@ class Showcase:
     far too fast to watch. Each table plays its own match with its own deck.
     """
 
-    def __init__(self, hub: Hub, tables: int = 6):
+    def __init__(self, hub: Hub, tables: int = 6, pairing: tuple[str, str] = ("auto", "auto")):
         self.hub = hub
         self.count = max(1, int(tables))
-        self.control = {"delay": 0.9, "paused": False, "a": "auto", "b": "auto"}
+        self.control = {"delay": 0.9, "paused": False, "a": pairing[0], "b": pairing[1]}
         self.version = 0  # bumps when the pairing changes, so every table restarts
         self.step_token = 0  # bumps on "next move", so each paused table moves once
         self.tally: dict[str, dict] = {}
@@ -105,7 +106,15 @@ class Showcase:
         return dict(self.control)
 
     # ---- choosing who plays ---------------------------------------------
-    def player(self, pid: str) -> Player | None:
+    def player(self, pid: str, table: int = 0) -> Player | None:
+        if pid == "pop":
+            found = self.hub.population_member(table)
+            if found is None:
+                return None
+            net, info = found
+            rate = info.get("win_rate")
+            label = f"Net {info['id']}" + (f" · {rate * 100:.0f}%" if rate is not None else "")
+            return Player("pop", label, net=net, tag=f"pop:{info['id']}")
         if pid in BOTS:
             label, bot = BOTS[pid]
             return Player(pid, label, bot=bot)
@@ -121,8 +130,11 @@ class Showcase:
                 return Player(pid, f"Gen {index}", net=net)
         return None
 
-    def resolve(self) -> tuple[Player, Player, bool]:
-        """Seat A and seat B. The flag says the pairing follows new generations."""
+    def resolve(self, table: int = 0) -> tuple[Player, Player, bool]:
+        """Seat A and seat B for one table. The flag says the pairing follows new generations.
+
+        "pop" seats a different member of the newest population at each table.
+        """
         latest = self.hub.latest_generation()
         if latest is None:
             auto = ("counter", "greedy")
@@ -132,14 +144,16 @@ class Showcase:
             auto = (f"gen:{latest}", f"gen:{latest - 1}")
         a = self.control["a"] if self.control["a"] != "auto" else auto[0]
         b = self.control["b"] if self.control["b"] != "auto" else auto[1]
-        pa = self.player(a) or self.player(auto[0])
-        pb = self.player(b) or self.player(auto[1])
-        dynamic = any(v in ("auto", "best") for v in (self.control["a"], self.control["b"]))
+        if "pop" in (a, b) and self.hub.population_member(0) is None:
+            a, b = auto  # no population yet: show the usual pairing until there is one
+        pa = self.player(a, table) or self.player(auto[0], table)
+        pb = self.player(b, table) or self.player(auto[1], table)
+        dynamic = any(v in ("auto", "best", "pop") for v in (self.control["a"], self.control["b"]))
         return pa, pb, dynamic
 
-    def target(self) -> tuple[str, str]:
-        a, b, _ = self.resolve()
-        return a.id, b.id
+    def target(self, table: int = 0) -> tuple[str, str]:
+        a, b, _ = self.resolve(table)
+        return a.tag, b.tag
 
     # ---- shared bookkeeping -----------------------------------------------
     def next_match(self) -> int:
@@ -149,7 +163,8 @@ class Showcase:
 
     def record(self, a: Player, b: Player, rounds: int | None = None, matches: int | None = None) -> None:
         with self.lock:
-            tally = self.tally.setdefault(f"{a.id}|{b.id}", {"a": a.label, "b": b.label, "rounds": [0, 0, 0], "matches": [0, 0, 0]})
+            names = ["Population" if p.id == "pop" else p.label for p in (a, b)]
+            tally = self.tally.setdefault(f"{a.id}|{b.id}", {"a": names[0], "b": names[1], "rounds": [0, 0, 0], "matches": [0, 0, 0]})
             if rounds is not None:
                 tally["rounds"][rounds] += 1
             if matches is not None:
@@ -221,7 +236,7 @@ class Table(threading.Thread):
         while True:
             if show.version != self.version:
                 return False
-            if self.pairing is not None and show.target() != self.pairing:
+            if self.pairing is not None and show.target(self.index) != self.pairing:
                 return False  # a new generation arrived: every table switches at once
             if show.control["paused"]:
                 if show.step_token != self.seen_step:
@@ -249,9 +264,9 @@ class Table(threading.Thread):
     def _play_match(self) -> None:
         show = self.show
         self.version = show.version
-        a, b, dynamic = show.resolve()
+        a, b, dynamic = show.resolve(self.index)
         players = [a, b]
-        self.pairing = (a.id, b.id) if dynamic else None
+        self.pairing = (a.tag, b.tag) if dynamic else None
         self.match_no = show.next_match()
         show.record(a, b)
         if self.index == 0:

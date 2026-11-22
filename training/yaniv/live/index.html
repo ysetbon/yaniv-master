@@ -148,6 +148,17 @@ main{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px;margin
 .ref{font-size:.8rem;color:var(--ink-2);border-top:1px solid var(--line);padding-top:6px;margin-top:2px}
 .ref b{font-weight:600;color:var(--ink)}
 
+/* ---------- population grid ---------- */
+.popgrid{overflow-x:auto}
+.poprow{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.poprow .g{width:46px;flex:none;font-family:var(--mono);font-size:.72rem;color:var(--muted);text-align:right}
+.poprow .cells{display:flex;gap:2px}
+.pc{width:15px;height:15px;border-radius:3px;display:grid;place-items:center;font:600 .55rem/1 var(--mono);color:var(--ink)}
+.pc.elite{outline:2px solid var(--gold);outline-offset:-2px}
+.pc.champ{outline:2px solid var(--ink);outline-offset:-2px}
+.poplegend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.78rem;color:var(--ink-2);margin-top:6px}
+.poplegend .pc{display:inline-grid;vertical-align:middle;margin-right:5px}
+
 /* ---------- side controls ---------- */
 .side{gap:16px}
 .block{display:flex;flex-direction:column;gap:8px}
@@ -222,6 +233,7 @@ select{background:var(--raised);border:1px solid var(--line-strong);border-radiu
   <div class="toprow">
     <h1>Yaniv training</h1>
     <span class="chip" id="status"><span class="dot"></span><span id="status-text">Connecting</span></span>
+    <span class="chip" id="recipe" title="How the net improves after copying the counter"><span id="recipe-text">Recipe</span></span>
     <span class="chip" id="device" title="Where gradient steps run"><span class="dot"></span><span id="device-text">Device</span></span>
     <span class="spacer"></span>
     <span class="clock"><span>elapsed <b id="elapsed">0:00</b></span><span id="eta-wrap">left <b id="eta">estimating</b></span></span>
@@ -261,6 +273,7 @@ select{background:var(--raised);border:1px solid var(--line-strong);border-radiu
         <button class="btn" type="button" data-a="auto" data-b="counter">Newest vs counter</button>
         <button class="btn" type="button" data-a="best" data-b="gen:0">Best vs Gen 0</button>
         <button class="btn" type="button" data-a="best" data-b="counter">Best vs counter</button>
+        <button class="btn" type="button" data-a="pop" data-b="counter" id="preset-pop" hidden>Population vs counter</button>
       </div>
       <div class="seats">
         <label for="seat-a"><span><span class="tag a"></span> Bottom seat</span><select id="seat-a"></select></label>
@@ -300,6 +313,17 @@ select{background:var(--raised);border:1px solid var(--line-strong);border-radiu
 
   <div class="section-title"><h2>Is it improving?</h2><p>Every generation plays the card counter, and every generation plays every older one.</p></div>
 
+  <section class="panel span-7" aria-labelledby="fit-title" id="fit-panel" hidden>
+    <div class="panel-head"><h2 id="fit-title">Fitness of the population</h2><span class="sub" id="fit-sub">Rounds won against the counter, every network on the same deals</span></div>
+    <div class="legend"><span><i style="background:var(--s1)"></i>Best</span><span><i style="background:var(--s2)"></i>Median</span><span><i style="background:var(--muted)"></i>Worst</span><span><i class="band" style="background:var(--s2)"></i>Whole population</span></div>
+    <div class="chart" id="c-fit"></div>
+  </section>
+  <section class="panel span-5" aria-labelledby="pop-title" id="pop-panel" hidden>
+    <div class="panel-head"><h2 id="pop-title">Population</h2><span class="sub">One square per network, best on the left</span></div>
+    <div class="popgrid" id="popgrid"></div>
+    <div class="poplegend"><span><span class="pc elite" style="background:var(--raised)">E</span>elite, kept unchanged</span><span><span class="pc" style="background:var(--raised)">×</span>crossover of two parents</span><span><span class="pc" style="background:var(--raised)">·</span>mutant of one parent</span><span><span class="pc champ" style="background:var(--raised)"></span>champion</span><span>Gold is above 50% against the counter, blue below.</span></div>
+  </section>
+
   <section class="panel span-7" aria-labelledby="wr-title">
     <div class="panel-head"><h2 id="wr-title">Win rate against the card counter</h2><span class="sub">Shaded bands are 95% ranges. Gold points passed the gate.</span></div>
     <div class="legend"><span><i style="background:var(--s1)"></i>Rounds won</span><span><i style="background:var(--s2)"></i>Matches won</span><span><i class="box" style="background:var(--gold)"></i>Kept as best</span></div>
@@ -333,7 +357,7 @@ select{background:var(--raised);border:1px solid var(--line-strong);border-radiu
     <div class="legend"><span><i style="background:var(--s1)"></i>Net</span><span><i style="background:var(--s2)"></i>Card counter</span></div>
     <div class="chart" id="c-pts"></div>
   </section>
-  <section class="panel span-4" aria-labelledby="mix-title">
+  <section class="panel span-4" aria-labelledby="mix-title" id="mix-panel">
     <div class="panel-head"><h2 id="mix-title">What each generation trained on</h2><span class="sub">Decisions per fine-tune</span></div>
     <div class="legend"><span><i class="box" style="background:var(--s2)"></i>Copied from the counter</span><span><i class="box" style="background:var(--s1)"></i>Its own self-play wins</span></div>
     <div class="chart" id="c-mix"></div>
@@ -347,7 +371,7 @@ select{background:var(--raised);border:1px solid var(--line-strong);border-radiu
   <section class="panel span-12" aria-labelledby="gen-title">
     <div class="panel-head"><h2 id="gen-title">Generations</h2><span class="sub" id="run-dir"></span></div>
     <div class="datatable"><table>
-      <thead><tr><th>Gen</th><th>How it was made</th><th>Trained on</th><th>Rounds vs counter</th><th>Matches vs counter</th><th>Avg pts net : counter</th><th>Assaf</th><th>Gate</th><th>Took</th><th></th></tr></thead>
+      <thead><tr><th>Gen</th><th>How it was made</th><th id="trained-h">Trained on</th><th>Rounds vs counter</th><th>Matches vs counter</th><th>Avg pts net : counter</th><th>Assaf</th><th>Gate</th><th>Took</th><th></th></tr></thead>
       <tbody id="gens"><tr><td colspan="10" class="muted" style="text-align:left">Generation 0 appears once the net has copied the counter.</td></tr></tbody>
     </table></div>
   </section>
@@ -408,11 +432,15 @@ function bestGen(){
   if (S.report && S.generations[S.report.best_generation]) return S.generations[S.report.best_generation];
   let b = null; S.generations.forEach(g => { if (g.kept) b = g; }); return b;
 }
+const isGA = () => S && S.config && S.config.recipe === 'genetic';
 function freshFor(i){ const f = S.report && S.report.fresh_test; return f ? f[String(i)] : null; }
 function renderHeader(){
   const st = S.stopping && S.status === 'training' ? 'stopping' : S.status;
   $('status').className = 'chip st-'+st;
   $('status-text').textContent = {starting:'Starting', training:'Training', stopping:'Stopping after this generation', done:'Finished', error:'Stopped by an error'}[st] || st;
+  $('recipe-text').textContent = isGA() ? 'Genetic algorithm · population '+S.config.population : S.config.recipe === 'selfplay' && S.config.replay_capacity ? 'Self-play' : 'Self-play (original)';
+  ['fit-panel','pop-panel','preset-pop'].forEach(id => $(id).hidden = !isGA());
+  $('mix-panel').hidden = isGA();
   $('device').className = 'chip'+(S.device.gpu ? ' gpu' : '');
   $('device-text').textContent = S.device.label;
   $('device-note').hidden = !S.device.note; $('device-note').textContent = S.device.note || '';
@@ -430,7 +458,7 @@ function renderHeader(){
 function stepFraction(){
   // where the run is inside the current step, from the phase and its counter
   const p = S.progress, f = p.total ? p.done/p.total : 0, name = S.phase.name;
-  const spans = {bench:[0,.04], expert:[.04,.3], imitation:null, eval:[.82,1], self_play:[0,.35], fine_tune:[.35,.6], ladder:[.9,1], final:[0,1]};
+  const spans = {bench:[0,.04], expert:[.04,.3], imitation:null, eval:[.82,1], self_play:[0,.35], fine_tune:[.35,.6], evolve:[0,.6], ladder:[.9,1], final:[0,1]};
   if (name === 'imitation'){ const ep = (S.history.filter(h => h.phase==='imitation').length); return .3 + .52*((ep + f)/Math.max(1, S.config.epochs)); }
   if (name === 'eval'){ const sub = p.name === 'eval_matches' ? .3 + .7*f : .3*f; return S.generations.length === 0 ? .82 + .18*sub : .6 + .3*sub; }
   const sp = spans[name]; return sp ? sp[0] + (sp[1]-sp[0])*f : 0;
@@ -458,9 +486,14 @@ function renderProgress(){
   });
   const p = S.progress;
   $('bar-count').textContent = S.status === 'training' && p.total ? p.done.toLocaleString()+' / '+p.total.toLocaleString()+' '+(COUNT_UNITS[p.name]||'') : '';
-  const passes = Math.max(0, S.generations.length - 1), live = S.phase.name === 'self_play' && p.name === 'self_play' ? p.done : 0;
-  const games = passes * S.config.games_per_generation + live;
-  $('games-count').textContent = games ? '· '+games.toLocaleString()+' self-play games so far' : '';
+  const passes = Math.max(0, S.generations.length - 1);
+  if (isGA()){
+    const done = (S.population || []).length * S.config.population * S.config.fitness_rounds, live = p.name === 'evolve' ? p.done : 0;
+    $('games-count').textContent = done + live ? '· '+(done + live).toLocaleString()+' fitness rounds played' : '';
+  } else {
+    const live = S.phase.name === 'self_play' && p.name === 'self_play' ? p.done : 0, games = passes * S.config.games_per_generation + live;
+    $('games-count').textContent = games ? '· '+games.toLocaleString()+' self-play games so far' : '';
+  }
   const overall = S.status === 'done' ? 1 : (cur + frac) / (G + 2);
   document.title = S.status === 'done' ? 'Finished · Yaniv Training' : S.status === 'training' ? Math.round(overall*100)+'% · '+(cur === 0 ? 'copying' : cur > G ? 'final test' : 'gen '+cur+' of '+G)+' · Yaniv Training' : 'Yaniv Training';
 }
@@ -485,7 +518,7 @@ function renderKpis(){
   const passes = gens.length - 1;
   const ft = S.report && S.report.fresh_test && Object.keys(S.report.fresh_test).length > 1;
   $('k-best-sub').textContent = S.report ? (b.index === 0 ? (ft ? 'The gate\'s pick did worse than the copy on new games, so the copy ships.' : 'No self-play pass beat the copy.') : 'Kept by the gate and confirmed on new games.')
-    : b.index === 0 ? (passes ? 'No self-play pass has beaten the copy yet ('+passes+' tried).' : 'Self-play passes start next.') : 'Kept by the gate. '+passes+' of '+S.config.generations+' passes done.';
+    : b.index === 0 ? (passes ? 'No generation has beaten the copy yet ('+passes+' tried).' : (isGA() ? 'Evolution starts next.' : 'Self-play passes start next.')) : 'Kept by the gate. '+passes+' of '+S.config.generations+' generations done.';
   const fresh = freshFor(b.index), fresh0 = freshFor(0);
   const m = fresh ? fresh.matches : b.matches, mn = m.wins+m.losses+m.ties, [lo, hi] = wilson(m.wins, mn);
   $('k-match').innerHTML = pct0(m.win_rate)+'<small>'+m.wins+' of '+mn+'</small>';
@@ -493,7 +526,12 @@ function renderKpis(){
   const r = fresh ? fresh.rounds : b.rounds, r0 = fresh0 ? fresh0.rounds : g0 ? g0.rounds : null, d = r0 ? (r.win_rate - r0.win_rate)*100 : 0;
   $('k-round').innerHTML = pct(r.win_rate)+' <span class="delta '+(d>0.05?'up':d<-0.05?'down':'')+'">'+(d>=0?'+':'')+d.toFixed(1)+' pts</span>';
   $('k-round-sub').textContent = b.index === 0 ? 'This is the copy itself.' : 'Change since Gen 0, the copy of the counter. '+r.hero_avg.toFixed(1)+' to '+r.villain_avg.toFixed(1)+' points per round.';
-  if (last && last.index > 0){
+  if (isGA()){
+    const P = S.population || [], lp = P[P.length-1];
+    document.querySelector('#k-exp').previousElementSibling.textContent = 'Population';
+    $('k-exp').innerHTML = S.config.population+'<small>networks</small>';
+    $('k-exp-sub').textContent = lp ? 'Gen '+lp.gen+': best '+pct0(lp.best)+', median '+pct0(lp.median)+' of rounds. Mutation size '+lp.sigma.toFixed(3)+'.' : 'The first population starts as mutants of the copy.';
+  } else if (last && last.index > 0){
     const n = last.replay != null ? last.replay : last.winning_decisions;
     $('k-exp').textContent = n.toLocaleString();
     $('k-exp-sub').textContent = last.replay != null && S.config.replay_capacity ? 'Winning decisions kept from all passes so far, mixed with '+(last.copied||0).toLocaleString()+' copied ones.' : 'Winning decisions from the latest pass.';
@@ -570,6 +608,7 @@ function playerOptions(){
   const gens = S.generations.map(g => g.index), b = bestGen();
   return [['auto','Newest generation (auto)'], ['best','Best generation'+(b ? ' (now Gen '+b.index+')' : '')]]
     .concat(gens.map(i => ['gen:'+i, 'Gen '+i+(S.generations[i].kept?' · passed gate':'')]))
+    .concat(isGA() ? [['pop','Population (one network per table)']] : [])
     .concat([['counter','Card counter'],['greedy','Greedy dumper'],['random','Random']]);
 }
 function renderControls(){
@@ -722,6 +761,23 @@ function renderFinal(){
   $('final').innerHTML = '<div class="datatable"><table style="min-width:620px"><thead><tr><th>Gen</th><th>What</th><th>Rounds won</th><th>Matches won</th><th>Its training test</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div><p class="caption">'+esc(verdict)+'</p>';
 }
 
+/* ---------- population ---------- */
+function renderPopulation(){
+  if (!isGA()) return;
+  const P = S.population || [];
+  $('trained-h').textContent = 'Champion';
+  chart('c-fit', {x:P.map(p => 'Gen '+p.gen), xs:P.map(p => String(p.gen)), pad:true, floor:0, fmt:pct0, tipFmt:pct, h:240, ref:.5, refLab:'even with the counter',
+    empty:'Every network in the population plays '+S.config.fitness_rounds+' rounds against the counter, on the same deals. The first generation appears after the copy is tested.',
+    aria:'Best, median and worst rounds won per generation',
+    tipExtra:i => '<br><span class="muted">mutation size '+P[i].sigma.toFixed(3)+'</span>',
+    series:[{n:'Best', c:C.s1, v:P.map(p => p.best)}, {n:'Median', c:C.s2, v:P.map(p => p.median), lo:P.map(p => p.worst), hi:P.map(p => p.best)}, {n:'Worst', c:C.muted, v:P.map(p => p.worst)}]});
+  if (!P.length){ $('popgrid').innerHTML = '<div class="empty" style="min-height:120px">Squares appear as each generation is scored.</div>'; return; }
+  const glyph = {elite:'E', cross:'×', mutant:'·', copy:'C'};
+  $('popgrid').innerHTML = P.slice().reverse().slice(0, 16).map(p => '<div class="poprow"><span class="g">Gen '+p.gen+'</span><span class="cells">'+p.members.map((m, i) =>
+    '<span class="pc'+(m.op==='elite'||m.op==='copy'?' elite':'')+(i===0?' champ':'')+'" style="background:'+heatColor(m.win_rate)+'" title="Net '+m.id+': '+pct(m.win_rate)+' of '+p.rounds+' rounds ('+m.wins+'–'+m.losses+'–'+m.ties+'), '+({elite:'elite', cross:'crossover of', mutant:'mutant of', copy:'the copy'}[m.op])+' '+esc((m.op==='copy'?'':m.parents.join(' and ')))+'">'+(glyph[m.op]||'')+'</span>').join('')+'</span></div>').join('')
+    + (P.length > 16 ? '<p class="caption">Showing the newest 16 generations.</p>' : '');
+}
+
 /* ---------- ratings ---------- */
 function ratings(){
   const gens = S.generations, n = gens.length; if (!n) return null;
@@ -775,7 +831,7 @@ function renderGens(){
   const b = bestGen();
   $('gens').innerHTML = gens.map(g => {
     const status = b && g.index === b.index ? '<span class="pill keep">current best</span>' : g.kept ? '<span class="pill was">was best</span>' : '<span class="pill drop">not kept</span>';
-    const trained = g.index === 0 ? 'copied moves' : (g.copied != null ? g.copied.toLocaleString()+' + '+(g.replay||0).toLocaleString() : (g.winning_decisions||0).toLocaleString()+' new');
+    const trained = g.index === 0 ? 'copied moves' : g.member ? 'net '+g.member+', '+({elite:'elite', cross:'crossover', mutant:'mutant', copy:'the copy'}[g.op]||g.op) : (g.copied != null ? g.copied.toLocaleString()+' + '+(g.replay||0).toLocaleString() : (g.winning_decisions||0).toLocaleString()+' new');
     return '<tr'+(b && g.index===b.index?' class="best"':'')+'><td>'+g.index+'</td><td>'+esc(g.label)+'</td><td>'+trained+'</td><td>'+g.rounds.wins+'–'+g.rounds.losses+'–'+g.rounds.ties+' <span class="muted">('+pct(g.rounds.win_rate)+')</span></td><td>'+g.matches.wins+'–'+g.matches.losses+' <span class="muted">('+pct(g.matches.win_rate)+')</span></td><td>'+g.rounds.hero_avg.toFixed(2)+' : '+g.rounds.villain_avg.toFixed(2)+'</td><td>'+g.rounds.assafs+' / '+g.rounds.calls+'</td><td>'+status+'</td><td class="mono">'+(g.seconds != null ? fmtDur(g.seconds) : '–')+'</td><td><button class="btn watch" type="button" data-gen="'+g.index+'" aria-label="Watch Gen '+g.index+' play the counter">Watch</button></td></tr>';
   }).join('');
   $('gens').querySelectorAll('.watch').forEach(btn => btn.onclick = () => { control({a:'gen:'+btn.dataset.gen, b:'counter'}); $('table-title').scrollIntoView({behavior:'smooth', block:'start'}); });
@@ -786,7 +842,7 @@ async function loadRuns(){
   const r = await fetch('/api/runs').catch(() => null); if (!r || !r.ok) return;
   const runs = await r.json(); if (!runs.length) return;
   $('runs').innerHTML = runs.map(x => { const m = x.matches || {}; const name = x.name.replace(/^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2}).*/, '$1-$2-$3 $4:$5');
-    return '<tr><td class="mono">'+esc(name)+'</td><td>'+(x.recipe === 'replay' ? 'replay store' : 'original')+'</td><td>'+esc(x.device||'–')+'</td><td>'+(x.generations ?? '–')+'</td><td>Gen '+(x.best_generation ?? '–')+'</td><td>'+(m.wins != null ? m.wins+'–'+m.losses+' <span class="muted">('+pct(x.match_win_rate)+')</span>' : '–')+'</td><td>'+(x.round_win_rate != null ? pct(x.round_win_rate) : '–')+'</td><td class="mono">'+(x.seconds ? fmtDur(x.seconds) : '–')+'</td></tr>'; }).join('');
+    return '<tr><td class="mono">'+esc(name)+'</td><td>'+({genetic:'genetic', replay:'replay store'}[x.recipe] || 'original')+'</td><td>'+esc(x.device||'–')+'</td><td>'+(x.generations ?? '–')+'</td><td>Gen '+(x.best_generation ?? '–')+'</td><td>'+(m.wins != null ? m.wins+'–'+m.losses+' <span class="muted">('+pct(x.match_win_rate)+')</span>' : '–')+'</td><td>'+(x.round_win_rate != null ? pct(x.round_win_rate) : '–')+'</td><td class="mono">'+(x.seconds ? fmtDur(x.seconds) : '–')+'</td></tr>'; }).join('');
 }
 
 /* ---------- log ---------- */
@@ -796,7 +852,7 @@ function addLog(l){ const box = $('log'), stick = box.scrollTop + box.clientHeig
   if (stick) box.scrollTop = box.scrollHeight; }
 
 /* ---------- wiring ---------- */
-function renderAll(){ renderHeader(); renderKpis(); renderBoard(); renderWall(); renderControls(); renderCharts(); renderRatings(); renderLadder(); renderGens(); renderFinal(); }
+function renderAll(){ renderHeader(); renderKpis(); renderBoard(); renderWall(); renderControls(); renderCharts(); renderPopulation(); renderRatings(); renderLadder(); renderGens(); renderFinal(); }
 async function sync(){
   const r = await fetch('/api/state'); S = await r.json(); clockOffset = Date.now()/1000 - S.now;
   $('log').innerHTML = ''; S.logs.forEach(addLog); renderAll();
@@ -809,6 +865,7 @@ function handle({type, data}){
     case 'history': S.history.push(data); renderCharts(); break;
     case 'generation': S.generations.push(data); renderKpis(); renderCharts(); renderRatings(); renderGens(); renderControls(); renderLadder(); renderProgress(); break;
     case 'ladder': S.ladder.push(data); renderLadder(); renderRatings(); break;
+    case 'population': S.population = S.population || []; S.population.push(data); renderPopulation(); renderKpis(); renderProgress(); break;
     case 'board': S.boards = S.boards || {}; S.boards[String(data.table)] = data; renderTile(data); if (String(data.table) === featured || !S.boards[featured]) renderBoard(); break;
     case 'showcase': S.showcase = data; renderControls(); renderWall(); break;
     case 'status': S.status = data; renderHeader(); if (data === 'done') loadRuns(); break;

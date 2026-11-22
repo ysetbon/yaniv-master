@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Train the Yaniv net and watch it live in your browser.
 
-    python main.py                  # full run, GPU if PyTorch can see one
+    python main.py                  # genetic algorithm: evolve a population of nets
+    python main.py --recipe selfplay  # fine-tune one net on its own wins instead
     python main.py --quick          # a two-minute smoke run
     python main.py --device cuda    # fail loudly if the NVIDIA GPU is not usable
     python main.py --legacy         # the first training recipe, for comparison
@@ -30,9 +31,13 @@ def main() -> None:
     parser.add_argument("--quick", action="store_true", help="tiny run to check everything works")
     parser.add_argument("--device", default="auto", choices=CHOICES,
                         help="auto picks CUDA, then Apple MPS, then NumPy on the CPU")
+    parser.add_argument("--recipe", choices=("genetic", "selfplay"), default="genetic",
+                        help="genetic evolves a population of nets (default); selfplay fine-tunes one net on its wins")
+    parser.add_argument("--population", type=int, help="genetic: networks per generation (default 24)")
+    parser.add_argument("--fitness-rounds", type=int, help="genetic: rounds each network plays per generation (default 200)")
     parser.add_argument("--legacy", action="store_true",
                         help="the first recipe: fresh wins only, unweighted, 48 test matches, one core")
-    parser.add_argument("--generations", type=int, help="self-play passes after the copied net (default 8)")
+    parser.add_argument("--generations", type=int, help="generations after the copied net (default 20 genetic, 8 self-play)")
     parser.add_argument("--games", type=int, help="self-play games per generation (default 800)")
     parser.add_argument("--batch", type=int, help="decisions per gradient step (default 72)")
     parser.add_argument("--workers", type=int,
@@ -47,7 +52,16 @@ def main() -> None:
                         help="also write the best net to public/model/ for the game")
     args = parser.parse_args()
 
-    cfg = TrainConfig.quick() if args.quick else TrainConfig.legacy() if args.legacy else TrainConfig()
+    if args.legacy:
+        cfg = TrainConfig.legacy()
+    elif args.recipe == "genetic":
+        cfg = TrainConfig.genetic(quick=args.quick)
+    else:
+        cfg = TrainConfig.quick() if args.quick else TrainConfig()
+    if args.population is not None:
+        cfg.population = max(2, args.population)
+    if args.fitness_rounds is not None:
+        cfg.fitness_rounds = max(2, args.fitness_rounds)
     if args.generations is not None:
         cfg.generations = max(0, args.generations)
     if args.games is not None:

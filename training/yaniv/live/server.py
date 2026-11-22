@@ -47,7 +47,8 @@ def past_runs(current: Path) -> list[dict]:
             "round_win_rate": report.get("round_win_rate_vs_benchmark"),
             "hero_avg": rounds.get("hero_avg"),
             "villain_avg": rounds.get("villain_avg"),
-            "recipe": "replay" if (report.get("config") or {}).get("replay_capacity") else "original",
+            "recipe": report.get("recipe") if report.get("recipe") == "genetic"
+            else "replay" if (report.get("config") or {}).get("replay_capacity") else "original",
         })
     return out[:20]
 
@@ -172,7 +173,7 @@ def run_live(cfg: TrainConfig, device: Device, port: int, open_browser: bool, ex
     run_dir = RUNS / stamp
     config = {**asdict(cfg), "run_dir": str(run_dir), "export": export}
     hub = Hub(config, device.label(), device.note, device.is_gpu)
-    showcase = Showcase(hub, tables)
+    showcase = Showcase(hub, tables, ("pop", "counter") if cfg.recipe == "genetic" else ("auto", "auto"))
 
     try:
         server = ThreadingHTTPServer(("127.0.0.1", port), make_handler(hub, showcase, run_dir))

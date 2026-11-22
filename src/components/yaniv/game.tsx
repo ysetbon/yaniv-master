@@ -68,6 +68,10 @@ interface Report {
   round_record_vs_greedy: { hero_avg: number; villain_avg: number };
   round_win_rate_vs_random: number;
   benchmark_vs_greedy: { wins: number; losses: number; win_rate: number; hero_avg: number; villain_avg: number; assaf_rate: number };
+  recipe?: string;
+  best_generation?: number;
+  self_play_iterations?: number;
+  config?: { population?: number; fitness_rounds?: number };
 }
 
 interface LogLine {
@@ -565,12 +569,25 @@ function MatchSheet({ scores, onRestart }: { scores: [number, number]; onRestart
 function Dossier({ report }: { report: Report | null }) {
   const body = report ? (
     <div className="space-y-3 text-sm text-[#f6edd9]">
-      <p>
-        It first copied a card counter for {report.expert_decisions.toLocaleString()} decisions
-        across {report.expert_rounds.toLocaleString()} rounds, then played {report.self_play_games.toLocaleString()} games
-        against itself and that counter. Only the throws from rounds it won were kept
-        ({report.self_play_winning_decisions.toLocaleString()} of them).
-      </p>
+      {report.recipe === "genetic" ? (
+        <p>
+          It first copied a card counter for {report.expert_decisions.toLocaleString()} decisions
+          across {report.expert_rounds.toLocaleString()} rounds. Then a population of {report.config?.population ?? "many"} networks
+          evolved for {report.self_play_iterations ?? 0} generations. Each generation every network played{" "}
+          {report.config?.fitness_rounds ?? "a few hundred"} rounds against the counter on the same deals, and the fittest were kept
+          or bred into the next generation by crossover and mutation.{" "}
+          {report.best_generation === 0
+            ? "No evolved champion beat the copy on new games, so the net here is the copy itself."
+            : `The net here is the champion of generation ${report.best_generation}.`}
+        </p>
+      ) : (
+        <p>
+          It first copied a card counter for {report.expert_decisions.toLocaleString()} decisions
+          across {report.expert_rounds.toLocaleString()} rounds, then played {report.self_play_games.toLocaleString()} games
+          against itself and that counter. Only the throws from rounds it won were kept
+          ({report.self_play_winning_decisions.toLocaleString()} of them).
+        </p>
+      )}
       <p>
         In direct matches it won {report.match_record_vs_benchmark.wins}, lost {report.match_record_vs_benchmark.losses},
         and tied {report.match_record_vs_benchmark.ties}. Over the measured rounds it averages {report.round_record_vs_benchmark.hero_avg.toFixed(1)} points
@@ -601,7 +618,9 @@ function Dossier({ report }: { report: Report | null }) {
         <SheetContent side="bottom" className="max-h-[80dvh] overflow-y-auto bg-[#1a140f] pb-8 text-[#f6edd9]">
           <SheetHeader>
             <SheetTitle className="text-[#f6edd9]">How it learned</SheetTitle>
-            <SheetDescription className="text-[#f6edd9]/70">Self-play against a card counter, then more self-play.</SheetDescription>
+            <SheetDescription className="text-[#f6edd9]/70">
+              {report?.recipe === "genetic" ? "Copied a card counter, then evolved a population of nets." : "Copied a card counter, then learned from its own wins."}
+            </SheetDescription>
           </SheetHeader>
           {body}
         </SheetContent>

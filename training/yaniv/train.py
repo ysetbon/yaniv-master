@@ -14,6 +14,7 @@ os.environ.setdefault("OPENBLAS_NUM_THREADS", "3")
 os.environ.setdefault("MKL_NUM_THREADS", "3")
 
 import argparse
+import dataclasses
 import json
 import random
 import time
@@ -477,6 +478,23 @@ class TrainConfig:
     ladder_rounds: int = 0  # rounds per pair of generations; 0 skips the ladder
     workers: int = 0  # processes for playing games; 0 picks from the CPU count
     cache: bool = True  # keep the card counter's decisions on disk between runs
+    # "selfplay" fine-tunes one net on its own wins. "genetic" evolves a
+    # population of nets that all start from the copy of the counter.
+    recipe: str = "selfplay"
+    population: int = 24
+    fitness_rounds: int = 200  # rounds per member per generation, the same deals for everyone
+    elites: int = 2  # best members copied unchanged into the next generation
+    tournament: int = 3
+    crossover_rate: float = 0.5
+    sigma: float = 0.2  # mutation size, relative to each layer's weight spread (0.2 changes ~3% of moves)
+    sigma_decay: float = 0.96  # sigma shrinks by this much every generation
+    ga_seed: int = 17
+
+    @classmethod
+    def genetic(cls, quick: bool = False) -> "TrainConfig":
+        if quick:
+            return dataclasses.replace(cls.quick(), recipe="genetic", generations=3, population=6, fitness_rounds=20)
+        return cls(recipe="genetic", generations=20)
 
     @classmethod
     def quick(cls) -> "TrainConfig":
@@ -542,6 +560,10 @@ class Observer:
         pass
 
     def ladder(self, row: int, col: int, record: dict) -> None:
+        pass
+
+    def population(self, summary: dict, nets: list[MLP]) -> None:
+        """Genetic recipe only: one generation's members, best first, with their nets."""
         pass
 
     def should_stop(self) -> bool:
@@ -625,15 +647,16 @@ def run_training(
 
         generations: list[MLP] = []
 
-        def evaluate(gen_index: int, seed_round: int, seed_match: int):
+        def evaluate(gen_index: int, seed_round: int, seed_match: int, candidate: MLP | None = None):
             obs.phase("eval", f"Gen {gen_index} plays the counter: {cfg.eval_rounds} rounds, {cfg.eval_matches} matches")
-            spec = net_spec(snapshot(net))
+            spec = net_spec(candidate if candidate is not None else snapshot(net))
             rounds = workers.rounds(spec, counter, cfg.eval_rounds, seed_round, job("eval_rounds"))
             matches = workers.matches(spec, counter, cfg.eval_matches, seed_match, job("eval_matches"))
             return rounds, matches
 
-        def publish_generation(index: int, label: str, rounds: dict, matches: dict, kept: bool, extra: dict) -> None:
-            current = snapshot(net)
+        def publish_generation(index: int, label: str, rounds: dict, matches: dict, kept: bool, extra: dict,
+                               candidate: MLP | None = None) -> None:
+            current = candidate.clone() if candidate is not None else snapshot(net)
             generations.append(current)
             if run_dir is not None:
                 save_net(current, run_dir / f"gen-{index:02d}.json", {"generation": index, "label": label})
@@ -666,73 +689,131 @@ def run_training(
 
         self_play_games = 0
         self_play_decisions = 0
-        replay: list[Dataset] = []
         passes_run = 0
-        for iteration in range(1, cfg.generations + 1):
-            if obs.should_stop():
-                log(f"Stopping early after generation {iteration - 1}, as asked")
-                break
-            t_gen = time.time()
-            obs.phase("self_play", f"Gen {iteration}: {cfg.games_per_generation} self-play games")
-            fresh_rows = workers.self_play(snapshot(net), cfg.games_per_generation, 4000 + iteration,
-                                           cfg.temperature, cfg.weighted, job("self_play"), cfg.match_scores)
-            self_play_games += cfg.games_per_generation
-            self_play_decisions += len(fresh_rows)
-            fresh = materialize(fresh_rows) if fresh_rows else None
-            log(f"Self-play {iteration}: {len(fresh_rows)} winning decisions in {time.time()-t_gen:.1f}s")
+        population_history: list[dict] = []
+        if cfg.recipe == "genetic":
+            from .genetic import breed, fitness, seed_population
 
-            if cfg.replay_capacity > 0:
-                if fresh is not None and len(fresh):
-                    replay.append(fresh)
-                while len(replay) > 1 and sum(len(d) for d in replay) - len(replay[0]) >= cfg.replay_capacity:
-                    replay.pop(0)
-                won = concat_datasets(replay) if replay else None
-                won_count = len(won) if won is not None else 0
-                take = min(len(expert), int(round(cfg.expert_mix(iteration) * won_count))) if won_count else len(expert)
-                picked = sorted(rng.sample(range(len(expert)), take)) if take < len(expert) else range(len(expert))
-                parts = [subset(expert, list(picked))] + ([won] if won is not None else [])
-                mixed = concat_datasets(parts)
-            else:
-                won_count = len(fresh) if fresh is not None else 0
-                take = len(expert)
-                mixed = concat_datasets([expert, fresh]) if fresh is not None and len(fresh) else expert
+            ga_rng = np.random.default_rng(cfg.ga_seed)
+            pick = random.Random(cfg.ga_seed)
+            sigma = cfg.sigma
+            population = seed_population(generations[0], cfg.population, sigma, ga_rng)
+            for gen_i in range(1, cfg.generations + 1):
+                if obs.should_stop():
+                    log(f"Stopping early after generation {gen_i - 1}, as asked")
+                    break
+                t_gen = time.time()
+                obs.phase("evolve", f"Gen {gen_i}: {len(population)} networks play the counter, {cfg.fitness_rounds} rounds each on the same deals")
+                records = workers.rounds_many([net_spec(m.net) for m in population], counter, cfg.fitness_rounds,
+                                              9000 + gen_i, job("evolve"))
+                for member, record in zip(population, records):
+                    member.record = record
+                    member.fitness = fitness(record)
+                ranked = sorted(population, key=lambda m: -m.fitness)
+                rates = [m.record["win_rate"] for m in ranked]
+                summary = {
+                    "gen": gen_i, "sigma": sigma, "rounds": cfg.fitness_rounds,
+                    "best": rates[0], "median": float(np.median(rates)), "worst": rates[-1],
+                    "members": [m.info() for m in ranked],
+                }
+                population_history.append(summary)
+                self_play_games += len(population) * cfg.fitness_rounds
+                obs.population(summary, [m.net for m in ranked])
+                champion = ranked[0]
+                ops = {op: sum(1 for m in ranked if m.op == op) for op in ("copy", "elite", "cross", "mutant")}
+                log(f"Gen {gen_i}: rounds won best {rates[0]:.3f} median {summary['median']:.3f} worst {rates[-1]:.3f}, "
+                    f"sigma {sigma:.4f}, champion {champion.id} ({champion.op})")
+                rounds, matches = evaluate(gen_i, 700 + gen_i, 800 + gen_i, champion.net)
+                key = (matches["win_rate"], rounds["win_rate"], -rounds["hero_avg"])
+                log(f"  champion {champion.id} rounds {rounds['win_rate']:.3f} assaf {rounds['assaf_rate']:.2f} "
+                    f"matches {matches['win_rate']:.3f}")
+                entry = {"phase": "genetic", "iteration": gen_i, "best": rates[0], "median": summary["median"],
+                         "worst": rates[-1], "sigma": sigma, "rounds": rounds, "matches": matches}
+                history.append(entry)
+                obs.history(entry)
+                kept = key > best_key
+                if kept:
+                    best_key = key
+                    best = champion.net.clone()
+                    best_round, best_match, best_index = rounds, matches, gen_i
+                    log("  new best checkpoint")
+                publish_generation(gen_i, f"Champion of generation {gen_i}", rounds, matches, kept,
+                                   {"member": champion.id, "op": champion.op, "parents": champion.parents,
+                                    "fitness_win_rate": rates[0], "median_win_rate": summary["median"],
+                                    "worst_win_rate": rates[-1], "sigma": sigma, "ops": ops,
+                                    "seconds": round(time.time() - t_gen, 1)}, champion.net)
+                passes_run = gen_i
+                if gen_i < cfg.generations:
+                    population = breed(ranked, cfg.population, cfg.elites, cfg.tournament, cfg.crossover_rate,
+                                       sigma * cfg.sigma_decay, gen_i + 1, ga_rng, pick)
+                sigma *= cfg.sigma_decay
+        else:
+            replay: list[Dataset] = []
+            for iteration in range(1, cfg.generations + 1):
+                if obs.should_stop():
+                    log(f"Stopping early after generation {iteration - 1}, as asked")
+                    break
+                t_gen = time.time()
+                obs.phase("self_play", f"Gen {iteration}: {cfg.games_per_generation} self-play games")
+                fresh_rows = workers.self_play(snapshot(net), cfg.games_per_generation, 4000 + iteration,
+                                               cfg.temperature, cfg.weighted, job("self_play"), cfg.match_scores)
+                self_play_games += cfg.games_per_generation
+                self_play_decisions += len(fresh_rows)
+                fresh = materialize(fresh_rows) if fresh_rows else None
+                log(f"Self-play {iteration}: {len(fresh_rows)} winning decisions in {time.time()-t_gen:.1f}s")
 
-            obs.phase("fine_tune", f"Gen {iteration}: fine-tune on {take:,} copied + {won_count:,} self-play decisions")
-            t0 = time.time()
-            ce = float("nan")
-            for _ in range(cfg.fine_tune_epochs):
-                ce, acc = train_dataset(net, mixed, cfg.fine_tune_lr, cfg.batch, rng, job("fine_tune"))
-            tune_seconds = time.time() - t0
-            rounds, matches = evaluate(iteration, 700 + iteration, 800 + iteration)
-            key = (matches["win_rate"], rounds["win_rate"], -rounds["hero_avg"])
-            log(
-                f"  fine-tune {tune_seconds:.1f}s ce {ce:.3f} rounds {rounds['win_rate']:.3f} "
-                f"assaf {rounds['assaf_rate']:.2f} matches {matches['win_rate']:.3f}"
-            )
-            entry = {
-                "phase": "self_play",
-                "iteration": iteration,
-                "winning_decisions": len(fresh_rows),
-                "rounds": rounds,
-                "matches": matches,
-            }
-            history.append(entry)
-            obs.history(entry)
-            kept = key > best_key
-            if kept:
-                best_key = key
-                best = snapshot(net)
-                best_round = rounds
-                best_match = matches
-                best_index = iteration
-                log("  new best checkpoint")
-            publish_generation(iteration, f"Self-play pass {iteration}", rounds, matches, kept,
-                               {"winning_decisions": len(fresh_rows), "ce": ce, "copied": take,
-                                "replay": won_count, "seconds": round(time.time() - t_gen, 1)})
-            passes_run = iteration
-            if not kept and cfg.revert_on_reject:
-                net = _restart_from(net, best, device)
-                log(f"  next pass starts again from gen {best_index}")
+                if cfg.replay_capacity > 0:
+                    if fresh is not None and len(fresh):
+                        replay.append(fresh)
+                    while len(replay) > 1 and sum(len(d) for d in replay) - len(replay[0]) >= cfg.replay_capacity:
+                        replay.pop(0)
+                    won = concat_datasets(replay) if replay else None
+                    won_count = len(won) if won is not None else 0
+                    take = min(len(expert), int(round(cfg.expert_mix(iteration) * won_count))) if won_count else len(expert)
+                    picked = sorted(rng.sample(range(len(expert)), take)) if take < len(expert) else range(len(expert))
+                    parts = [subset(expert, list(picked))] + ([won] if won is not None else [])
+                    mixed = concat_datasets(parts)
+                else:
+                    won_count = len(fresh) if fresh is not None else 0
+                    take = len(expert)
+                    mixed = concat_datasets([expert, fresh]) if fresh is not None and len(fresh) else expert
+
+                obs.phase("fine_tune", f"Gen {iteration}: fine-tune on {take:,} copied + {won_count:,} self-play decisions")
+                t0 = time.time()
+                ce = float("nan")
+                for _ in range(cfg.fine_tune_epochs):
+                    ce, acc = train_dataset(net, mixed, cfg.fine_tune_lr, cfg.batch, rng, job("fine_tune"))
+                tune_seconds = time.time() - t0
+                rounds, matches = evaluate(iteration, 700 + iteration, 800 + iteration)
+                key = (matches["win_rate"], rounds["win_rate"], -rounds["hero_avg"])
+                log(
+                    f"  fine-tune {tune_seconds:.1f}s ce {ce:.3f} rounds {rounds['win_rate']:.3f} "
+                    f"assaf {rounds['assaf_rate']:.2f} matches {matches['win_rate']:.3f}"
+                )
+                entry = {
+                    "phase": "self_play",
+                    "iteration": iteration,
+                    "winning_decisions": len(fresh_rows),
+                    "rounds": rounds,
+                    "matches": matches,
+                }
+                history.append(entry)
+                obs.history(entry)
+                kept = key > best_key
+                if kept:
+                    best_key = key
+                    best = snapshot(net)
+                    best_round = rounds
+                    best_match = matches
+                    best_index = iteration
+                    log("  new best checkpoint")
+                publish_generation(iteration, f"Self-play pass {iteration}", rounds, matches, kept,
+                                   {"winning_decisions": len(fresh_rows), "ce": ce, "copied": take,
+                                    "replay": won_count, "seconds": round(time.time() - t_gen, 1)})
+                passes_run = iteration
+                if not kept and cfg.revert_on_reject:
+                    net = _restart_from(net, best, device)
+                    log(f"  next pass starts again from gen {best_index}")
 
         fresh_test: dict[str, dict] = {}
         if cfg.final_matches > 0 and generations:
@@ -794,6 +875,8 @@ def run_training(
         "benchmark_vs_greedy": bench,
         "history": history,
         "config": asdict(cfg),
+        "recipe": cfg.recipe,
+        "population_history": population_history,
         "rules": {"yaniv_max": 5, "assaf_penalty": 30, "match_limit": 100, "deal": 5, "max_plies": MAX_PLIES},
     }
     meta = {

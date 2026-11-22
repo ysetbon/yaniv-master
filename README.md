@@ -40,9 +40,25 @@ python main.py
 - **Buttons:** *Stop after this generation* ends early and still tests and saves the best. *Use best in game* writes it to `public/model/` for the game.
 - **Past runs:** results from earlier runs saved under `runs/`.
 
-A generation is one checkpoint. Generation 0 is the copy of the card counter, and each later one comes from a self-play pass. This is imitation learning plus self-play, not a genetic algorithm. There is no population, mutation, or crossover.
+Generation 0 is always the copy of the card counter. After that, `main.py` runs a genetic algorithm by default. `--recipe selfplay` uses the earlier self-play recipe instead.
 
-### How a self-play pass trains
+### How the genetic algorithm works
+
+1. The first population is the copy plus 23 mutants of it. Every member keeps the same shape as the copy (377 → 192 → 192 → 1), so neuron *i* means roughly the same thing in every member.
+2. Each generation, every member plays the same 200 deals against the card counter. Fitness is the share of rounds won, with the points margin as a tie-breaker. Using the same deals means members differ only where their moves differ, not through luck of the deal.
+3. The two fittest members carry over unchanged (elites). The rest are children:
+   - Parents are picked by tournament: the best of three random members.
+   - About half the children are a neuron-by-neuron crossover of two parents.
+   - Every child gets Gaussian noise on its weights, scaled to each layer's spread. The noise starts at 0.2, which changes about 3% of moves, and shrinks by 4% each generation.
+4. Each generation's champion plays 400 rounds and 200 matches against the counter. The gate and the final check then work as for self-play, so a champion that only got lucky does not ship.
+
+The dashboard adds a fitness chart (best, median and worst member per generation) and a population grid with one square per network, marking elites, crossovers, mutants and the champion. *Population vs counter* seats a different member at each table.
+
+```bash
+python main.py --population 32 --generations 30 --fitness-rounds 300
+```
+
+### How a self-play pass trains (`--recipe selfplay`)
 
 1. About 800 games are played, spread across CPU cores. Two in five start from random match scores, so the net sees positions near the 100 limit, as the copied rounds do.
 2. Decisions from won rounds are kept, weighted by the winning margin: 0.5 for a one-point win, 2.0 for 30 points or more.
