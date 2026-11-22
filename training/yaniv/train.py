@@ -341,10 +341,19 @@ def collect_self_play(net, n_games: int, seed: int, temperature: float, progress
 
 
 def round_duel(hero, villain, n: int, seed: int, progress=None) -> dict:
+    """`n` rounds of `hero` against `villain`, played as mirrored pairs.
+
+    Each deal is played twice: once with the hero in seat 0, then with the
+    seats swapped, so each player holds both hands and the same player leads
+    from the same hand. Card luck cancels within a pair, which makes two
+    networks on the same seed far easier to tell apart. Pairs alternate which
+    seat leads. An odd `n` ends with one unpaired round.
+    """
     rng = random.Random(seed)
     wins = losses = ties = 0
     hero_points = villain_points = 0
     calls = assafs = 0
+    deal_seed = 0
     for i in range(n):
         _tick(progress, i + 1, n)
         called = {"flag": False}
@@ -355,12 +364,17 @@ def round_duel(hero, villain, n: int, seed: int, progress=None) -> dict:
                 called["flag"] = True
             return action
 
-        if i % 2 == 0:
-            state = play_round(hero_tracked, villain, rng, [0, 0], i % 2)
+        pair, second = divmod(i, 2)
+        if not second:
+            deal_seed = rng.getrandbits(64)
+        deal = random.Random(deal_seed)
+        leader = pair % 2
+        if not second:
+            state = play_round(hero_tracked, villain, deal, [0, 0], leader)
             mine, theirs = state.result.added
             hero_called = called["flag"] and state.result.caller == 0
         else:
-            state = play_round(villain, hero_tracked, rng, [0, 0], i % 2)
+            state = play_round(villain, hero_tracked, deal, [0, 0], leader)
             theirs, mine = state.result.added
             hero_called = called["flag"] and state.result.caller == 1
         if hero_called:
@@ -389,14 +403,21 @@ def round_duel(hero, villain, n: int, seed: int, progress=None) -> dict:
 
 
 def match_duel(hero, villain, n: int, seed: int, progress=None) -> dict:
+    """`n` matches, played as mirrored pairs like `round_duel`.
+
+    Both matches of a pair see the same sequence of shuffled decks, with the
+    seats swapped, so the hero plays every hand the villain held.
+    """
     rng = random.Random(seed)
     wins = losses = ties = 0
+    match_seed = 0
     for i in range(n):
         _tick(progress, i + 1, n)
         if i % 2 == 0:
-            mine, theirs = play_match(hero, villain, rng)
+            match_seed = rng.getrandbits(64)
+            mine, theirs = play_match(hero, villain, random.Random(match_seed))
         else:
-            theirs, mine = play_match(villain, hero, rng)
+            theirs, mine = play_match(villain, hero, random.Random(match_seed))
         if mine < theirs:
             wins += 1
         elif theirs < mine:
@@ -445,6 +466,15 @@ def print_sample(log=print) -> None:
         shown += 1
 
 
+def gate_key(rounds: dict, matches: dict) -> tuple:
+    """How the gate ranks two test results: rounds won, then matches won, then fewer points.
+
+    Rounds come first because there are many more of them: 400 mirrored
+    rounds pin a net down to about 2 points, 200 matches only to about 3.5.
+    """
+    return (rounds["win_rate"], matches["win_rate"], -rounds["hero_avg"])
+
+
 @dataclass
 class TrainConfig:
     expert_rounds: int = 2400
@@ -470,8 +500,15 @@ class TrainConfig:
     weighted: bool = True  # weight won rounds by their points margin
     match_scores: bool = True  # start 40% of self-play rounds from random match scores
     revert_on_reject: bool = False  # restart a pass from the best net when it fails the gate
-    # The gate picks the best of many noisy tests, which flatters the winner.
-    # A final test on new games re-measures the pick and Gen 0; the better one
+    # The gate ranks generations by rounds won on their own test (see
+    # gate_key). One test per generation is noisy, so when training ends the
+    # top `gate_finalists` generations replay one shared, larger set of games
+    # and the best of them is the gate's pick. 0 finalists skips the replay.
+    gate_finalists: int = 4
+    gate_rounds: int = 2000
+    gate_matches: int = 400
+    # Picking the best of several noisy tests still flatters the winner. A
+    # final test on new games re-measures the pick and Gen 0; the better one
     # ships, with these honest numbers. 0 skips it.
     final_rounds: int = 1000
     final_matches: int = 400
@@ -482,7 +519,10 @@ class TrainConfig:
     # population of nets that all start from the copy of the counter.
     recipe: str = "selfplay"
     population: int = 24
-    fitness_rounds: int = 200  # rounds per member per generation, the same deals for everyone
+    # Rounds per member per generation, the same mirrored deals for everyone.
+    # Two mutants differ by under a point of rounds won; at 200 rounds the
+    # noise in their difference is about 2 points, at 1000 about 0.9.
+    fitness_rounds: int = 1000
     elites: int = 2  # best members copied unchanged into the next generation
     tournament: int = 3
     crossover_rate: float = 0.5
@@ -493,7 +533,8 @@ class TrainConfig:
     @classmethod
     def genetic(cls, quick: bool = False) -> "TrainConfig":
         if quick:
-            return dataclasses.replace(cls.quick(), recipe="genetic", generations=3, population=6, fitness_rounds=20)
+            return dataclasses.replace(cls.quick(), recipe="genetic", generations=3, population=6, fitness_rounds=20,
+                                       gate_finalists=2)
         return cls(recipe="genetic", generations=20)
 
     @classmethod
@@ -510,6 +551,8 @@ class TrainConfig:
             lrs=[1e-3, 4e-4],
             batch=256,
             replay_capacity=5000,
+            gate_rounds=60,
+            gate_matches=8,
             final_rounds=40,
             final_matches=8,
         )
@@ -526,6 +569,7 @@ class TrainConfig:
             replay_capacity=0,
             weighted=False,
             match_scores=False,
+            gate_finalists=0,
             final_rounds=0,
             final_matches=0,
             workers=1,
@@ -675,7 +719,8 @@ def run_training(
         t_gen = time.time()
         best = snapshot(net)
         best_round, best_match = evaluate(0, 500, 600)
-        best_key = (best_match["win_rate"], best_round["win_rate"], -best_round["hero_avg"])
+        best_key = gate_key(best_round, best_match)
+        tested: dict[int, tuple[dict, dict]] = {0: (best_round, best_match)}
         best_index = 0
         log(
             f"After imitation rounds {best_round['win_rate']:.3f} ({best_round['hero_avg']:.2f} pts, "
@@ -724,7 +769,8 @@ def run_training(
                 log(f"Gen {gen_i}: rounds won best {rates[0]:.3f} median {summary['median']:.3f} worst {rates[-1]:.3f}, "
                     f"sigma {sigma:.4f}, champion {champion.id} ({champion.op})")
                 rounds, matches = evaluate(gen_i, 700 + gen_i, 800 + gen_i, champion.net)
-                key = (matches["win_rate"], rounds["win_rate"], -rounds["hero_avg"])
+                key = gate_key(rounds, matches)
+                tested[gen_i] = (rounds, matches)
                 log(f"  champion {champion.id} rounds {rounds['win_rate']:.3f} assaf {rounds['assaf_rate']:.2f} "
                     f"matches {matches['win_rate']:.3f}")
                 entry = {"phase": "genetic", "iteration": gen_i, "best": rates[0], "median": summary["median"],
@@ -785,7 +831,8 @@ def run_training(
                     ce, acc = train_dataset(net, mixed, cfg.fine_tune_lr, cfg.batch, rng, job("fine_tune"))
                 tune_seconds = time.time() - t0
                 rounds, matches = evaluate(iteration, 700 + iteration, 800 + iteration)
-                key = (matches["win_rate"], rounds["win_rate"], -rounds["hero_avg"])
+                key = gate_key(rounds, matches)
+                tested[iteration] = (rounds, matches)
                 log(
                     f"  fine-tune {tune_seconds:.1f}s ce {ce:.3f} rounds {rounds['win_rate']:.3f} "
                     f"assaf {rounds['assaf_rate']:.2f} matches {matches['win_rate']:.3f}"
@@ -815,6 +862,39 @@ def run_training(
                     net = _restart_from(net, best, device)
                     log(f"  next pass starts again from gen {best_index}")
 
+        # The gate's replay: the top generations by their own tests, Gen 0
+        # included if it ranks there, play one shared, larger set of games,
+        # and the best of them becomes the pick.
+        gate_replay: dict | None = None
+        ranked_gens = sorted(tested, key=lambda gi: gate_key(*tested[gi]), reverse=True)
+        finalists = ranked_gens[:cfg.gate_finalists]
+        if len(finalists) > 1 and cfg.gate_rounds > 0:
+            replays: dict[str, dict] = {}
+            for gi in finalists:
+                obs.phase("final", f"Gate replay for Gen {gi}: {cfg.gate_rounds} rounds and {cfg.gate_matches} matches, "
+                                   f"the same games for all {len(finalists)} finalists")
+                spec = net_spec(generations[gi])
+                gr = workers.rounds(spec, counter, cfg.gate_rounds, 41000, job("final"))
+                gm = (workers.matches(spec, counter, cfg.gate_matches, 41001, job("final")) if cfg.gate_matches > 0
+                      else {"wins": 0, "losses": 0, "ties": 0, "win_rate": 0.0})
+                replays[str(gi)] = {"rounds": gr, "matches": gm, "training_rounds": tested[gi][0],
+                                    "training_matches": tested[gi][1]}
+                log(f"Gate replay gen {gi}: rounds {gr['win_rate']:.3f} matches {gm['wins']}-{gm['losses']}-{gm['ties']} "
+                    f"({gm['win_rate']:.3f}), its own test said rounds {tested[gi][0]['win_rate']:.3f}")
+            top = max(finalists, key=lambda gi: gate_key(replays[str(gi)]["rounds"], replays[str(gi)]["matches"]))
+            if top != best_index:
+                log(f"Gate replay picks gen {top} over gen {best_index}")
+            else:
+                log(f"Gate replay confirms gen {top}")
+            best_index = top
+            best = generations[top]
+            best_round, best_match = replays[str(top)]["rounds"], replays[str(top)]["matches"]
+            gate_replay = {"finalists": finalists, "chosen": top, "results": replays,
+                           "rounds": cfg.gate_rounds, "matches": cfg.gate_matches}
+            entry = {"phase": "gate_replay", **gate_replay}
+            history.append(entry)
+            obs.history(entry)
+
         fresh_test: dict[str, dict] = {}
         if cfg.final_matches > 0 and generations:
             candidates = [best_index] if best_index == 0 else [best_index, 0]
@@ -828,8 +908,7 @@ def run_training(
             chosen = best_index
             if best_index != 0:
                 pick, copy = fresh_test[str(best_index)], fresh_test["0"]
-                key_of = lambda t: (t["matches"]["win_rate"], t["rounds"]["win_rate"], -t["rounds"]["hero_avg"])
-                if key_of(copy) > key_of(pick):
+                if gate_key(copy["rounds"], copy["matches"]) > gate_key(pick["rounds"], pick["matches"]):
                     chosen = 0
                     log(f"Gen 0 did better than gen {best_index} on new games, so Gen 0 ships")
                 else:
@@ -864,6 +943,7 @@ def run_training(
         "seconds": round(time.time() - started, 1),
         "device": device.label(),
         "best_generation": best_index,
+        "gate_replay": gate_replay,
         "fresh_test": fresh_test,
         "match_win_rate_vs_benchmark": best_match["win_rate"],
         "match_record_vs_benchmark": best_match,

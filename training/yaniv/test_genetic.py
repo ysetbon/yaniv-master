@@ -88,7 +88,8 @@ class Recording(Observer):
 class EndToEnd(unittest.TestCase):
     def test_tiny_genetic_run(self):
         cfg = dataclasses.replace(TrainConfig.genetic(quick=True), workers=1, cache=False, generations=2, population=4,
-                                  fitness_rounds=6, eval_rounds=6, eval_matches=2, final_rounds=6, final_matches=2)
+                                  fitness_rounds=6, eval_rounds=6, eval_matches=2, final_rounds=6, final_matches=2,
+                                  gate_finalists=2, gate_rounds=6, gate_matches=2)
         obs = Recording()
         report = run_training(cfg, obs, model_path=None, report_path=None)
         self.assertEqual(report["recipe"], "genetic")
@@ -99,6 +100,11 @@ class EndToEnd(unittest.TestCase):
         rates = [m["win_rate"] for m in obs.pops[0]["members"]]
         self.assertEqual(rates, sorted(rates, reverse=True))
         self.assertIn(report["best_generation"], (0, 1, 2))
+        replay = report["gate_replay"]
+        self.assertEqual(len(replay["finalists"]), 2)
+        self.assertIn(replay["chosen"], replay["finalists"])
+        self.assertEqual(sorted(replay["results"]), sorted(str(g) for g in replay["finalists"]))
+        self.assertIn(report["best_generation"], (0, replay["chosen"]))
 
 
 if __name__ == "__main__":

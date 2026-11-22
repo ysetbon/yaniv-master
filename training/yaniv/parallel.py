@@ -145,7 +145,7 @@ class Workers:
             from .train import round_duel
 
             return round_duel(chooser(a), chooser(b), n, seed, progress)
-        chunks = self._chunks(n, 2)  # even chunks keep seats alternating
+        chunks = self._chunks(n, 2)  # even chunks keep mirrored pairs together
         jobs = [(a, b, size, seed * 7919 + i) for i, (_, size) in enumerate(chunks)]
         parts = self._run(_rounds, jobs, [size for _, size in chunks], n, progress)
         return _merge_rounds(parts, n)
