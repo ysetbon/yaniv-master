@@ -89,6 +89,21 @@ def _init_worker() -> None:
     # anything the worker starts itself inherits one thread.
     for key in THREAD_VARS:
         os.environ[key] = "1"
+    _lower_priority()
+
+
+def _lower_priority() -> None:
+    """Run game workers below normal priority, so the computer stays responsive."""
+    try:
+        if os.name == "nt":
+            import ctypes
+
+            below_normal = 0x00004000
+            ctypes.windll.kernel32.SetPriorityClass(ctypes.windll.kernel32.GetCurrentProcess(), below_normal)
+        else:
+            os.nice(5)
+    except Exception:  # priority is a courtesy; never fail a worker over it
+        pass
 
 
 def _merge_rounds(parts: list[dict], n: int) -> dict:
@@ -109,9 +124,16 @@ def _merge_matches(parts: list[dict], n: int) -> dict:
     return {**total, "win_rate": total["wins"] / max(1, n)}
 
 
-def default_workers() -> int:
-    """Leave two cores for the dashboard, the live table and the OS."""
-    return max(1, min(16, (os.cpu_count() or 2) - 2))
+def default_workers(share: float | None = None) -> int:
+    """Game-playing processes. With `share` (0 to 1), that fraction of the logical cores.
+
+    Without it, every core but two, which are left for the dashboard, the
+    live table and the OS.
+    """
+    cores = os.cpu_count() or 2
+    if share is not None:
+        return max(1, min(cores, round(cores * share)))
+    return max(1, min(16, cores - 2))
 
 
 class Workers:

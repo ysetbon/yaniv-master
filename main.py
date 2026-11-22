@@ -35,6 +35,13 @@ def main() -> None:
     parser.add_argument("--recipe", choices=("search", "genetic", "selfplay"), default="search",
                         help="search copies a teacher that plays each move out (default); genetic evolves a "
                              "population of nets; selfplay fine-tunes one net on its wins")
+    parser.add_argument("--effort", type=float, metavar="SHARE",
+                        help="share of the computer to use, 0.05 to 1 (e.g. 0.7): game processes on that share of "
+                             "the CPU cores, at below-normal priority, and a cap on GPU memory (default: all cores "
+                             "but two)")
+    parser.add_argument("--copied-share", type=float, metavar="RATIO",
+                        help="search: card-counter moves mixed in per searched move (default 1 sliding to 0.25, "
+                             "or 0 with --start-from)")
     parser.add_argument("--start-from", metavar="NET_JSON",
                         help="start from a saved net instead of copying the counter, e.g. public/model/yaniv-net.json")
     parser.add_argument("--search-rounds", type=int, help="search: rounds labelled per pass (default 150)")
@@ -77,6 +84,14 @@ def main() -> None:
         if not os.path.exists(args.start_from):
             parser.error(f"--start-from: no such file {args.start_from}")
         cfg.start_from = args.start_from
+        # A net already past the counter is only pulled back by more of its moves.
+        cfg.expert_mix_start = cfg.expert_mix_end = 0.0
+    if args.copied_share is not None:
+        cfg.expert_mix_start = cfg.expert_mix_end = max(0.0, args.copied_share)
+    if args.effort is not None:
+        if not 0.05 <= args.effort <= 1.0:
+            parser.error("--effort: give a share between 0.05 and 1, e.g. 0.7")
+        cfg.effort = args.effort
     if args.search_rounds is not None:
         cfg.search_rounds = max(1, args.search_rounds)
     if args.search_samples is not None:
@@ -106,6 +121,11 @@ def main() -> None:
     cfg.ladder_rounds = max(0, args.ladder_rounds if not args.quick else min(args.ladder_rounds, 30))
 
     device = resolve_device(args.device)
+    if args.effort is not None and device.kind == "cuda":
+        import torch
+
+        # The GPU only runs the learning step, a few seconds a pass, so this caps its memory, not its time.
+        torch.cuda.set_per_process_memory_fraction(args.effort)
     run_live(cfg, device, args.port, open_browser=not args.no_browser, export=args.export,
              tables=max(1, min(12, args.tables)))
 

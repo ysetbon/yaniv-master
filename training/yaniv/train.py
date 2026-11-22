@@ -524,6 +524,7 @@ class TrainConfig:
     final_matches: int = 400
     ladder_rounds: int = 0  # rounds per pair of generations; 0 skips the ladder
     workers: int = 0  # processes for playing games; 0 picks from the CPU count
+    effort: float = 0.0  # share of the logical cores to play games on (0 to 1); 0 means all but two
     cache: bool = True  # keep the card counter's decisions on disk between runs
     # "selfplay" fine-tunes one net on its own wins. "genetic" evolves a
     # population of nets that all start from the copy of the counter.
@@ -552,6 +553,10 @@ class TrainConfig:
     search_lr: float = 3e-4
     search_epochs: int = 3
     search_capacity: int = 60000  # searched decisions kept across passes, oldest dropped first
+    # "latest": each pass's net teaches the next pass, kept by the gate or not.
+    # "best": only a pass that passes the gate becomes the teacher. One pass's
+    # test is noisy, so "best" tends to keep a lucky pass and stall.
+    search_teacher: str = "latest"
     # A saved net (e.g. public/model/yaniv-net.json or a run's best.json) to
     # start from instead of copying the counter. It becomes Gen 0, so the
     # final check only ships a later generation that beats it.
@@ -563,7 +568,10 @@ class TrainConfig:
             return dataclasses.replace(cls.quick(), recipe="search", generations=2, gate_metric="margin",
                                        search_rounds=6, search_samples=8, gate_finalists=2,
                                        expert_mix_start=1.0, expert_mix_end=0.25)
-        return cls(recipe="search", generations=8, gate_metric="margin", expert_mix_start=1.0, expert_mix_end=0.25)
+        # 1,000 test rounds a pass instead of 400: nets a fraction of a point
+        # apart are told apart about 1.6 times more sharply.
+        return cls(recipe="search", generations=8, gate_metric="margin", expert_mix_start=1.0, expert_mix_end=0.25,
+                   eval_rounds=1000)
 
     @classmethod
     def genetic(cls, quick: bool = False) -> "TrainConfig":
@@ -680,7 +688,7 @@ def run_training(
     obs = observer or Observer()
     device = device or resolve_device("numpy")
     log = obs.log
-    workers = Workers(cfg.workers or default_workers())
+    workers = Workers(cfg.workers or default_workers(cfg.effort or None))
 
     def job(name: str):
         return lambda done, total: obs.progress(name, done, total)
@@ -843,9 +851,11 @@ def run_training(
                     log(f"Stopping early after generation {iteration - 1}, as asked")
                     break
                 t_gen = time.time()
+                latest = cfg.search_teacher == "latest"
+                teacher, teacher_index = (snapshot(net), iteration - 1) if latest else (best, best_index)
                 obs.phase("search", f"Gen {iteration}: searching every decision of {cfg.search_rounds} rounds, "
-                                    f"{cfg.search_samples} imagined deals each, with Gen {best_index} as the teacher")
-                rows = workers.search_label(best, cfg.search_rounds, 6000 + iteration, cfg.search_samples,
+                                    f"{cfg.search_samples} imagined deals each, with Gen {teacher_index} as the teacher")
+                rows = workers.search_label(teacher, cfg.search_rounds, 6000 + iteration, cfg.search_samples,
                                             cfg.search_width, job("search"), cfg.match_scores, cfg.search_confidence)
                 self_play_games += cfg.search_rounds
                 self_play_decisions += len(rows)
@@ -855,12 +865,13 @@ def run_training(
                     searched.pop(0)
                 taught = concat_datasets(searched) if searched else None
                 taught_count = len(taught) if taught is not None else 0
-                agree = agreement(best, materialize(rows)) if rows else float("nan")
+                agree = agreement(teacher, materialize(rows)) if rows else float("nan")
                 log(f"Search {iteration}: {len(rows)} decisions in {time.time()-t_gen:.1f}s; "
                     f"the teacher's own net already picks the searched move {agree:.1%} of the time")
                 take = min(len(expert), int(round(cfg.expert_mix(iteration) * taught_count)))
                 picked = sorted(rng.sample(range(len(expert)), take)) if take < len(expert) else range(len(expert))
-                mixed = concat_datasets([subset(expert, list(picked))] + ([taught] if taught is not None else []))
+                parts = ([subset(expert, list(picked))] if take else []) + ([taught] if taught is not None else [])
+                mixed = concat_datasets(parts) if parts else expert
 
                 obs.phase("fine_tune", f"Gen {iteration}: learn {taught_count:,} searched + {take:,} copied decisions")
                 t0 = time.time()
@@ -883,7 +894,7 @@ def run_training(
                     best_key = key
                     best = snapshot(net)
                     best_round, best_match, best_index = rounds, matches, iteration
-                    log("  new best checkpoint, and the next teacher")
+                    log("  new best checkpoint" + ("" if cfg.search_teacher == "latest" else ", and the next teacher"))
                 publish_generation(iteration, f"Search pass {iteration}", rounds, matches, kept,
                                    {"winning_decisions": len(rows), "ce": ce, "copied": take, "replay": taught_count,
                                     "teacher_agreement": agree, "seconds": round(time.time() - t_gen, 1)})
