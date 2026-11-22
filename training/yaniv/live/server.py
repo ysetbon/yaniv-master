@@ -47,7 +47,7 @@ def past_runs(current: Path) -> list[dict]:
             "round_win_rate": report.get("round_win_rate_vs_benchmark"),
             "hero_avg": rounds.get("hero_avg"),
             "villain_avg": rounds.get("villain_avg"),
-            "recipe": report.get("recipe") if report.get("recipe") == "genetic"
+            "recipe": report.get("recipe") if report.get("recipe") in ("genetic", "search")
             else "replay" if (report.get("config") or {}).get("replay_capacity") else "original",
         })
     return out[:20]

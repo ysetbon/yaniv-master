@@ -2,6 +2,7 @@
 """Train the Yaniv net and watch it live in your browser.
 
     python main.py                  # genetic algorithm: evolve a population of nets
+    python main.py --recipe search  # learn from a search teacher that plays each move out
     python main.py --recipe selfplay  # fine-tune one net on its own wins instead
     python main.py --quick          # a two-minute smoke run
     python main.py --device cuda    # fail loudly if the NVIDIA GPU is not usable
@@ -31,8 +32,11 @@ def main() -> None:
     parser.add_argument("--quick", action="store_true", help="tiny run to check everything works")
     parser.add_argument("--device", default="auto", choices=CHOICES,
                         help="auto picks CUDA, then Apple MPS, then NumPy on the CPU")
-    parser.add_argument("--recipe", choices=("genetic", "selfplay"), default="genetic",
-                        help="genetic evolves a population of nets (default); selfplay fine-tunes one net on its wins")
+    parser.add_argument("--recipe", choices=("genetic", "search", "selfplay"), default="genetic",
+                        help="genetic evolves a population of nets (default); search copies a teacher that plays "
+                             "each move out; selfplay fine-tunes one net on its wins")
+    parser.add_argument("--search-rounds", type=int, help="search: rounds labelled per pass (default 150)")
+    parser.add_argument("--search-samples", type=int, help="search: imagined deals per searched move (default 48)")
     parser.add_argument("--population", type=int, help="genetic: networks per generation (default 24)")
     parser.add_argument("--fitness-rounds", type=int, help="genetic: rounds each network plays per generation, in mirrored pairs (default 1000)")
     parser.add_argument("--legacy", action="store_true",
@@ -60,8 +64,14 @@ def main() -> None:
         cfg = TrainConfig.legacy()
     elif args.recipe == "genetic":
         cfg = TrainConfig.genetic(quick=args.quick)
+    elif args.recipe == "search":
+        cfg = TrainConfig.search(quick=args.quick)
     else:
         cfg = TrainConfig.quick() if args.quick else TrainConfig()
+    if args.search_rounds is not None:
+        cfg.search_rounds = max(1, args.search_rounds)
+    if args.search_samples is not None:
+        cfg.search_samples = max(1, args.search_samples)
     if args.population is not None:
         cfg.population = max(2, args.population)
     if args.fitness_rounds is not None:

@@ -468,12 +468,19 @@ def print_sample(log=print) -> None:
         shown += 1
 
 
-def gate_key(rounds: dict, matches: dict) -> tuple:
-    """How the gate ranks two test results: rounds won, then matches won, then fewer points.
+def gate_key(rounds: dict, matches: dict, metric: str = "rounds") -> tuple:
+    """How the gate ranks two test results.
 
-    Rounds come first because there are many more of them: 400 mirrored
-    rounds pin a net down to about 2 points, 200 matches only to about 3.5.
+    "rounds": rounds won, then matches won, then fewer points. Rounds come
+    first because there are many more of them: 400 mirrored rounds pin a net
+    down to about 2 points, 200 matches only to about 3.5.
+    "margin": the points margin per round (the counter's points minus the
+    net's), then matches, then rounds. Matches are decided by total points, so
+    this is what the search recipe optimizes, and it is measured on as many
+    rounds.
     """
+    if metric == "margin":
+        return (rounds["villain_avg"] - rounds["hero_avg"], matches["win_rate"], rounds["win_rate"])
     return (rounds["win_rate"], matches["win_rate"], -rounds["hero_avg"])
 
 
@@ -506,6 +513,7 @@ class TrainConfig:
     # gate_key). One test per generation is noisy, so when training ends the
     # top `gate_finalists` generations replay one shared, larger set of games
     # and the best of them is the gate's pick. 0 finalists skips the replay.
+    gate_metric: str = "rounds"  # "rounds" or "margin", see gate_key
     gate_finalists: int = 4
     gate_rounds: int = 2000
     gate_matches: int = 400
@@ -531,6 +539,23 @@ class TrainConfig:
     sigma: float = 0.2  # mutation size, relative to each layer's weight spread (0.2 changes ~3% of moves)
     sigma_decay: float = 0.96  # sigma shrinks by this much every generation
     ga_seed: int = 17
+    # "search": the best net plays the counter, a search labels every decision
+    # (see search.py), and the net learns the searched moves. Each pass's
+    # better net plays the next pass's playouts, so the teacher improves too.
+    search_rounds: int = 150  # rounds labelled per pass, about 20 decisions each
+    search_samples: int = 48  # imagined deals per searched decision
+    search_width: int = 4  # plays searched per decision, best first by the net, plus Yaniv
+    search_lr: float = 3e-4
+    search_epochs: int = 3
+    search_capacity: int = 60000  # searched decisions kept across passes, oldest dropped first
+
+    @classmethod
+    def search(cls, quick: bool = False) -> "TrainConfig":
+        if quick:
+            return dataclasses.replace(cls.quick(), recipe="search", generations=2, gate_metric="margin",
+                                       search_rounds=6, search_samples=8, gate_finalists=2,
+                                       expert_mix_start=1.0, expert_mix_end=0.25)
+        return cls(recipe="search", generations=8, gate_metric="margin", expert_mix_start=1.0, expert_mix_end=0.25)
 
     @classmethod
     def genetic(cls, quick: bool = False) -> "TrainConfig":
@@ -721,7 +746,7 @@ def run_training(
         t_gen = time.time()
         best = snapshot(net)
         best_round, best_match = evaluate(0, 500, 600)
-        best_key = gate_key(best_round, best_match)
+        best_key = gate_key(best_round, best_match, cfg.gate_metric)
         tested: dict[int, tuple[dict, dict]] = {0: (best_round, best_match)}
         best_index = 0
         log(
@@ -771,7 +796,7 @@ def run_training(
                 log(f"Gen {gen_i}: rounds won best {rates[0]:.3f} median {summary['median']:.3f} worst {rates[-1]:.3f}, "
                     f"sigma {sigma:.4f}, champion {champion.id} ({champion.op})")
                 rounds, matches = evaluate(gen_i, 700 + gen_i, 800 + gen_i, champion.net)
-                key = gate_key(rounds, matches)
+                key = gate_key(rounds, matches, cfg.gate_metric)
                 tested[gen_i] = (rounds, matches)
                 log(f"  champion {champion.id} rounds {rounds['win_rate']:.3f} assaf {rounds['assaf_rate']:.2f} "
                     f"matches {matches['win_rate']:.3f}")
@@ -795,6 +820,58 @@ def run_training(
                     population = breed(ranked, cfg.population, cfg.elites, cfg.tournament, cfg.crossover_rate,
                                        sigma * cfg.sigma_decay, gen_i + 1, ga_rng, pick)
                 sigma *= cfg.sigma_decay
+        elif cfg.recipe == "search":
+            searched: list[Dataset] = []
+            for iteration in range(1, cfg.generations + 1):
+                if obs.should_stop():
+                    log(f"Stopping early after generation {iteration - 1}, as asked")
+                    break
+                t_gen = time.time()
+                obs.phase("search", f"Gen {iteration}: searching every decision of {cfg.search_rounds} rounds, "
+                                    f"{cfg.search_samples} imagined deals each, with Gen {best_index} as the teacher")
+                rows = workers.search_label(best, cfg.search_rounds, 6000 + iteration, cfg.search_samples,
+                                            cfg.search_width, job("search"), cfg.match_scores)
+                self_play_games += cfg.search_rounds
+                self_play_decisions += len(rows)
+                if rows:
+                    searched.append(materialize(rows))
+                while len(searched) > 1 and sum(len(d) for d in searched) - len(searched[0]) >= cfg.search_capacity:
+                    searched.pop(0)
+                taught = concat_datasets(searched) if searched else None
+                taught_count = len(taught) if taught is not None else 0
+                agree = agreement(best, materialize(rows)) if rows else float("nan")
+                log(f"Search {iteration}: {len(rows)} decisions in {time.time()-t_gen:.1f}s; "
+                    f"the teacher's own net already picks the searched move {agree:.1%} of the time")
+                take = min(len(expert), int(round(cfg.expert_mix(iteration) * taught_count)))
+                picked = sorted(rng.sample(range(len(expert)), take)) if take < len(expert) else range(len(expert))
+                mixed = concat_datasets([subset(expert, list(picked))] + ([taught] if taught is not None else []))
+
+                obs.phase("fine_tune", f"Gen {iteration}: learn {taught_count:,} searched + {take:,} copied decisions")
+                t0 = time.time()
+                ce = float("nan")
+                for _ in range(cfg.search_epochs):
+                    ce, acc = train_dataset(net, mixed, cfg.search_lr, cfg.batch, rng, job("fine_tune"))
+                tune_seconds = time.time() - t0
+                rounds, matches = evaluate(iteration, 700 + iteration, 800 + iteration)
+                key = gate_key(rounds, matches, cfg.gate_metric)
+                tested[iteration] = (rounds, matches)
+                margin = rounds["villain_avg"] - rounds["hero_avg"]
+                log(f"  learned in {tune_seconds:.1f}s ce {ce:.3f}: margin {margin:+.2f} pts a round, "
+                    f"rounds {rounds['win_rate']:.3f} matches {matches['win_rate']:.3f} assaf {rounds['assaf_rate']:.2f}")
+                entry = {"phase": "search", "iteration": iteration, "searched": len(rows), "teacher_agreement": agree,
+                         "rounds": rounds, "matches": matches}
+                history.append(entry)
+                obs.history(entry)
+                kept = key > best_key
+                if kept:
+                    best_key = key
+                    best = snapshot(net)
+                    best_round, best_match, best_index = rounds, matches, iteration
+                    log("  new best checkpoint, and the next teacher")
+                publish_generation(iteration, f"Search pass {iteration}", rounds, matches, kept,
+                                   {"winning_decisions": len(rows), "ce": ce, "copied": take, "replay": taught_count,
+                                    "teacher_agreement": agree, "seconds": round(time.time() - t_gen, 1)})
+                passes_run = iteration
         else:
             replay: list[Dataset] = []
             for iteration in range(1, cfg.generations + 1):
@@ -833,7 +910,7 @@ def run_training(
                     ce, acc = train_dataset(net, mixed, cfg.fine_tune_lr, cfg.batch, rng, job("fine_tune"))
                 tune_seconds = time.time() - t0
                 rounds, matches = evaluate(iteration, 700 + iteration, 800 + iteration)
-                key = gate_key(rounds, matches)
+                key = gate_key(rounds, matches, cfg.gate_metric)
                 tested[iteration] = (rounds, matches)
                 log(
                     f"  fine-tune {tune_seconds:.1f}s ce {ce:.3f} rounds {rounds['win_rate']:.3f} "
@@ -868,7 +945,7 @@ def run_training(
         # included if it ranks there, play one shared, larger set of games,
         # and the best of them becomes the pick.
         gate_replay: dict | None = None
-        ranked_gens = sorted(tested, key=lambda gi: gate_key(*tested[gi]), reverse=True)
+        ranked_gens = sorted(tested, key=lambda gi: gate_key(*tested[gi], cfg.gate_metric), reverse=True)
         finalists = ranked_gens[:cfg.gate_finalists]
         if len(finalists) > 1 and cfg.gate_rounds > 0:
             replays: dict[str, dict] = {}
@@ -883,7 +960,8 @@ def run_training(
                                     "training_matches": tested[gi][1]}
                 log(f"Gate replay gen {gi}: rounds {gr['win_rate']:.3f} matches {gm['wins']}-{gm['losses']}-{gm['ties']} "
                     f"({gm['win_rate']:.3f}), its own test said rounds {tested[gi][0]['win_rate']:.3f}")
-            top = max(finalists, key=lambda gi: gate_key(replays[str(gi)]["rounds"], replays[str(gi)]["matches"]))
+            top = max(finalists, key=lambda gi: gate_key(replays[str(gi)]["rounds"], replays[str(gi)]["matches"],
+                                                         cfg.gate_metric))
             if top != best_index:
                 log(f"Gate replay picks gen {top} over gen {best_index}")
             else:
@@ -910,7 +988,8 @@ def run_training(
             chosen = best_index
             if best_index != 0:
                 pick, copy = fresh_test[str(best_index)], fresh_test["0"]
-                if gate_key(copy["rounds"], copy["matches"]) > gate_key(pick["rounds"], pick["matches"]):
+                if (gate_key(copy["rounds"], copy["matches"], cfg.gate_metric)
+                        > gate_key(pick["rounds"], pick["matches"], cfg.gate_metric)):
                     chosen = 0
                     log(f"Gen 0 did better than gen {best_index} on new games, so Gen 0 ships")
                 else:

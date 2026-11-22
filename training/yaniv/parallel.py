@@ -74,6 +74,12 @@ def _self_play(spec: Spec, n: int, seed: int, temperature: float, weighted: bool
                              match_scores=match_scores)
 
 
+def _search_label(spec: Spec, n: int, seed: int, samples: int, width: int, match_scores: bool) -> list:
+    from .search import collect_search
+
+    return collect_search(_net(spec), n, seed, samples, width, match_scores=match_scores)
+
+
 def _init_worker() -> None:
     # Each worker plays one game at a time; extra BLAS threads only fight.
     for key in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
@@ -176,6 +182,19 @@ class Workers:
         jobs = [(a, b, size, seed * 7919 + i) for i, (_, size) in enumerate(chunks)]
         parts = self._run(_matches, jobs, [size for _, size in chunks], n, progress)
         return _merge_matches(parts, n)
+
+    def search_label(self, net: MLP, n: int, seed: int, samples: int, width: int, progress=None,
+                     match_scores: bool = True) -> list:
+        """(view, label) rows: `n` rounds of the net against the counter, every decision searched."""
+        if self.count == 1:
+            from .search import collect_search
+
+            return collect_search(net, n, seed, samples, width, progress, match_scores=match_scores)
+        spec = net_spec(net)
+        chunks = self._chunks(n, 1)
+        jobs = [(spec, size, seed * 7919 + i, samples, width, match_scores) for i, (_, size) in enumerate(chunks)]
+        parts = self._run(_search_label, jobs, [size for _, size in chunks], n, progress)
+        return [row for part in parts for row in part]
 
     def self_play(self, net: MLP, n: int, seed: int, temperature: float, weighted: bool, progress=None,
                   match_scores: bool = False) -> list:

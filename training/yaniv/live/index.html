@@ -359,7 +359,7 @@ select{background:var(--raised);border:1px solid var(--line-strong);border-radiu
   </section>
   <section class="panel span-4" aria-labelledby="mix-title" id="mix-panel">
     <div class="panel-head"><h2 id="mix-title">What each generation trained on</h2><span class="sub">Decisions per fine-tune</span></div>
-    <div class="legend"><span><i class="box" style="background:var(--s2)"></i>Copied from the counter</span><span><i class="box" style="background:var(--s1)"></i>Its own self-play wins</span></div>
+    <div class="legend"><span><i class="box" style="background:var(--s2)"></i>Copied from the counter</span><span><i class="box" style="background:var(--s1)"></i><span id="mix-own">Its own self-play wins</span></span></div>
     <div class="chart" id="c-mix"></div>
   </section>
   <section class="panel span-4" aria-labelledby="ce-title">
@@ -428,20 +428,22 @@ function cardEl(c, cls){
 }
 
 /* ---------- header, stepper, clock ---------- */
-const COUNT_UNITS = {bench:'rounds', expert:'rounds', imitation:'batches', self_play:'games', fine_tune:'batches', eval_rounds:'rounds', eval_matches:'matches', ladder:'rounds', final:'rounds'};
+const COUNT_UNITS = {search:'rounds', bench:'rounds', expert:'rounds', imitation:'batches', self_play:'games', fine_tune:'batches', eval_rounds:'rounds', eval_matches:'matches', ladder:'rounds', final:'rounds'};
 function bestGen(){
   if (S.report && S.generations[S.report.best_generation]) return S.generations[S.report.best_generation];
   let b = null; S.generations.forEach(g => { if (g.kept) b = g; }); return b;
 }
 const isGA = () => S && S.config && S.config.recipe === 'genetic';
+const isSearch = () => S && S.config && S.config.recipe === 'search';
 function freshFor(i){ const f = S.report && S.report.fresh_test; return f ? f[String(i)] : null; }
 function renderHeader(){
   const st = S.stopping && S.status === 'training' ? 'stopping' : S.status;
   $('status').className = 'chip st-'+st;
   $('status-text').textContent = {starting:'Starting', training:'Training', stopping:'Stopping after this generation', done:'Finished', error:'Stopped by an error'}[st] || st;
-  $('recipe-text').textContent = isGA() ? 'Genetic algorithm · population '+S.config.population : S.config.recipe === 'selfplay' && S.config.replay_capacity ? 'Self-play' : 'Self-play (original)';
+  $('recipe-text').textContent = isGA() ? 'Genetic algorithm · population '+S.config.population : isSearch() ? 'Search teacher · '+S.config.search_samples+' imagined deals a move' : S.config.recipe === 'selfplay' && S.config.replay_capacity ? 'Self-play' : 'Self-play (original)';
   ['fit-panel','pop-panel','preset-pop'].forEach(id => $(id).hidden = !isGA());
   $('mix-panel').hidden = isGA();
+  $('mix-own').textContent = isSearch() ? 'Moves the search chose' : 'Its own self-play wins';
   $('device').className = 'chip'+(S.device.gpu ? ' gpu' : '');
   $('device-text').textContent = S.device.label;
   $('device-note').hidden = !S.device.note; $('device-note').textContent = S.device.note || '';
@@ -459,7 +461,7 @@ function renderHeader(){
 function stepFraction(){
   // where the run is inside the current step, from the phase and its counter
   const p = S.progress, f = p.total ? p.done/p.total : 0, name = S.phase.name;
-  const spans = {bench:[0,.04], expert:[.04,.3], imitation:null, eval:[.82,1], self_play:[0,.35], fine_tune:[.35,.6], evolve:[0,.6], ladder:[.9,1], final:[0,1]};
+  const spans = {search:[0,.55], bench:[0,.04], expert:[.04,.3], imitation:null, eval:[.82,1], self_play:[0,.35], fine_tune:[.35,.6], evolve:[0,.6], ladder:[.9,1], final:[0,1]};
   if (name === 'imitation'){ const ep = (S.history.filter(h => h.phase==='imitation').length); return .3 + .52*((ep + f)/Math.max(1, S.config.epochs)); }
   if (name === 'eval'){ const sub = p.name === 'eval_matches' ? .3 + .7*f : .3*f; return S.generations.length === 0 ? .82 + .18*sub : .6 + .3*sub; }
   const sp = spans[name]; return sp ? sp[0] + (sp[1]-sp[0])*f : 0;
@@ -491,6 +493,9 @@ function renderProgress(){
   if (isGA()){
     const done = (S.population || []).length * S.config.population * S.config.fitness_rounds, live = p.name === 'evolve' ? p.done : 0;
     $('games-count').textContent = done + live ? '· '+(done + live).toLocaleString()+' fitness rounds played' : '';
+  } else if (isSearch()){
+    const live = p.name === 'search' ? p.done : 0, rounds = passes * S.config.search_rounds + live;
+    $('games-count').textContent = rounds ? '· '+rounds.toLocaleString()+' rounds searched so far' : '';
   } else {
     const live = S.phase.name === 'self_play' && p.name === 'self_play' ? p.done : 0, games = passes * S.config.games_per_generation + live;
     $('games-count').textContent = games ? '· '+games.toLocaleString()+' self-play games so far' : '';
@@ -519,7 +524,7 @@ function renderKpis(){
   const passes = gens.length - 1;
   const ft = S.report && S.report.fresh_test && Object.keys(S.report.fresh_test).length > 1;
   $('k-best-sub').textContent = S.report ? (b.index === 0 ? (ft ? 'The gate\'s pick did worse than the copy on new games, so the copy ships.' : 'No generation beat the copy.') : 'Kept by the gate and confirmed on new games.')
-    : b.index === 0 ? (passes ? 'No generation has beaten the copy yet ('+passes+' tried).' : (isGA() ? 'Evolution starts next.' : 'Self-play passes start next.')) : 'Kept by the gate. '+passes+' of '+S.config.generations+' generations done.';
+    : b.index === 0 ? (passes ? 'No generation has beaten the copy yet ('+passes+' tried).' : (isGA() ? 'Evolution starts next.' : isSearch() ? 'Search passes start next.' : 'Self-play passes start next.')) : 'Kept by the gate. '+passes+' of '+S.config.generations+' generations done.';
   const fresh = freshFor(b.index), fresh0 = freshFor(0);
   const m = fresh ? fresh.matches : b.matches, mn = m.wins+m.losses+m.ties, [lo, hi] = wilson(m.wins, mn);
   $('k-match').innerHTML = pct0(m.win_rate)+'<small>'+m.wins+' of '+mn+'</small>';
@@ -535,8 +540,9 @@ function renderKpis(){
   } else if (last && last.index > 0){
     const n = last.replay != null ? last.replay : last.winning_decisions;
     $('k-exp').textContent = n.toLocaleString();
-    $('k-exp-sub').textContent = last.replay != null && S.config.replay_capacity ? 'Winning decisions kept from all passes so far, mixed with '+(last.copied||0).toLocaleString()+' copied ones.' : 'Winning decisions from the latest pass.';
-  } else { $('k-exp').textContent = '0'; $('k-exp-sub').textContent = 'Self-play starts after the copy is tested.'; }
+    $('k-exp-sub').textContent = isSearch() ? 'Searched decisions kept from all passes, mixed with '+(last.copied||0).toLocaleString()+' copied ones.' : last.replay != null && S.config.replay_capacity ? 'Winning decisions kept from all passes so far, mixed with '+(last.copied||0).toLocaleString()+' copied ones.' : 'Winning decisions from the latest pass.';
+  } else { $('k-exp').textContent = '0'; $('k-exp-sub').textContent = (isSearch() ? 'Search' : 'Self-play')+' starts after the copy is tested.'; }
+  document.querySelector('#k-exp').previousElementSibling.textContent = isGA() ? 'Population' : isSearch() ? 'Searched decisions' : 'Self-play experience';
 }
 
 /* ---------- live table ---------- */
@@ -735,7 +741,7 @@ function renderCharts(){
   const sp = gens.filter(g => g.index > 0);
   chart('c-mix', {type:'stack', x:sp.map(g => 'Gen '+g.index), xs:sp.map(g => String(g.index)), y0:0, fmt:v => v >= 1000 ? (v/1000).toFixed(v % 1000 ? 1 : 0)+'k' : String(Math.round(v)), tipFmt:v => v.toLocaleString(),
     empty:'Shows how many copied and self-play decisions each pass trains on, from Gen 1.', aria:'Copied and self-play decisions per fine-tune',
-    series:[{n:'Copied', c:C.s2, v:sp.map(g => g.copied != null ? g.copied : S.report ? S.report.expert_decisions : null)}, {n:'Self-play wins', c:C.s1, v:sp.map(g => g.replay != null ? g.replay : g.winning_decisions)}]});
+    series:[{n:'Copied', c:C.s2, v:sp.map(g => g.copied != null ? g.copied : S.report ? S.report.expert_decisions : null)}, {n:isSearch() ? 'Searched' : 'Self-play wins', c:C.s1, v:sp.map(g => g.replay != null ? g.replay : g.winning_decisions)}]});
   const im = S.history.filter(h => h.phase === 'imitation');
   chart('c-acc', {x:im.map(h => 'Epoch '+h.epoch), xs:im.map(h => String(h.epoch)), pad:true, fmt:pct0, tipFmt:pct,
     empty:'Agreement shows up after the first copying epoch.', aria:'Agreement with the card counter per epoch',
@@ -855,7 +861,7 @@ async function loadRuns(){
   const r = await fetch('/api/runs').catch(() => null); if (!r || !r.ok) return;
   const runs = await r.json(); if (!runs.length) return;
   $('runs').innerHTML = runs.map(x => { const m = x.matches || {}; const name = x.name.replace(/^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2}).*/, '$1-$2-$3 $4:$5');
-    return '<tr><td class="mono">'+esc(name)+'</td><td>'+({genetic:'genetic', replay:'replay store'}[x.recipe] || 'original')+'</td><td>'+esc(x.device||'–')+'</td><td>'+(x.generations ?? '–')+'</td><td>Gen '+(x.best_generation ?? '–')+'</td><td>'+(m.wins != null ? m.wins+'–'+m.losses+' <span class="muted">('+pct(x.match_win_rate)+')</span>' : '–')+'</td><td>'+(x.round_win_rate != null ? pct(x.round_win_rate) : '–')+'</td><td class="mono">'+(x.seconds ? fmtDur(x.seconds) : '–')+'</td></tr>'; }).join('');
+    return '<tr><td class="mono">'+esc(name)+'</td><td>'+({genetic:'genetic', search:'search teacher', replay:'replay store'}[x.recipe] || 'original')+'</td><td>'+esc(x.device||'–')+'</td><td>'+(x.generations ?? '–')+'</td><td>Gen '+(x.best_generation ?? '–')+'</td><td>'+(m.wins != null ? m.wins+'–'+m.losses+' <span class="muted">('+pct(x.match_win_rate)+')</span>' : '–')+'</td><td>'+(x.round_win_rate != null ? pct(x.round_win_rate) : '–')+'</td><td class="mono">'+(x.seconds ? fmtDur(x.seconds) : '–')+'</td></tr>'; }).join('');
 }
 
 /* ---------- log ---------- */
