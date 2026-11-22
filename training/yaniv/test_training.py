@@ -133,6 +133,29 @@ class WorkerPool(unittest.TestCase):
         finally:
             workers.close()
 
+    def test_mirrored_pairs_cancel_card_luck(self):
+        # Two copies of the same deterministic player play each deal from both
+        # seats, so every pair is one win and one loss (or two ties).
+        from .heuristic import choose_heuristic
+        from .train import match_duel, round_duel
+
+        rounds = round_duel(choose_heuristic, choose_heuristic, 40, 5)
+        self.assertEqual(rounds["wins"], rounds["losses"])
+        self.assertAlmostEqual(rounds["hero_avg"], rounds["villain_avg"])
+        matches = match_duel(choose_heuristic, choose_heuristic, 6, 5)
+        self.assertEqual(matches["wins"], matches["losses"])
+
+    def test_mirrored_deals_ignore_the_players_random_draws(self):
+        # The random player draws from the shared rng; the deals must not move.
+        from .heuristic import choose_heuristic, choose_random
+        from .train import round_duel
+
+        a = round_duel(choose_heuristic, choose_random, 20, 8)
+        b = round_duel(choose_heuristic, choose_heuristic, 20, 8)
+        c = round_duel(choose_heuristic, choose_random, 20, 8)
+        self.assertEqual(a, c)
+        self.assertNotEqual(a, b)
+
     def test_one_worker_matches_the_plain_functions(self):
         from .heuristic import choose_heuristic, choose_random
         from .train import round_duel

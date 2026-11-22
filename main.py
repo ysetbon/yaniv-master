@@ -34,7 +34,7 @@ def main() -> None:
     parser.add_argument("--recipe", choices=("genetic", "selfplay"), default="genetic",
                         help="genetic evolves a population of nets (default); selfplay fine-tunes one net on its wins")
     parser.add_argument("--population", type=int, help="genetic: networks per generation (default 24)")
-    parser.add_argument("--fitness-rounds", type=int, help="genetic: rounds each network plays per generation (default 200)")
+    parser.add_argument("--fitness-rounds", type=int, help="genetic: rounds each network plays per generation, in mirrored pairs (default 1000)")
     parser.add_argument("--legacy", action="store_true",
                         help="the first recipe: fresh wins only, unweighted, 48 test matches, one core")
     parser.add_argument("--generations", type=int, help="generations after the copied net (default 20 genetic, 8 self-play)")
@@ -43,6 +43,10 @@ def main() -> None:
     parser.add_argument("--workers", type=int,
                         help="CPU processes that play games (default: CPU cores minus two)")
     parser.add_argument("--test-matches", type=int, help="matches against the counter per generation (default 200)")
+    parser.add_argument("--finalists", type=int,
+                        help="generations the gate replays on shared games when training ends, 0 to skip (default 4)")
+    parser.add_argument("--gate-rounds", type=int, help="rounds each finalist plays in the gate replay (default 2000)")
+    parser.add_argument("--gate-matches", type=int, help="matches each finalist plays in the gate replay (default 400)")
     parser.add_argument("--ladder-rounds", type=int, default=100,
                         help="rounds each new generation plays against every older one, 0 to skip")
     parser.add_argument("--tables", type=int, default=6, help="exhibition games shown at once on the dashboard (default 6)")
@@ -72,6 +76,12 @@ def main() -> None:
         cfg.workers = max(1, args.workers)
     if args.test_matches is not None:
         cfg.eval_matches = max(2, args.test_matches)
+    if args.finalists is not None:
+        cfg.gate_finalists = max(0, args.finalists)
+    if args.gate_rounds is not None:
+        cfg.gate_rounds = max(2, args.gate_rounds)
+    if args.gate_matches is not None:
+        cfg.gate_matches = max(0, args.gate_matches)
     cfg.ladder_rounds = max(0, args.ladder_rounds if not args.quick else min(args.ladder_rounds, 30))
 
     device = resolve_device(args.device)
