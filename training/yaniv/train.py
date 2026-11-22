@@ -442,6 +442,8 @@ def _cards(mask: int) -> list[int]:
 
 
 def _card(card: int) -> str:
+    if card >= 52:
+        return "Jk"
     return "A23456789TJQK"[card % 13] + "cdhs"[card // 13]
 
 

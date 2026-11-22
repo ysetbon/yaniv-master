@@ -7,6 +7,7 @@ import random
 from pathlib import Path
 
 from training.yaniv.engine import (
+    DECK_SIZE,
     Action,
     View,
     apply_action,
@@ -20,13 +21,26 @@ from training.yaniv.features import action_features, state_features
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "src" / "lib" / "yaniv" / "fixtures.json"
+# Card masks need 54 bits, more than a JSON number holds exactly in
+# JavaScript, so every mask is written as a decimal string.
+MASK_KEYS = {"hands", "known", "discard_mask", "mask", "my_hand", "my_known", "opp_known"}
+
+
+def masks_as_strings(value, key=None):
+    if isinstance(value, dict):
+        return {k: masks_as_strings(v, k) for k, v in value.items()}
+    if isinstance(value, list):
+        return [masks_as_strings(v, key) for v in value]
+    if key in MASK_KEYS and isinstance(value, int) and not isinstance(value, bool):
+        return str(value)
+    return value
 
 
 def main() -> None:
     rng = random.Random(21)
     keeps = []
     for _ in range(250):
-        deck = list(range(52))
+        deck = list(range(DECK_SIZE))
         rng.shuffle(deck)
         mask = 0
         for card in deck[: rng.randint(0, 5)]:
@@ -34,8 +48,10 @@ def main() -> None:
         keeps.append({"mask": mask, "keep": best_keep_points(mask)})
 
     steps = []
-    for game in range(24):
-        state = new_round([game % 7, (game * 3) % 11], game % 2, rng)
+    near_cuts = [[45, 92], [48, 96], [40, 90], [99, 49]]
+    for game in range(32):
+        scores = near_cuts[game % 4] if game >= 24 else [game % 7, (game * 3) % 11]
+        state = new_round(list(scores), game % 2, rng)
         guard = 0
         while not state.terminal and guard < 18:
             guard += 1
@@ -55,6 +71,27 @@ def main() -> None:
             before = state.to_json()
             apply_action(state, action)
             steps.append({"before": before, "action": action.to_json(), "after": state.to_json()})
+
+    # Round endings that land exactly on 50 or 100, so the TypeScript port
+    # must cut those scores the same way.
+    ten, ace, seven, joker = 9, 0, 6, 52
+    for scores, hands, turn, yaniv in (
+        ([40, 0], [1 << ten, 1 << joker], 0, False),  # showdown: 40 + 10 = 50 -> 0
+        ([90, 30], [1 << ten, 1 << ace], 1, True),  # Yaniv: 90 + 10 = 100 -> 50
+        ([63, 20], [1 << seven, 1 << joker], 0, True),  # Assaf: 63 + 7 + 30 = 100 -> 50
+        ([45, 95], [(1 << 52) | (1 << 53), 1 << 4], 0, True),  # two jokers call: 95 + 5 = 100 -> 50
+    ):
+        state = new_round(scores, turn, rng)
+        state.hands = list(hands)
+        state.known = [0, 0]
+        before = state.to_json()
+        if yaniv:
+            apply_action(state, Action("yaniv"))
+            action = Action("yaniv").to_json()
+        else:
+            resolve_showdown(state)
+            action = None
+        steps.append({"before": before, "action": action, "after": state.to_json()})
 
     anchor = View(
         my_hand=1 << 0,
@@ -77,7 +114,7 @@ def main() -> None:
             apply_action(state, legal_actions(make_view(state, state.turn))[0])
             features.append(feature_case(make_view(state, state.turn)))
 
-    payload = {"keeps": keeps, "steps": steps, "features": features}
+    payload = masks_as_strings({"keeps": keeps, "steps": steps, "features": features})
     OUT.write_text(json.dumps(payload), encoding="utf-8")
     print(f"wrote {OUT} keeps={len(keeps)} steps={len(steps)} features={len(features)}")
 

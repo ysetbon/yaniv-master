@@ -422,6 +422,7 @@ function toast(kind, text){
 
 /* ---------- cards ---------- */
 function cardEl(c, cls){
+  if (c >= 52) return '<div class="card'+(c===52?' red':'')+(cls?' '+cls:'')+'" role="img" aria-label="'+(c===52?'red':'black')+' joker"><span>★</span><span>JK</span></div>';
   const r = RANKS[c%13], s = SUITS[Math.floor(c/13)], red = s==='♦'||s==='♥', name = (r==='T'?'10':r)+s;
   return '<div class="card'+(red?' red':'')+(cls?' '+cls:'')+'" role="img" aria-label="'+name+'"><span>'+(r==='T'?'10':r)+'</span><span>'+s+'</span></div>';
 }
@@ -578,7 +579,7 @@ function renderBoard(){
 }
 
 /* ---------- wall of tables ---------- */
-function mini(c, cls){ const r = RANKS[c%13], s = SUITS[Math.floor(c/13)]; return '<span class="mc'+(s==='♦'||s==='♥'?' red':'')+(cls?' '+cls:'')+'"><span>'+(r==='T'?'10':r)+'</span><span>'+s+'</span></span>'; }
+function mini(c, cls){ if (c >= 52) return '<span class="mc'+(c===52?' red':'')+(cls?' '+cls:'')+'"><span>★</span><span>JK</span></span>'; const r = RANKS[c%13], s = SUITS[Math.floor(c/13)]; return '<span class="mc'+(s==='♦'||s==='♥'?' red':'')+(cls?' '+cls:'')+'"><span>'+(r==='T'?'10':r)+'</span><span>'+s+'</span></span>'; }
 function renderTile(b){
   let el = document.querySelector('.tile[data-table="'+b.table+'"]');
   if (!el){

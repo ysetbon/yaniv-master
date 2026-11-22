@@ -2,7 +2,7 @@
 
 A two-player game of Yaniv. You sit across from a neural network that learned the table by copying a card counter and then playing thousands of games against itself.
 
-A hand is five cards. Ace is 1, number cards are their pips, and 10, jack, queen, and king are 10. Throw a single card, a set of one rank, or a same-suit run of three or more, then draw the previous open card or a blind card from the deck. With 5 points or fewer you may call Yaniv. If the other hand is the same or lower, the call is Assaf and costs your points plus 30. The match ends when a score reaches 100. The lower score wins.
+A hand is five cards from a 54-card deck with two jokers. Ace is 1, number cards are their pips, 10, jack, queen, and king are 10, and a joker is 0. Throw a single card or a set of one rank (the two jokers pair with each other; there are no runs), then draw the previous open card or a blind card from the deck. With 7 points or fewer you may call Yaniv. If the other hand is the same or lower, the call is Assaf and costs your points plus 30. A score that lands exactly on 50 or 100 is cut by 50. The match ends when a score reaches 100. The lower score wins.
 
 ## Run it
 
@@ -44,7 +44,7 @@ Generation 0 is always the copy of the card counter. After that, `main.py` runs 
 
 ### How the genetic algorithm works
 
-1. The first population is the copy plus 23 mutants of it. Every member keeps the same shape as the copy (377 → 192 → 192 → 1), so neuron *i* means roughly the same thing in every member.
+1. The first population is the copy plus 23 mutants of it. Every member keeps the same shape as the copy (389 → 192 → 192 → 1), so neuron *i* means roughly the same thing in every member.
 2. Each generation, every member plays the same 1,000 rounds against the card counter. Fitness is the share of rounds won, with the points margin as a tie-breaker. Using the same deals means members differ only where their moves differ, not through luck of the deal.
 3. The two fittest members carry over unchanged (elites). The rest are children:
    - Parents are picked by tournament: the best of three random members.

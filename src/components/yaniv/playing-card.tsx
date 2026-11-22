@@ -2,18 +2,38 @@
 
 import { RANK_CHARS, cardLabel } from "@/lib/yaniv/engine";
 
-const PIPS: Record<number, Array<[number, number]>> = {
-  1: [[50, 50]],
-  2: [[50, 24], [50, 76]],
-  3: [[50, 22], [50, 50], [50, 78]],
-  4: [[30, 24], [70, 24], [30, 76], [70, 76]],
-  5: [[30, 24], [70, 24], [50, 50], [30, 76], [70, 76]],
-  6: [[30, 22], [70, 22], [30, 50], [70, 50], [30, 78], [70, 78]],
-  7: [[30, 20], [70, 20], [50, 36], [30, 52], [70, 52], [30, 80], [70, 80]],
-  8: [[30, 18], [70, 18], [50, 34], [30, 50], [70, 50], [50, 66], [30, 82], [70, 82]],
-  9: [[30, 16], [70, 16], [30, 36], [70, 36], [50, 50], [30, 64], [70, 64], [30, 84], [70, 84]],
-  10: [[30, 15], [70, 15], [50, 30], [30, 40], [70, 40], [30, 60], [70, 60], [50, 70], [30, 85], [70, 85]],
+export type CardSize = "sm" | "md" | "lg";
+
+const SIZES: Record<CardSize, string> = {
+  sm: "h-16 w-11 rounded-md",
+  md: "h-[5.4rem] w-[3.8rem] rounded-lg sm:h-28 sm:w-20",
+  lg: "h-[5.9rem] w-[4.1rem] rounded-lg sm:h-[8.4rem] sm:w-[6rem]",
 };
+
+const CORNER: Record<CardSize, string> = {
+  sm: "text-[10px]",
+  md: "text-xs sm:text-sm",
+  lg: "text-sm sm:text-base",
+};
+
+const CENTER: Record<CardSize, string> = {
+  sm: "text-xl",
+  md: "text-3xl sm:text-4xl",
+  lg: "text-3xl sm:text-5xl",
+};
+
+const SUITS = "♣♦♥♠";
+const FIRST_JOKER = 52;
+
+/** Card ids 0..51 are suit * 13 + rank. 52 is the red joker, 53 the black one. */
+function isJokerCard(card: number): boolean {
+  return card >= FIRST_JOKER;
+}
+
+function labelFor(card: number): string {
+  if (isJokerCard(card)) return card === FIRST_JOKER ? "red joker" : "black joker";
+  return cardLabel(card);
+}
 
 export function PlayingCard({
   card,
@@ -21,6 +41,7 @@ export function PlayingCard({
   hinted = false,
   faceDown = false,
   dimmed = false,
+  size = "md",
   onClick,
   className = "",
 }: {
@@ -29,68 +50,88 @@ export function PlayingCard({
   hinted?: boolean;
   faceDown?: boolean;
   dimmed?: boolean;
+  size?: CardSize;
   onClick?: () => void;
   className?: string;
 }) {
-  const shared =
-    "relative h-[5.6rem] w-10 shrink-0 rounded-md shadow-md transition duration-150 sm:h-28 sm:w-[4.4rem] " +
-    className;
+  const shared = `relative shrink-0 select-none transition duration-150 ease-out ${SIZES[size]} ${className}`;
   if (faceDown || card === undefined) {
     return (
       <div
-        className={`${shared} border border-[#d6b36a]/70 bg-[#143d2c]`}
-        aria-hidden={faceDown}
+        className={`${shared} border border-[#c9a45c]/60 bg-[#1b2440] shadow-[0_2px_6px_rgba(0,0,0,0.45)]`}
+        aria-hidden="true"
       >
-        <div className="absolute inset-1 rounded-[4px] border border-[#e6c98a]/50 bg-[repeating-linear-gradient(45deg,#1c5c40_0_6px,#164832_6px_12px)]" />
+        <div className="absolute inset-[5px] rounded-[5px] border border-[#c9a45c]/45 bg-[radial-gradient(circle_at_center,#2b3a66_0,#1b2440_70%)]">
+          <div className="absolute inset-0 rounded-[4px] bg-[repeating-linear-gradient(45deg,transparent_0_7px,rgba(201,164,92,0.16)_7px_8px),repeating-linear-gradient(-45deg,transparent_0_7px,rgba(201,164,92,0.16)_7px_8px)]" />
+          <div className="absolute top-1/2 left-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rotate-45 border border-[#c9a45c]/70 bg-[#1b2440]" />
+        </div>
       </div>
     );
   }
+
+  const Tag = onClick ? "button" : "div";
+  const label = labelFor(card);
+  const interactive = onClick ? "cursor-pointer hover:-translate-y-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white " : "";
+  const state =
+    (selected ? "-translate-y-4 ring-[3px] ring-[#f2c75c] shadow-[0_10px_22px_rgba(0,0,0,0.45)] " : "shadow-[0_2px_6px_rgba(0,0,0,0.35)] ") +
+    (hinted && !selected ? "ring-[3px] ring-[#8fd3ff] " : "") +
+    (dimmed ? "opacity-45 " : "");
+
+  if (isJokerCard(card)) {
+    const red = card === FIRST_JOKER;
+    return (
+      <Tag
+        type={onClick ? "button" : undefined}
+        onClick={onClick}
+        aria-label={label}
+        aria-pressed={onClick ? selected : undefined}
+        className={`${shared} border border-[#e2d6bf] bg-[#fbf7ef] ${red ? "text-[#c3362c]" : "text-[#1c1916]"} ${state}${interactive}`}
+      >
+        <span className={`absolute top-1 left-1.5 leading-none font-bold ${CORNER[size]}`}>★</span>
+        <span className={`absolute right-1.5 bottom-1 rotate-180 leading-none font-bold ${CORNER[size]}`}>★</span>
+        <span className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
+          <span className={`leading-none ${CENTER[size]}`}>★</span>
+          {size !== "sm" && <span className="text-[9px] font-semibold tracking-[0.2em] sm:text-[10px]">JOKER</span>}
+        </span>
+        <span className="sr-only">{label}</span>
+      </Tag>
+    );
+  }
+
   const rank = card % 13;
   const suit = Math.floor(card / 13);
   const red = suit === 1 || suit === 2;
-  const symbol = "♣♦♥♠"[suit];
+  const symbol = SUITS[suit];
+  const rankText = rank === 9 ? "10" : RANK_CHARS[rank];
   const face = rank >= 10;
-  const layout = PIPS[rank === 0 ? 1 : rank + 1] ?? [];
-  const Tag = onClick ? "button" : "div";
   return (
     <Tag
       type={onClick ? "button" : undefined}
       onClick={onClick}
-      aria-label={cardLabel(card)}
+      aria-label={label}
       aria-pressed={onClick ? selected : undefined}
-      className={
-        shared +
-        " border bg-[#fbf6ee] text-left " +
-        (red ? "text-[#c3362c] " : "text-[#1c1916] ") +
-        (selected ? "-translate-y-3 border-[#e6c27a] ring-2 ring-[#e6c27a] " : "border-[#e7dcc6] ") +
-        (hinted && !selected ? "ring-2 ring-[#9ad7ff] " : "") +
-        (dimmed ? "opacity-45 " : "") +
-        (onClick ? "cursor-pointer hover:-translate-y-1 " : "")
-      }
+      className={`${shared} border border-[#e2d6bf] bg-[#fbf7ef] ${red ? "text-[#c3362c]" : "text-[#1c1916]"} ${state}${interactive}`}
     >
-      <span className="absolute top-0.5 left-1 text-[11px] leading-none font-semibold sm:text-sm">
-        {rank === 9 ? "10" : RANK_CHARS[rank]}
-        <span className="block text-[10px] sm:text-xs">{symbol}</span>
+      <span className={`absolute top-1 left-1.5 flex flex-col items-center leading-none font-semibold ${CORNER[size]}`}>
+        <span>{rankText}</span>
+        <span className="mt-0.5">{symbol}</span>
       </span>
-      {face ? (
-        <span className="absolute inset-0 grid place-items-center text-2xl font-semibold tracking-tight sm:text-3xl">
-          <span>
-            {"JQK"[rank - 10]}
-            <span className="ml-0.5 text-sm sm:text-base">{symbol}</span>
-          </span>
+      {size !== "sm" && (
+        <span className={`absolute right-1.5 bottom-1 flex rotate-180 flex-col items-center leading-none font-semibold ${CORNER[size]}`}>
+          <span>{rankText}</span>
+          <span className="mt-0.5">{symbol}</span>
         </span>
-      ) : (
-        layout.map(([x, y], index) => (
-          <span
-            key={index}
-            className="absolute text-[11px] leading-none sm:text-sm"
-            style={{ left: `${x}%`, top: `${y}%`, transform: `translate(-50%, -50%)${y > 55 ? " rotate(180deg)" : ""}` }}
-          >
-            {symbol}
-          </span>
-        ))
       )}
-      <span className="sr-only">{cardLabel(card)}</span>
+      <span className="absolute inset-0 grid place-items-center">
+        {face ? (
+          <span className={`font-display leading-none font-semibold ${CENTER[size]}`}>
+            {"JQK"[rank - 10]}
+          </span>
+        ) : (
+          <span className={`leading-none ${CENTER[size]} ${rank === 0 ? "scale-125" : ""}`}>{symbol}</span>
+        )}
+      </span>
+      <span className="sr-only">{label}</span>
     </Tag>
   );
 }
