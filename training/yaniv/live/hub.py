@@ -29,7 +29,7 @@ class Hub:
             "generations": [],
             "ladder": [],
             "logs": [],
-            "board": None,
+            "boards": {},
             "showcase": None,
             "report": None,
             "paths": {},
@@ -90,6 +90,12 @@ class Hub:
         with self._lock:
             self._logs.append(line)
         self.publish("log", line)
+
+    def set_board(self, table: int, board: dict) -> None:
+        """One table's latest position. Sent as a "board" event that carries its table number."""
+        with self._lock:
+            self.state["boards"][str(table)] = board
+        self.publish("board", board)
 
     def add_net(self, index: int, net: MLP) -> None:
         with self._lock:

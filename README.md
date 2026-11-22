@@ -34,8 +34,8 @@ python main.py
 `main.py` trains the network and opens a dashboard at http://127.0.0.1:8765:
 
 - **Summary at the top:** a step bar for the whole run, time left, the best generation so far, and its win rate against the card counter with a 95% range.
-- **Live table:** two players face up, with a short pause before each move that highlights the cards about to be thrown. For net players, a panel lists the top moves the net weighed. Presets seat the newest generation against the previous one, the newest or best against the counter, or the best against Gen 0. You can pause, step one move at a time (Space and →), and change speed.
-- **Is it improving?** Win rate against the counter per generation with 95% bands, a ladder where each generation plays every older one, points per round, what each pass trained on, and the training loss.
+- **Tables:** six exhibition games run side by side (`--tables` sets how many), separate from the training games, which run too fast to watch. Select one to feature it: the featured table shows both hands face up, a short pause before each move that lifts the cards about to be thrown, the top moves the net weighed, and what Gen 0 would have played instead. Presets seat the newest generation against the previous one, the newest or best against the counter, or the best against Gen 0. When a new generation arrives, every table switches to it. You can pause, step one move at a time (Space and →), and change speed.
+- **Is it improving?** Win rate against the counter per generation with 95% bands, a ladder where each generation plays every older one, an Elo rating per generation fitted from all of those rounds (card counter at 0), how often each generation calls Yaniv and gets caught, points per round, what each pass trained on, and the training loss.
 - **Final check:** at the end, the generation the gate picked and Gen 0 both play new games. The better of the two ships.
 - **Buttons:** *Stop after this generation* ends early and still tests and saves the best. *Use best in game* writes it to `public/model/` for the game.
 - **Past runs:** results from earlier runs saved under `runs/`.

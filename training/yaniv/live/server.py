@@ -167,12 +167,12 @@ def make_handler(hub: Hub, showcase: Showcase, run_dir: Path):
     return Handler
 
 
-def run_live(cfg: TrainConfig, device: Device, port: int, open_browser: bool, export: bool) -> None:
+def run_live(cfg: TrainConfig, device: Device, port: int, open_browser: bool, export: bool, tables: int = 6) -> None:
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     run_dir = RUNS / stamp
     config = {**asdict(cfg), "run_dir": str(run_dir), "export": export}
     hub = Hub(config, device.label(), device.note, device.is_gpu)
-    showcase = Showcase(hub)
+    showcase = Showcase(hub, tables)
 
     try:
         server = ThreadingHTTPServer(("127.0.0.1", port), make_handler(hub, showcase, run_dir))

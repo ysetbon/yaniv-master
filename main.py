@@ -40,6 +40,7 @@ def main() -> None:
     parser.add_argument("--test-matches", type=int, help="matches against the counter per generation (default 200)")
     parser.add_argument("--ladder-rounds", type=int, default=100,
                         help="rounds each new generation plays against every older one, 0 to skip")
+    parser.add_argument("--tables", type=int, default=6, help="exhibition games shown at once on the dashboard (default 6)")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--no-browser", action="store_true", help="do not open a browser tab")
     parser.add_argument("--export", action="store_true",
@@ -60,7 +61,8 @@ def main() -> None:
     cfg.ladder_rounds = max(0, args.ladder_rounds if not args.quick else min(args.ladder_rounds, 30))
 
     device = resolve_device(args.device)
-    run_live(cfg, device, args.port, open_browser=not args.no_browser, export=args.export)
+    run_live(cfg, device, args.port, open_browser=not args.no_browser, export=args.export,
+             tables=max(1, min(12, args.tables)))
 
 
 if __name__ == "__main__":
