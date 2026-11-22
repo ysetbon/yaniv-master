@@ -76,6 +76,7 @@ class Showcase(threading.Thread):
         self.rng = random.Random()
         self.control = {"delay": 0.9, "paused": False, "a": "auto", "b": "auto"}
         self._changed = threading.Event()
+        self._step = threading.Event()
         self.tally: dict[str, dict] = {}
         self.match_no = 0
 
@@ -90,6 +91,8 @@ class Showcase(threading.Thread):
             self.control["delay"] = min(5.0, max(0.05, float(update["delay"])))
         if "paused" in update:
             self.control["paused"] = bool(update["paused"])
+        if update.get("step"):
+            self._step.set()
         self._publish_meta(None)
         return dict(self.control)
 
@@ -98,6 +101,11 @@ class Showcase(threading.Thread):
         if pid in BOTS:
             label, bot = BOTS[pid]
             return Player(pid, label, bot=bot)
+        if pid == "best":
+            index = self.hub.best_generation()
+            if index is not None and self.hub.net(index) is not None:
+                return Player(f"gen:{index}", f"Gen {index} (best)", net=self.hub.net(index))
+            return None
         if pid.startswith("gen:"):
             index = int(pid[4:])
             net = self.hub.net(index)
@@ -118,7 +126,8 @@ class Showcase(threading.Thread):
         b = self.control["b"] if self.control["b"] != "auto" else auto[1]
         pa = self._player(a) or self._player(auto[0])
         pb = self._player(b) or self._player(auto[1])
-        return pa, pb, "auto" in (self.control["a"], self.control["b"])
+        dynamic = any(v in ("auto", "best") for v in (self.control["a"], self.control["b"]))
+        return pa, pb, dynamic
 
     def _auto_target(self) -> tuple[str, str]:
         a, b, _ = self._resolve()
@@ -136,7 +145,7 @@ class Showcase(threading.Thread):
             payload["players"] = self.hub.state["showcase"].get("players")
         self.hub.update("showcase", "showcase", payload)
 
-    def _board(self, state, players, round_no, last=None, thinking=None, note=None) -> None:
+    def _board(self, state, players, round_no, last=None, thinking=None, note=None, pending=None) -> None:
         board = {
             "match": self.match_no,
             "round": round_no,
@@ -153,6 +162,7 @@ class Showcase(threading.Thread):
             "thinking": thinking,
             "result": None if state.result is None else state.result.to_json(),
             "note": note,
+            "pending": pending,
             "limit": MATCH_LIMIT,
         }
         self.hub.update("board", "board", board)
@@ -165,8 +175,11 @@ class Showcase(threading.Thread):
             if self._changed.is_set():
                 return False
             if self.control["paused"]:
+                if self._step.is_set():
+                    self._step.clear()
+                    return True
                 end = time.time() + seconds
-                time.sleep(0.1)
+                time.sleep(0.05)
                 continue
             left = end - time.time()
             if left <= 0:
@@ -211,6 +224,12 @@ class Showcase(threading.Thread):
                 action, thinking = players[seat].choose(view, actions, self.rng)
                 before = state.hands[seat]
                 text = describe(view, action)
+                think = None if thinking is None else {"seat": seat, "moves": thinking}
+                pending = {"seat": seat, "text": text, "kind": action.kind,
+                           "thrown": cards_from_mask(action.discard_mask), "draw": action.draw}
+                self._board(state, players, round_no, thinking=think, pending=pending)
+                if not self._wait(self.control["delay"] * 0.6):
+                    return
                 apply_action(state, action)
                 drawn = cards_from_mask(state.hands[seat] & ~before)
                 last = {
@@ -222,8 +241,7 @@ class Showcase(threading.Thread):
                     "draw": action.draw,
                     "drawn": drawn[0] if drawn and action.draw != "none" else None,
                 }
-                self._board(state, players, round_no, last=last,
-                            thinking=None if thinking is None else {"seat": seat, "moves": thinking})
+                self._board(state, players, round_no, last=last, thinking=think)
                 if not self._wait(self.control["delay"]):
                     return
             if not state.terminal:

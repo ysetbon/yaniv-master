@@ -31,16 +31,35 @@ pip install -r training/requirements.txt
 python main.py
 ```
 
-`main.py` trains the network and opens a dashboard at http://127.0.0.1:8765. The live table plays the newest generation against the one before it, face up, with the scores the net gave its top moves. You can seat any generation, the card counter, the greedy player, or random play in either chair. Charts update as training runs: agreement with the card counter while it copies, win rate against the counter per generation, points per round, and a ladder where each new generation plays every older one.
+`main.py` trains the network and opens a dashboard at http://127.0.0.1:8765:
 
-A generation here is one checkpoint: generation 0 is the copy of the card counter, and each later one comes from a self-play pass. This is imitation learning plus self-play, not a genetic algorithm. There is no population, mutation, or crossover.
+- **Summary at the top:** a step bar for the whole run, time left, the best generation so far, and its win rate against the card counter with a 95% range.
+- **Live table:** two players face up, with a short pause before each move that highlights the cards about to be thrown. For net players, a panel lists the top moves the net weighed. Presets seat the newest generation against the previous one, the newest or best against the counter, or the best against Gen 0. You can pause, step one move at a time (Space and →), and change speed.
+- **Is it improving?** Win rate against the counter per generation with 95% bands, a ladder where each generation plays every older one, points per round, what each pass trained on, and the training loss.
+- **Final check:** at the end, the generation the gate picked and Gen 0 both play new games. The better of the two ships.
+- **Buttons:** *Stop after this generation* ends early and still tests and saves the best. *Use best in game* writes it to `public/model/` for the game.
+- **Past runs:** results from earlier runs saved under `runs/`.
 
-Every generation is saved under `runs/<timestamp>/`. The model the game loads is only replaced when you pass `--export`.
+A generation is one checkpoint. Generation 0 is the copy of the card counter, and each later one comes from a self-play pass. This is imitation learning plus self-play, not a genetic algorithm. There is no population, mutation, or crossover.
+
+### How a self-play pass trains
+
+1. About 800 games are played, spread across CPU cores. Two in five start from random match scores, so the net sees positions near the 100 limit, as the copied rounds do.
+2. Decisions from won rounds are kept, weighted by the winning margin: 0.5 for a one-point win, 2.0 for 30 points or more.
+3. Wins from all passes go into a store of up to 60,000 decisions. Each pass trains on that store plus copied decisions, sliding from two copied per self-play decision down to one per two.
+4. The new generation plays 400 rounds and 200 matches against the counter. The gate keeps it if it wins more matches than the best so far.
+
+The card counter's decisions are cached in `runs/.cache/` because they are the same every run. `python main.py --legacy` runs the first recipe for comparison.
+
+### What the numbers say so far
+
+On a test of 1,000 rounds and 400 matches on new games, no recipe has yet produced a generation clearly stronger than the plain copy of the counter. Every candidate won 44–46% of rounds and 38–42% of matches, and those differences are within chance. Learning only from its own wins keeps the net close to the player it copied. The final check exists so a generation that scored well by luck during training does not ship.
 
 ```bash
 python main.py --quick                  # small run to check everything works
-python main.py --generations 10         # more self-play passes
-python main.py --export                 # also write the best net to public/model/
+python main.py --generations 12         # more self-play passes
+python main.py --workers 6              # CPU processes for playing games
+python main.py --export                 # write the best net to public/model/ when training ends
 ```
 
 ### Training on a GPU

@@ -51,7 +51,7 @@ class TorchMLP:
         net.b = [b.detach().cpu().numpy().astype(np.float32, copy=True) for b in self.b]
         return net
 
-    def _step(self, grads: list[torch.Tensor], n_examples: int, lr: float,
+    def _step(self, grads: list[torch.Tensor], n_examples: float, lr: float,
               weight_decay: float = 1e-6, clip: float = 5.0) -> None:
         count = len(self.W)
         scale = 1.0 / max(1, n_examples)
@@ -84,6 +84,7 @@ class TorchMLP:
         offsets = data.offsets.astype(np.int64)
         total_ce = torch.zeros((), device=self.device)
         total_acc = torch.zeros((), device=self.device)
+        total_weight = 0.0
         seen = 0
         batches = max(1, (count + batch_size - 1) // batch_size)
         for batch_index, start in enumerate(range(0, count, batch_size)):
@@ -105,15 +106,19 @@ class TorchMLP:
             seg_t = torch.from_numpy(seg).to(self.device)
             col_t = torch.from_numpy(col).to(self.device)
             labels = torch.from_numpy(data.labels[ids].astype(np.int64)).to(self.device)
+            batch_weights = data.weights[ids].astype(np.float32)
+            weight_sum = float(batch_weights.sum())
+            weights = torch.from_numpy(batch_weights).to(self.device)
 
             values = self._forward(x)[:, 0]
             dense = values.new_full((len(ids), int(sizes.max())), float("-inf"))
             dense = dense.index_put((seg_t, col_t), values)
             logp = torch.log_softmax(dense, dim=1)
             ce = -logp[torch.arange(len(ids), device=self.device), labels]
-            loss = ce.sum()
+            loss = (ce * weights).sum()
             grads = torch.autograd.grad(loss, self.W + self.b)
-            self._step(list(grads), len(ids), lr)
+            self._step(list(grads), weight_sum, lr)
+            total_weight += weight_sum
 
             total_ce += loss.detach()
             total_acc += (dense.detach().argmax(dim=1) == labels).sum()
@@ -122,4 +127,4 @@ class TorchMLP:
                 progress(batch_index + 1, batches)
         if seen == 0:
             return 0.0, 0.0
-        return float(total_ce.item()) / seen, float(total_acc.item()) / seen
+        return float(total_ce.item()) / max(total_weight, 1e-8), float(total_acc.item()) / seen

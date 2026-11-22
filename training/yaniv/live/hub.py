@@ -17,6 +17,7 @@ class Hub:
         self._lock = threading.Lock()
         self._subscribers: list[queue.Queue] = []
         self.nets: dict[int, MLP] = {}
+        self.stop_requested = False
         self.started = time.time()
         self.state: dict = {
             "config": config,
@@ -33,6 +34,8 @@ class Hub:
             "report": None,
             "paths": {},
             "error": None,
+            "stopping": False,
+            "exported": None,
             "started": self.started,
             "finished": None,
         }
@@ -78,6 +81,10 @@ class Hub:
             self.state[key].append(value)
         self.publish(kind, value)
 
+    def toast(self, kind: str, text: str) -> None:
+        """A short notice shown in the corner of every open dashboard."""
+        self.publish("toast", {"kind": kind, "text": text})
+
     def log(self, message: str) -> None:
         line = {"t": round(time.time() - self.started, 1), "text": message}
         with self._lock:
@@ -91,6 +98,13 @@ class Hub:
     def net(self, index: int) -> MLP | None:
         with self._lock:
             return self.nets.get(index)
+
+    def best_generation(self) -> int | None:
+        with self._lock:
+            if self.state.get("report"):
+                return self.state["report"]["best_generation"]
+            kept = [g["index"] for g in self.state["generations"] if g.get("kept")]
+            return kept[-1] if kept else None
 
     def latest_generation(self) -> int | None:
         with self._lock:
@@ -120,6 +134,11 @@ class HubObserver(Observer):
     def generation(self, gen: dict, net: MLP) -> None:
         self.hub.add_net(gen["index"], net)
         self.hub.append("generation", "generations", gen)
+        if gen["index"] > 0 and gen["kept"]:
+            self.hub.toast("good", f"Gen {gen['index']} is the new best: {int(gen['matches']['win_rate']*100 + 0.5)}% of matches won against the counter")
+
+    def should_stop(self) -> bool:
+        return self.hub.stop_requested
 
     def ladder(self, row: int, col: int, record: dict) -> None:
         self.hub.append("ladder", "ladder", {"row": row, "col": col, **record})
@@ -127,3 +146,6 @@ class HubObserver(Observer):
     def done(self, report: dict, paths: dict) -> None:
         self.hub.update("paths", "paths", paths)
         self.hub.update("report", "report", report)
+        best = report["best_generation"]
+        self.hub.toast("good", f"Training finished. Gen {best} is the best, winning "
+                       f"{int(report['match_win_rate_vs_benchmark']*100 + 0.5)}% of matches against the counter on new games.")
