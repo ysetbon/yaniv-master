@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -77,6 +76,15 @@ interface Report {
 interface LogLine {
   id: number;
   text: string;
+  who: "you" | "net";
+}
+
+interface Match {
+  state: State;
+  leader: number;
+  round: number;
+  /** Scores when this round was dealt, so the result can show a 50/100 cut. */
+  startScores: [number, number];
 }
 
 const rng = { random: () => Math.random() };
@@ -91,8 +99,8 @@ function mulberry32(seed: number) {
   };
 }
 
-function freshMatch(): { state: State; leader: number; round: number } {
-  return { state: newRound([0, 0], 0, rng), leader: 0, round: 1 };
+function freshMatch(): Match {
+  return { state: newRound([0, 0], 0, rng), leader: 0, round: 1, startScores: [0, 0] };
 }
 
 export function Game() {
@@ -101,13 +109,18 @@ export function Game() {
   const [error, setError] = useState<string | null>(null);
   const [booting, setBooting] = useState(true);
   const [attempt, setAttempt] = useState(0);
-  const [match, setMatch] = useState(() => ({ state: newRound([0, 0], 0, mulberry32(1)), leader: 0, round: 1 }));
+  const [match, setMatch] = useState<Match>(() => ({
+    state: newRound([0, 0], 0, mulberry32(1)),
+    leader: 0,
+    round: 1,
+    startScores: [0, 0],
+  }));
   const [selected, setSelected] = useState<number[]>([]);
   const [topOverride, setTopOverride] = useState<number | null>(null);
   const [log, setLog] = useState<LogLine[]>([]);
   const logSeq = useRef(1);
   const dealt = useRef(false);
-  const [note, setNote] = useState("Your deal. Throw a card, a set, or a same-suit run, then draw.");
+  const [note, setNote] = useState("Your lead. Throw one card or a set of the same rank, then draw.");
   const [hintCards, setHintCards] = useState<number[]>([]);
   const [matchOver, setMatchOver] = useState(false);
   const [sudden, setSudden] = useState(0);
@@ -146,7 +159,7 @@ export function Game() {
   const points = maskPoints(state.hands[0]);
   const selectionValid = selected.length > 0 && isValidCombo(selected);
   const top = selected.length && selected.includes(topOverride ?? -1) ? (topOverride as number) : selected.length ? defaultTop(selected) : -1;
-  const canCall = !state.terminal && state.turn === 0 && points <= YANIV_LIMIT && points > 0;
+  const canCall = !state.terminal && state.turn === 0 && points <= YANIV_LIMIT && hand.length > 0;
   const openCard = state.discard[state.discard.length - 1];
 
   const aiTurn = Boolean(net) && !matchOver && !state.terminal && state.turn === 1 && state.ply < 48;
@@ -173,7 +186,7 @@ export function Game() {
         const id = logSeq.current;
         logSeq.current += 1;
         const line = `The net ${sentence.charAt(0).toLowerCase()}${sentence.slice(1)}`;
-        setLog((lines) => [{ id, text: line }, ...lines].slice(0, 8));
+        setLog((lines) => [{ id, text: line, who: "net" as const }, ...lines].slice(0, 8));
       }
       setMatch((current) => ({ ...current, state: next }));
     }, 720);
@@ -183,7 +196,7 @@ export function Game() {
   function push(text: string) {
     const id = logSeq.current;
     logSeq.current += 1;
-    setLog((lines) => [{ id, text }, ...lines].slice(0, 8));
+    setLog((lines) => [{ id, text, who: "you" as const }, ...lines].slice(0, 8));
   }
 
   function toggle(card: number) {
@@ -252,7 +265,12 @@ export function Game() {
     const leader = 1 - match.leader;
     setSudden(limitReached ? sudden + 1 : 0);
     setSelected([]);
-    setMatch({ state: newRound(scores, leader, rng), leader, round: match.round + 1 });
+    setMatch({
+      state: newRound(scores, leader, rng),
+      leader,
+      round: match.round + 1,
+      startScores: [scores[0], scores[1]],
+    });
     setNote(leader === 0 ? "Your lead." : "The net leads this round.");
   }
 
@@ -263,7 +281,7 @@ export function Game() {
     setMatchOver(false);
     setSudden(0);
     setHintCards([]);
-    setNote("New match. First to 100 loses if the other score is lower.");
+    setNote(`New match. Scores add up, and when someone passes ${MATCH_LIMIT} the lower score wins.`);
   }
 
   if (booting) {
@@ -281,7 +299,7 @@ export function Game() {
           body={error ?? "The weight file has not been written."}
           action={
             <Button
-              className="bg-[#e6c27a] text-[#2a2118] hover:bg-[#efd7a4]"
+              className="h-10 bg-[#f2c75c] px-4 text-[#2a2118] hover:bg-[#f6d685]"
               onClick={() => {
                 setBooting(true);
                 setError(null);
@@ -299,164 +317,209 @@ export function Game() {
   const result = state.result;
   const showResult = Boolean(result) && !matchOver;
   const shed = selectionValid ? selected.reduce((sum, card) => sum + cardPoints(card), 0) : 0;
+  const yourTurn = state.turn === 0 && !state.terminal && !aiTurn;
+  const canThrow = selectionValid && yourTurn;
+  const netCards = popcount(state.hands[1]);
 
   return (
     <Shell>
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="font-display text-3xl leading-none text-[#f6edd9] sm:text-4xl">
-            Yaniv <span className="text-[#e6c27a]">יניב</span>
-          </p>
-          <p className="mt-1 text-sm text-[#e7d7b8]/80">You against a neural net that learned by playing itself.</p>
+      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <div className="min-w-0">
+          <h1 className="font-display text-3xl leading-none text-[#f6edd9] sm:text-4xl">
+            Yaniv <span className="text-[#f2c75c]">יניב</span>
+          </h1>
+          <p className="mt-1 text-sm text-[#e7d7b8]/75">You against a neural net that learned the game.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Score name="You" value={state.scores[0]} hot={state.scores[0] >= 80} />
-          <Score name="The net" value={state.scores[1]} hot={state.scores[1] >= 80} />
-          <Badge variant="outline" className="border-[#e6c27a]/40 text-[#f6edd9]">
-            Round {match.round}
-          </Badge>
+        <div className="flex items-center gap-2">
           <RulesButton />
-          <Button variant="outline" className="border-[#e6c27a]/40 bg-transparent text-[#f6edd9] hover:bg-white/10" onClick={restart}>
+          <Button
+            variant="outline"
+            className="h-9 border-[#f2c75c]/40 bg-transparent px-3 text-[#f6edd9] hover:bg-white/10 hover:text-[#f6edd9]"
+            onClick={restart}
+          >
             New match
           </Button>
         </div>
       </header>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-        <section className="felt relative overflow-hidden rounded-[2rem] border border-[#6a4324] px-3 py-4 shadow-[inset_0_0_80px_rgba(0,0,0,0.35)] sm:px-6 sm:py-6">
-          <div className="flex items-center justify-between gap-3 text-[#f4ead4]">
-            <div>
-              <p className="text-xs tracking-[0.16em] text-[#e6c27a] uppercase">The net</p>
-              <p className="text-sm">{popcount(state.hands[1])} cards {aiTurn ? "· counting" : ""}</p>
+      <ScoreBoard you={state.scores[0]} net={state.scores[1]} round={match.round} />
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <section
+          aria-label="Table"
+          className="felt relative flex flex-col gap-5 overflow-hidden rounded-[1.75rem] border border-[#5a3a1f] px-3 py-5 shadow-[inset_0_0_90px_rgba(0,0,0,0.4),0_20px_50px_rgba(0,0,0,0.35)] sm:gap-7 sm:px-8 sm:py-7"
+        >
+          {/* The net */}
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center gap-2 text-sm text-[#f6edd9]">
+              <span className="text-xs font-semibold tracking-[0.18em] text-[#f2c75c] uppercase">The net</span>
+              <span className="text-[#f6edd9]/70">
+                {netCards} {netCards === 1 ? "card" : "cards"}
+              </span>
+              {aiTurn && <ThinkingPill />}
             </div>
-            <div className="flex justify-end pl-6">
-              {Array.from({ length: popcount(state.hands[1]) }, (_, index) => (
-                <PlayingCard key={index} faceDown className={index ? "-ml-5 sm:-ml-7" : ""} />
+            <div className="flex justify-center pl-6 sm:pl-8">
+              {Array.from({ length: netCards }, (_, index) => (
+                <PlayingCard key={index} faceDown className="-ml-6 sm:-ml-8" />
               ))}
             </div>
           </div>
 
-          <div className="mx-auto mt-6 flex max-w-md items-end justify-center gap-6 sm:mt-8">
-            <button
-              type="button"
-              disabled={!selectionValid || state.turn !== 0 || state.stock.length === 0}
+          {/* Piles */}
+          <div className="flex items-start justify-center gap-8 sm:gap-14">
+            <PileButton
+              label="Deck"
+              detail={`${state.stock.length} left`}
+              active={canThrow && state.stock.length > 0}
+              disabled={!canThrow || state.stock.length === 0}
               onClick={() => throwCards("stock")}
-              className="group text-center disabled:opacity-70"
+              ariaLabel="Throw the selected cards and draw from the deck"
             >
-              <div className="relative mx-auto h-[6.6rem] w-16 sm:h-32 sm:w-[4.4rem]">
-                <PlayingCard faceDown className="absolute top-1 left-1" />
-                <PlayingCard faceDown />
-                <span className="absolute -right-2 -bottom-2 rounded-full bg-[#1a120c] px-1.5 text-[10px] text-[#f6edd9]">
-                  {state.stock.length}
-                </span>
+              <div className="relative">
+                {state.stock.length > 2 && (
+                  <div className="absolute top-[6px] left-[6px]" aria-hidden="true">
+                    <PlayingCard faceDown />
+                  </div>
+                )}
+                {state.stock.length > 1 && (
+                  <div className="absolute top-[3px] left-[3px]" aria-hidden="true">
+                    <PlayingCard faceDown />
+                  </div>
+                )}
+                {state.stock.length > 0 ? (
+                  <PlayingCard faceDown />
+                ) : (
+                  <div className="h-[5.4rem] w-[3.8rem] rounded-lg border-2 border-dashed border-white/25 sm:h-28 sm:w-20" />
+                )}
               </div>
-              <span className="mt-2 block text-xs text-[#f6edd9]">Deck</span>
-            </button>
-            <button
-              type="button"
-              disabled={!selectionValid || state.turn !== 0}
+            </PileButton>
+            <PileButton
+              label="Open card"
+              detail={`${cardPoints(openCard)} ${cardPoints(openCard) === 1 ? "point" : "points"}`}
+              active={canThrow}
+              disabled={!canThrow}
               onClick={() => throwCards("open")}
-              className="text-center disabled:opacity-80"
+              ariaLabel={`Throw the selected cards and take the ${cardName(openCard)}`}
             >
-              <PlayingCard card={openCard} />
-              <span className="mt-2 block text-xs text-[#f6edd9]">Open · {cardPoints(openCard)} pts</span>
-            </button>
+              <PlayingCard card={openCard} className="ring-2 ring-[#f2c75c]/70" />
+            </PileButton>
           </div>
 
-          <p className="mx-auto mt-6 max-w-xl text-center text-sm text-[#f6edd9]" aria-live="polite">
-            {aiTurn ? "The net is choosing a throw." : note}
-          </p>
+          {/* Status line */}
+          <div className="flex justify-center">
+            <p
+              className="min-h-[2.75rem] max-w-xl rounded-2xl bg-black/25 px-4 py-2.5 text-center text-sm leading-snug text-[#f6edd9] backdrop-blur-[2px]"
+              aria-live="polite"
+            >
+              {aiTurn ? "The net is choosing a throw." : note}
+            </p>
+          </div>
 
-          <div className="mt-5">
-            <div className="mb-2 flex items-baseline justify-between text-[#f6edd9]">
-              <p className="text-xs tracking-[0.16em] text-[#e6c27a] uppercase">Your hand</p>
-              <p className="text-sm">
-                {points} points {points <= YANIV_LIMIT ? "· Yaniv is legal" : `· call at ${YANIV_LIMIT} or less`}
-              </p>
+          {/* Your hand */}
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex w-full max-w-xl items-center justify-between gap-3">
+              <span className="text-xs font-semibold tracking-[0.18em] text-[#f2c75c] uppercase">Your hand</span>
+              <span
+                className={
+                  "rounded-full px-3 py-1 text-xs font-medium sm:text-sm " +
+                  (points <= YANIV_LIMIT ? "bg-[#f2c75c] text-[#2a2118]" : "bg-black/30 text-[#f6edd9]")
+                }
+              >
+                {points} {points === 1 ? "point" : "points"} ·{" "}
+                {points <= YANIV_LIMIT ? "Yaniv is open" : `Yaniv at ${YANIV_LIMIT} or less`}
+              </span>
             </div>
-            <div className="flex justify-center pl-4">
-              {hand.map((card, index) => (
+            <div className="flex justify-center gap-1.5 pt-4 sm:gap-3">
+              {hand.map((card) => (
                 <PlayingCard
                   key={card}
                   card={card}
+                  size="lg"
                   selected={selected.includes(card)}
                   hinted={hintCards.includes(card)}
                   onClick={() => toggle(card)}
-                  className={index ? "-ml-4 sm:-ml-5" : ""}
                 />
               ))}
             </div>
+            <p className="min-h-5 text-center text-xs text-[#f6edd9]/80 sm:text-sm">
+              {!yourTurn
+                ? state.terminal
+                  ? "Round over."
+                  : "Wait for the net's throw."
+                : !selected.length
+                  ? "Tap cards to select one card, or two or more of the same rank."
+                  : selectionValid
+                    ? `Throwing ${shed} ${shed === 1 ? "point" : "points"}. ${points - shed} stay in your hand before the draw.`
+                    : "Those cards are not one combination. Pick one card, or cards of the same rank."}
+            </p>
+            {selectionValid && selected.length > 1 && (
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <span className="text-xs text-[#f6edd9]/80">Leave face up:</span>
+                {selected.map((card) => (
+                  <button
+                    key={card}
+                    type="button"
+                    onClick={() => setTopOverride(card)}
+                    aria-pressed={card === top}
+                    className={
+                      "rounded-full px-3 py-1 text-xs font-medium transition " +
+                      (card === top ? "bg-[#f2c75c] text-[#2a2118]" : "bg-black/30 text-[#f6edd9] hover:bg-black/45")
+                    }
+                  >
+                    {cardName(card)}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+          {/* Actions */}
+          <div className="mx-auto grid w-full max-w-2xl grid-cols-2 gap-2 sm:grid-cols-4">
             <Button
-              className="h-11 bg-[#f6edd9] text-[#1c1916] hover:bg-white"
-              disabled={!selectionValid || state.turn !== 0 || state.stock.length === 0 || aiTurn}
+              className="h-12 bg-[#f6edd9] text-[#1c1916] hover:bg-white"
+              disabled={!canThrow || state.stock.length === 0}
               onClick={() => throwCards("stock")}
             >
-              Throw, then draw blind
+              Throw · draw from deck
             </Button>
             <Button
-              className="h-11 bg-[#245c3e] text-[#f6edd9] hover:bg-[#2d7350]"
-              disabled={!selectionValid || state.turn !== 0 || aiTurn}
+              className="h-12 border border-[#f6edd9]/25 bg-[#0f3a26] text-[#f6edd9] hover:bg-[#15503a]"
+              disabled={!canThrow}
               onClick={() => throwCards("open")}
             >
-              Throw, then take {cardName(openCard)}
+              Throw · take {cardName(openCard)}
             </Button>
             <Button
-              className="h-11 border border-[#e6c27a] bg-transparent text-[#e6c27a] hover:bg-[#e6c27a]/15"
+              className={
+                "h-12 font-semibold " +
+                (canCall && !aiTurn
+                  ? "bg-[#f2c75c] text-[#2a2118] shadow-[0_0_0_3px_rgba(242,199,92,0.3)] hover:bg-[#f6d685]"
+                  : "border border-[#f2c75c]/40 bg-transparent text-[#f2c75c]")
+              }
               disabled={!canCall || aiTurn}
               onClick={callYaniv}
             >
               Call Yaniv{canCall ? ` · ${points}` : ""}
             </Button>
-            <Button variant="ghost" className="text-[#f6edd9] hover:bg-white/10" onClick={askNet} disabled={aiTurn || state.turn !== 0}>
+            <Button
+              variant="ghost"
+              className="h-12 text-[#f6edd9] hover:bg-white/10 hover:text-[#f6edd9]"
+              onClick={askNet}
+              disabled={aiTurn || state.turn !== 0}
+            >
               Ask the net
             </Button>
           </div>
-          <p className="mt-2 min-h-5 text-xs text-[#f6edd9]/80">
-            {!selected.length
-              ? "Select cards. A pair, three or four of a kind, or a same-suit run of three or more."
-              : selectionValid
-                ? `Throwing ${shed} points${selected.length > 1 ? `, ${cardName(top)} stays face up` : ""}. ${points - shed} remain before the draw.`
-                : "That selection is not one combination."}
-          </p>
-          {selectionValid && selected.length > 1 && (
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <span className="text-xs text-[#f6edd9]/80">Leave face up</span>
-              {selected.map((card) => (
-                <button
-                  key={card}
-                  type="button"
-                  onClick={() => setTopOverride(card)}
-                  className={
-                    "rounded-full px-2 py-0.5 text-xs " +
-                    (card === top ? "bg-[#e6c27a] text-[#2a2118]" : "bg-black/20 text-[#f6edd9]")
-                  }
-                >
-                  {cardName(card)}
-                </button>
-              ))}
-            </div>
-          )}
         </section>
 
         <aside className="flex flex-col gap-3">
+          <RoundLog log={log} />
           <Dossier report={report} />
-          <div className="rounded-2xl border border-[#e6c27a]/20 bg-[#1a140f]/80 p-4 text-sm text-[#f6edd9]">
-            <p className="text-xs tracking-[0.16em] text-[#e6c27a] uppercase">This round</p>
-            <ul className="mt-2 space-y-2">
-              {log.length === 0 && <li className="text-[#f6edd9]/70">No throws yet.</li>}
-              {log.map((line) => (
-                <li key={line.id}>{line.text}</li>
-              ))}
-            </ul>
-          </div>
         </aside>
       </div>
 
       {showResult && result && (
-        <ResultSheet result={result} scores={state.scores} onContinue={nextRound} />
+        <ResultSheet result={result} scores={state.scores} startScores={match.startScores} onContinue={nextRound} />
       )}
       {matchOver && <MatchSheet scores={state.scores} onRestart={restart} />}
     </Shell>
@@ -469,7 +532,7 @@ function Shell({ children }: { children: ReactNode }) {
 
 function Status({ title, body, action }: { title: string; body: string; action?: ReactNode }) {
   return (
-    <div className="mx-auto mt-24 max-w-md rounded-2xl border border-[#e6c27a]/30 bg-[#1a140f] p-6 text-[#f6edd9]">
+    <div className="mx-auto mt-24 max-w-md rounded-2xl border border-[#f2c75c]/30 bg-[#1a140f] p-6 text-[#f6edd9]">
       <h1 className="font-display text-3xl">{title}</h1>
       <p className="mt-2 text-sm text-[#f6edd9]/80">{body}</p>
       {action && <div className="mt-4">{action}</div>}
@@ -477,11 +540,104 @@ function Status({ title, body, action }: { title: string; body: string; action?:
   );
 }
 
-function Score({ name, value, hot }: { name: string; value: number; hot: boolean }) {
+function ThinkingPill() {
   return (
-    <div className={"rounded-xl px-3 py-1.5 text-right " + (hot ? "bg-[#6d2a24]" : "bg-[#1a140f]/80")}>
-      <p className="text-[10px] tracking-[0.14em] text-[#e6c27a] uppercase">{name}</p>
-      <p className="font-display text-xl leading-none text-[#f6edd9]">{value}</p>
+    <span className="inline-flex items-center gap-1 rounded-full bg-black/30 px-2 py-0.5 text-xs text-[#f6edd9]">
+      thinking
+      <span className="flex gap-0.5" aria-hidden="true">
+        <span className="h-1 w-1 animate-pulse rounded-full bg-[#f2c75c]" />
+        <span className="h-1 w-1 animate-pulse rounded-full bg-[#f2c75c] [animation-delay:150ms]" />
+        <span className="h-1 w-1 animate-pulse rounded-full bg-[#f2c75c] [animation-delay:300ms]" />
+      </span>
+    </span>
+  );
+}
+
+function PileButton({
+  label,
+  detail,
+  active,
+  disabled,
+  onClick,
+  ariaLabel,
+  children,
+}: {
+  label: string;
+  detail: string;
+  active: boolean;
+  disabled: boolean;
+  onClick: () => void;
+  ariaLabel: string;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      aria-label={ariaLabel}
+      className={
+        "group flex flex-col items-center gap-2 rounded-xl p-1.5 text-center transition focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none " +
+        (active ? "cursor-pointer hover:-translate-y-1" : "cursor-default")
+      }
+    >
+      <span className={"rounded-lg transition " + (active ? "shadow-[0_0_0_3px_rgba(242,199,92,0.55)]" : "")}>{children}</span>
+      <span className="flex flex-col leading-tight">
+        <span className="text-xs font-semibold tracking-[0.14em] text-[#f6edd9] uppercase">{label}</span>
+        <span className="text-xs text-[#f6edd9]/70">{active ? "tap to draw" : detail}</span>
+      </span>
+    </button>
+  );
+}
+
+function ScoreBoard({ you, net, round }: { you: number; net: number; round: number }) {
+  return (
+    <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 rounded-2xl border border-[#f2c75c]/15 bg-[#1a140f]/80 px-4 py-3">
+      <ScoreSide name="You" value={you} />
+      <div className="text-center">
+        <p className="text-[10px] tracking-[0.18em] text-[#f6edd9]/60 uppercase">Round</p>
+        <p className="font-display text-2xl leading-none text-[#f6edd9]">{round}</p>
+      </div>
+      <ScoreSide name="The net" value={net} alignRight />
+    </div>
+  );
+}
+
+function ScoreSide({ name, value, alignRight = false }: { name: string; value: number; alignRight?: boolean }) {
+  const hot = value >= 80;
+  const width = Math.min(100, (value / MATCH_LIMIT) * 100);
+  return (
+    <div className={"min-w-0 " + (alignRight ? "text-right" : "")}>
+      <div className={"flex items-baseline gap-2 " + (alignRight ? "justify-end" : "")}>
+        <span className="text-xs tracking-[0.14em] text-[#f2c75c] uppercase">{name}</span>
+        <span className={"font-display text-2xl leading-none " + (hot ? "text-[#ff8a7a]" : "text-[#f6edd9]")}>
+          {value}
+          <span className="ml-0.5 font-sans text-xs text-[#f6edd9]/45">/{MATCH_LIMIT}</span>
+        </span>
+      </div>
+      <div className={"mt-1.5 flex h-1.5 overflow-hidden rounded-full bg-white/10 " + (alignRight ? "justify-end" : "")}>
+        <div className={"h-full rounded-full " + (hot ? "bg-[#e0614f]" : "bg-[#f2c75c]")} style={{ width: `${width}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function RoundLog({ log }: { log: LogLine[] }) {
+  return (
+    <div className="rounded-2xl border border-[#f2c75c]/15 bg-[#1a140f]/80 p-4 text-sm text-[#f6edd9]">
+      <p className="text-xs font-semibold tracking-[0.18em] text-[#f2c75c] uppercase">This round</p>
+      <ol className="mt-3 space-y-2.5">
+        {log.length === 0 && <li className="text-[#f6edd9]/60">No throws yet.</li>}
+        {log.map((line) => (
+          <li key={line.id} className="flex gap-2.5">
+            <span
+              className={"mt-1.5 h-2 w-2 shrink-0 rounded-full " + (line.who === "you" ? "bg-[#f2c75c]" : "bg-[#8fd3ff]")}
+              aria-hidden="true"
+            />
+            <span className="leading-snug">{line.text}</span>
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }
@@ -499,29 +655,50 @@ function resultHeadline(result: RoundResult, seat: number): string {
 function ResultSheet({
   result,
   scores,
+  startScores,
   onContinue,
 }: {
   result: RoundResult;
   scores: [number, number];
+  startScores: [number, number];
   onContinue: () => void;
 }) {
+  const youWon = result.added[0] === 0 && result.added[1] > 0;
   return (
-    <div className="fixed inset-0 z-40 grid place-items-center bg-black/55 p-4">
-      <div className="w-full max-w-lg rounded-2xl bg-[#fbf6ee] p-5 text-[#241c14] shadow-2xl">
-        <p className="text-xs tracking-[0.16em] text-[#8a6232] uppercase">{result.assaf ? "Assaf" : result.reason === "showdown" ? "Showdown" : "Yaniv"}</p>
-        <h2 className="font-display text-3xl leading-tight">{resultHeadline(result, 0)}</h2>
+    <div className="fixed inset-0 z-40 grid place-items-center bg-black/60 p-4 backdrop-blur-[2px]">
+      <div className="w-full max-w-lg rounded-2xl bg-[#fbf6ee] p-5 text-[#241c14] shadow-2xl sm:p-6">
+        <p className={"text-xs font-semibold tracking-[0.18em] uppercase " + (youWon ? "text-[#1d6a42]" : "text-[#8a6232]")}>
+          {result.assaf ? "Assaf" : result.reason === "showdown" ? "Showdown" : "Yaniv"}
+        </p>
+        <h2 className="font-display mt-1 text-2xl leading-tight sm:text-3xl">{resultHeadline(result, 0)}</h2>
         <p className="mt-2 text-sm text-[#5c5144]">
           {result.assaf
             ? `A caught call adds your hand plus ${ASSAF_PENALTY}. The player with the lower or equal hand scores 0.`
             : "The lower hand scores 0. The other hand adds its points."}
         </p>
         <div className="mt-4 grid grid-cols-2 gap-3">
-          <Reveal title="You" cards={cardsFromMask(result.hands[0])} points={result.points[0]} added={result.added[0]} />
-          <Reveal title="The net" cards={cardsFromMask(result.hands[1])} points={result.points[1]} added={result.added[1]} />
+          <Reveal
+            title="You"
+            cards={cardsFromMask(result.hands[0])}
+            points={result.points[0]}
+            added={result.added[0]}
+            before={startScores[0]}
+            after={scores[0]}
+          />
+          <Reveal
+            title="The net"
+            cards={cardsFromMask(result.hands[1])}
+            points={result.points[1]}
+            added={result.added[1]}
+            before={startScores[1]}
+            after={scores[1]}
+          />
         </div>
         <Separator className="my-4" />
-        <p className="text-sm">Match score: you {scores[0]}, the net {scores[1]}. The match ends at {MATCH_LIMIT}.</p>
-        <Button className="mt-4 h-11 w-full bg-[#245c3e] text-[#f6edd9] hover:bg-[#2d7350]" onClick={onContinue}>
+        <p className="text-sm">
+          Match score: you <b>{scores[0]}</b>, the net <b>{scores[1]}</b>. The match ends once someone passes {MATCH_LIMIT}.
+        </p>
+        <Button className="mt-4 h-11 w-full bg-[#1d6a42] text-[#f6edd9] hover:bg-[#24804f]" onClick={onContinue}>
           Continue
         </Button>
       </div>
@@ -529,17 +706,38 @@ function ResultSheet({
   );
 }
 
-function Reveal({ title, cards, points, added }: { title: string; cards: number[]; points: number; added: number }) {
+function Reveal({
+  title,
+  cards,
+  points,
+  added,
+  before,
+  after,
+}: {
+  title: string;
+  cards: number[];
+  points: number;
+  added: number;
+  before: number;
+  after: number;
+}) {
+  const landed = before + added;
+  const cut = landed !== after;
   return (
-    <div>
-      <p className="text-sm font-medium">{title}</p>
+    <div className="min-w-0">
+      <p className="text-sm font-semibold">{title}</p>
       <p className="text-xs text-[#5c5144]">
         {points} in hand · {added === 0 ? "scores 0" : `+${added}`}
       </p>
+      {cut && (
+        <p className="mt-1 inline-block rounded-full bg-[#1d6a42]/10 px-2 py-0.5 text-xs font-medium text-[#1d6a42]">
+          Landed on {landed}, cut to {after}
+        </p>
+      )}
       <div className="mt-2 flex min-h-16 flex-wrap gap-1">
         {cards.length === 0 && <span className="text-xs">Empty hand</span>}
         {sortHand(cards).map((card) => (
-          <PlayingCard key={card} card={card} className="h-16 w-11 sm:h-20 sm:w-14" />
+          <PlayingCard key={card} card={card} size="sm" />
         ))}
       </div>
     </div>
@@ -550,15 +748,15 @@ function MatchSheet({ scores, onRestart }: { scores: [number, number]; onRestart
   const youWin = scores[0] < scores[1];
   const tie = scores[0] === scores[1];
   return (
-    <div className="fixed inset-0 z-40 grid place-items-center bg-black/55 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-[#fbf6ee] p-5 text-[#241c14]">
-        <h2 className="font-display text-4xl">{tie ? "Split match" : youWin ? "You take the match" : "The net takes the match"}</h2>
+    <div className="fixed inset-0 z-40 grid place-items-center bg-black/60 p-4 backdrop-blur-[2px]">
+      <div className="w-full max-w-md rounded-2xl bg-[#fbf6ee] p-5 text-[#241c14] shadow-2xl sm:p-6">
+        <h2 className="font-display text-3xl sm:text-4xl">{tie ? "Split match" : youWin ? "You take the match" : "The net takes the match"}</h2>
         <p className="mt-2 text-sm text-[#5c5144]">
           {tie
             ? `Both finish on ${scores[0]}.`
-            : `You finish on ${scores[0]}. The net finishes on ${scores[1]}. Lower score wins once someone reaches ${MATCH_LIMIT}.`}
+            : `You finish on ${scores[0]}. The net finishes on ${scores[1]}. The lower score wins once someone passes ${MATCH_LIMIT}.`}
         </p>
-        <Button className="mt-4 h-11 w-full bg-[#245c3e] text-[#f6edd9] hover:bg-[#2d7350]" onClick={onRestart}>
+        <Button className="mt-4 h-11 w-full bg-[#1d6a42] text-[#f6edd9] hover:bg-[#24804f]" onClick={onRestart}>
           Deal another match
         </Button>
       </div>
@@ -568,7 +766,7 @@ function MatchSheet({ scores, onRestart }: { scores: [number, number]; onRestart
 
 function Dossier({ report }: { report: Report | null }) {
   const body = report ? (
-    <div className="space-y-3 text-sm text-[#f6edd9]">
+    <div className="space-y-3 text-sm leading-relaxed text-[#f6edd9]/90">
       {report.recipe === "genetic" ? (
         <p>
           It first copied a card counter for {report.expert_decisions.toLocaleString()} decisions
@@ -592,7 +790,6 @@ function Dossier({ report }: { report: Report | null }) {
         In direct matches it won {report.match_record_vs_benchmark.wins}, lost {report.match_record_vs_benchmark.losses},
         and tied {report.match_record_vs_benchmark.ties}. Over the measured rounds it averages {report.round_record_vs_benchmark.hero_avg.toFixed(1)} points
         to the counter&apos;s {report.round_record_vs_benchmark.villain_avg.toFixed(1)}. {Math.round(report.round_record_vs_benchmark.assaf_rate * 100)}% of its Yaniv calls are caught.
-        The counter still has the edge when they sit down together.
       </p>
       <p>
         Against a player who only dumps the fattest set it wins {Math.round(report.round_win_rate_vs_greedy * 100)}% of rounds,
@@ -607,13 +804,13 @@ function Dossier({ report }: { report: Report | null }) {
   );
   return (
     <>
-      <div className="hidden rounded-2xl border border-[#e6c27a]/20 bg-[#1a140f]/80 p-4 lg:block">
-        <p className="text-xs tracking-[0.16em] text-[#e6c27a] uppercase">How it learned</p>
-        <div className="mt-2">{body}</div>
+      <div className="hidden rounded-2xl border border-[#f2c75c]/15 bg-[#1a140f]/80 p-4 lg:block">
+        <p className="text-xs font-semibold tracking-[0.18em] text-[#f2c75c] uppercase">How it learned</p>
+        <div className="mt-3">{body}</div>
       </div>
       <Sheet>
-        <SheetTrigger className="inline-flex h-8 items-center rounded-lg border border-[#e6c27a]/40 px-2.5 text-sm text-[#f6edd9] lg:hidden">
-          How it learned
+        <SheetTrigger className="inline-flex h-11 items-center justify-center rounded-xl border border-[#f2c75c]/30 px-3 text-sm text-[#f6edd9] hover:bg-white/5 lg:hidden">
+          How the net learned
         </SheetTrigger>
         <SheetContent side="bottom" className="max-h-[80dvh] overflow-y-auto bg-[#1a140f] pb-8 text-[#f6edd9]">
           <SheetHeader>
@@ -622,7 +819,7 @@ function Dossier({ report }: { report: Report | null }) {
               {report?.recipe === "genetic" ? "Copied a card counter, then evolved a population of nets." : "Copied a card counter, then learned from its own wins."}
             </SheetDescription>
           </SheetHeader>
-          {body}
+          <div className="px-4">{body}</div>
         </SheetContent>
       </Sheet>
     </>
@@ -632,22 +829,25 @@ function Dossier({ report }: { report: Report | null }) {
 function RulesButton() {
   return (
     <Dialog>
-      <DialogTrigger className="inline-flex h-8 items-center rounded-lg border border-[#e6c27a]/40 px-2.5 text-sm text-[#f6edd9] hover:bg-white/10">
+      <DialogTrigger className="inline-flex h-9 items-center rounded-lg border border-[#f2c75c]/40 px-3 text-sm text-[#f6edd9] hover:bg-white/10">
         Rules
       </DialogTrigger>
       <DialogContent className="max-h-[85dvh] overflow-y-auto bg-[#fbf6ee] text-[#241c14] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">How this table plays</DialogTitle>
-          <DialogDescription>Two players, one deck, lowest score at 100 wins.</DialogDescription>
+          <DialogDescription>Two players, one deck with two jokers. Lowest score wins.</DialogDescription>
         </DialogHeader>
-        <ul className="space-y-2 text-sm">
-          <li>Five cards each. Ace is 1, numbers are their pips, and 10, jack, queen, and king are 10.</li>
-          <li>On your turn throw one combination: a single card, two or more of a rank, or three or more consecutive cards of one suit. Ace is low only, so A-2-3 is a run and queen-king-ace is not.</li>
+        <ul className="list-disc space-y-2 pl-5 text-sm">
+          <li>Five cards each. Ace is 1, numbers are their pips, 10, jack, queen and king are 10, and the two jokers are 0.</li>
+          <li>On your turn throw one combination: a single card, or two or more cards of the same rank. Two jokers together count as a pair. A joker is not wild.</li>
           <li>You choose which thrown card stays face up. Then draw either the previous open card or the top of the deck. You cannot draw a card you just threw.</li>
           <li>If your whole hand is one combination you may throw all of it, but you still draw, so you always hold at least one card.</li>
-          <li>With 5 points or fewer you may call Yaniv instead of throwing. If your hand is strictly lower, you score 0 and the net scores its hand. If the net has the same or less, you are Assaf: you take your points plus 30, and the net scores 0.</li>
+          <li>
+            With {YANIV_LIMIT} points or fewer you may call Yaniv instead of throwing. If your hand is strictly lower, you score 0 and the net scores its hand. If the net has the same or less, you are Assaf: you take your points plus {ASSAF_PENALTY}, and the net scores 0.
+          </li>
           <li>The deck is not reshuffled. When it is empty you can only take the open card. After 48 throws the hands are shown and the lower one scores 0.</li>
-          <li>Scores add up. When someone reaches 100, the lower score wins the match.</li>
+          <li>Scores add up. Landing exactly on 50 cuts your score to 0, and landing exactly on 100 cuts it to 50.</li>
+          <li>When someone passes {MATCH_LIMIT}, the lower score wins the match.</li>
         </ul>
       </DialogContent>
     </Dialog>
