@@ -99,6 +99,23 @@ class Values(unittest.TestCase):
         self.assertEqual(int(values.argmax()), len(candidates) - 1)
 
 
+class Confidence(unittest.TestCase):
+    def test_keeps_the_default_unless_a_rival_clearly_wins(self):
+        import numpy as np
+
+        from .search import pick_move
+
+        rng = np.random.default_rng(0)
+        base = rng.normal(0, 10, (48, 1))
+        noise = rng.normal(0, 3, (48, 3))
+        close = np.hstack([base, base + 0.3 + noise[:, :1], base - 1 + noise[:, 1:2]])
+        self.assertEqual(pick_move(close, 0, 1.5), 0)  # a 0.3-point edge is luck
+        clear = np.hstack([base, base + 4 + noise[:, :1], base + 1 + noise[:, 1:2]])
+        self.assertEqual(pick_move(clear, 0, 1.5), 1)
+        edge = np.hstack([base, base + 0.3, base - 1])  # a steady 0.3-point edge, no noise
+        self.assertEqual(pick_move(edge, 0, 1.5), 1)
+
+
 class Labels(unittest.TestCase):
     def test_collected_labels_index_legal_moves(self):
         rows = collect_search(default_net(5), 2, 4, samples=4, width=3)

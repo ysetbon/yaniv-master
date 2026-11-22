@@ -37,6 +37,8 @@ def main() -> None:
                              "each move out; selfplay fine-tunes one net on its wins")
     parser.add_argument("--search-rounds", type=int, help="search: rounds labelled per pass (default 150)")
     parser.add_argument("--search-samples", type=int, help="search: imagined deals per searched move (default 48)")
+    parser.add_argument("--search-confidence", type=float,
+                        help="search: standard errors a move must win by to replace the net's own (default 1.5)")
     parser.add_argument("--population", type=int, help="genetic: networks per generation (default 24)")
     parser.add_argument("--fitness-rounds", type=int, help="genetic: rounds each network plays per generation, in mirrored pairs (default 1000)")
     parser.add_argument("--legacy", action="store_true",
@@ -72,6 +74,8 @@ def main() -> None:
         cfg.search_rounds = max(1, args.search_rounds)
     if args.search_samples is not None:
         cfg.search_samples = max(1, args.search_samples)
+    if args.search_confidence is not None:
+        cfg.search_confidence = max(0.0, args.search_confidence)
     if args.population is not None:
         cfg.population = max(2, args.population)
     if args.fitness_rounds is not None:

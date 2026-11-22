@@ -545,6 +545,10 @@ class TrainConfig:
     search_rounds: int = 150  # rounds labelled per pass, about 20 decisions each
     search_samples: int = 48  # imagined deals per searched decision
     search_width: int = 4  # plays searched per decision, best first by the net, plus Yaniv
+    # A searched move replaces the net's own only when it wins on the same
+    # imagined deals by this many standard errors. Without it the search
+    # switches on luck between close moves and loses to the counter.
+    search_confidence: float = 1.5
     search_lr: float = 3e-4
     search_epochs: int = 3
     search_capacity: int = 60000  # searched decisions kept across passes, oldest dropped first
@@ -830,7 +834,7 @@ def run_training(
                 obs.phase("search", f"Gen {iteration}: searching every decision of {cfg.search_rounds} rounds, "
                                     f"{cfg.search_samples} imagined deals each, with Gen {best_index} as the teacher")
                 rows = workers.search_label(best, cfg.search_rounds, 6000 + iteration, cfg.search_samples,
-                                            cfg.search_width, job("search"), cfg.match_scores)
+                                            cfg.search_width, job("search"), cfg.match_scores, cfg.search_confidence)
                 self_play_games += cfg.search_rounds
                 self_play_decisions += len(rows)
                 if rows:

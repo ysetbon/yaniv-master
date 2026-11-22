@@ -110,18 +110,41 @@ def round_value(state: State, me: int) -> float:
     return value
 
 
-def evaluate_moves(view: View, candidates: list[Action], policy: Chooser, samples: int,
-                   rng: random.Random) -> np.ndarray:
-    """Average value of each candidate over `samples` shared sampled deals."""
-    totals = np.zeros(len(candidates))
-    for _ in range(samples):
+def sample_values(view: View, candidates: list[Action], policy: Chooser, samples: int,
+                  rng: random.Random) -> np.ndarray:
+    """Value of each candidate (columns) on each of `samples` shared sampled deals (rows)."""
+    values = np.zeros((max(1, samples), len(candidates)))
+    for row in range(samples):
         deal = deal_from_view(view, rng)
         for i, action in enumerate(candidates):
             state = _copy(deal)
             apply_action(state, action)
             playout(state, policy, rng)
-            totals[i] += round_value(state, view.seat)
-    return totals / max(1, samples)
+            values[row, i] = round_value(state, view.seat)
+    return values
+
+
+def evaluate_moves(view: View, candidates: list[Action], policy: Chooser, samples: int,
+                   rng: random.Random) -> np.ndarray:
+    """Average value of each candidate over `samples` shared sampled deals."""
+    return sample_values(view, candidates, policy, samples, rng).mean(axis=0)
+
+
+def pick_move(values: np.ndarray, default: int, confidence: float) -> int:
+    """The default move unless another beats it by `confidence` standard errors.
+
+    With a few dozen sampled deals two close moves often swap places by
+    luck. Switching on every such swap throws away a good default move, so a
+    rival must beat the default on the same deals by a clear margin.
+    """
+    if values.shape[1] <= 1:
+        return default
+    diffs = values - values[:, [default]]
+    means = diffs.mean(axis=0)
+    n = values.shape[0]
+    se = diffs.std(axis=0, ddof=1) / np.sqrt(n) if n > 1 else np.full(values.shape[1], np.inf)
+    clear = [i for i in range(values.shape[1]) if i != default and means[i] > confidence * se[i] and means[i] > 0]
+    return max(clear, key=lambda i: means[i]) if clear else default
 
 
 def counter_prior(view: View, actions: list[Action]) -> list[Action]:
@@ -145,24 +168,34 @@ def net_prior(net) -> Callable[[View, list[Action]], list[Action]]:
     return rank
 
 
+def candidate_moves(view: View, actions: list[Action], default: Action,
+                    prior: Callable[[View, list[Action]], list[Action]], width: int) -> list[Action]:
+    """The policy's own move first, then the `width` best plays by `prior`, then Yaniv when legal."""
+    out = [default]
+    for action in prior(view, actions)[:width] + [a for a in actions if a.kind == "yaniv"]:
+        if action not in out:
+            out.append(action)
+    return out
+
+
 def search_chooser(policy: Chooser, prior: Callable[[View, list[Action]], list[Action]], samples: int = 48,
-                   width: int = 4, seed: int = 0) -> Chooser:
-    """A chooser that searches the `width` best plays by `prior`, plus a Yaniv call when legal."""
+                   width: int = 4, seed: int = 0, confidence: float = 1.5) -> Chooser:
+    """A chooser that plays the policy's move unless the search finds a clearly better one."""
     own = random.Random(seed)
 
     def choose(view: View, actions: list[Action], rng=None) -> Action:
-        candidates = prior(view, actions)[:width]
-        candidates += [a for a in actions if a.kind == "yaniv"]
+        default = policy(view, actions, own)
+        candidates = candidate_moves(view, actions, default, prior, width)
         if len(candidates) <= 1:
-            return candidates[0] if candidates else actions[0]
-        values = evaluate_moves(view, candidates, policy, samples, own)
-        return candidates[int(np.argmax(values))]
+            return default
+        values = sample_values(view, candidates, policy, samples, own)
+        return candidates[pick_move(values, 0, confidence)]
 
     return choose
 
 
 def collect_search(net, n_rounds: int, seed: int, samples: int, width: int, progress=None,
-                   match_scores: bool = True) -> list[tuple[View, int]]:
+                   match_scores: bool = True, confidence: float = 1.5) -> list[tuple[View, int]]:
     """Label positions for the net to copy: (view, index of the searched move in legal_actions).
 
     The net plays the card counter, seats alternating; 40% of rounds start
@@ -194,10 +227,11 @@ def collect_search(net, n_rounds: int, seed: int, samples: int, width: int, prog
             if not actions:
                 resolve_showdown(state)
                 break
-            candidates = prior(view, actions)[:width] + [a for a in actions if a.kind == "yaniv"]
+            default = play_net(view, actions, searcher)
+            candidates = candidate_moves(view, actions, default, prior, width)
             if len(candidates) > 1:
-                values = evaluate_moves(view, candidates, play_net, samples, searcher)
-                rows.append((view, actions.index(candidates[int(np.argmax(values))])))
+                values = sample_values(view, candidates, play_net, samples, searcher)
+                rows.append((view, actions.index(candidates[pick_move(values, 0, confidence)])))
             mover = play_net if state.turn == net_seat else choose_heuristic
             apply_action(state, mover(view, actions, rng))
     return rows
