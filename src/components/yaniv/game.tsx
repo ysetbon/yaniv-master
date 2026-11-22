@@ -767,7 +767,13 @@ function MatchSheet({ scores, onRestart }: { scores: [number, number]; onRestart
 function Dossier({ report }: { report: Report | null }) {
   const body = report ? (
     <div className="space-y-3 text-sm leading-relaxed text-[#f6edd9]/90">
-      {report.recipe === "genetic" ? (
+      {report.recipe === "genetic" && !report.self_play_iterations ? (
+        <p>
+          It copied a card counter for {report.expert_decisions.toLocaleString()} decisions across{" "}
+          {report.expert_rounds.toLocaleString()} rounds of the current rules. It has not evolved past that copy yet, so it
+          plays about as well as the counter it learned from.
+        </p>
+      ) : report.recipe === "genetic" ? (
         <p>
           It first copied a card counter for {report.expert_decisions.toLocaleString()} decisions
           across {report.expert_rounds.toLocaleString()} rounds. Then a population of {report.config?.population ?? "many"} networks
