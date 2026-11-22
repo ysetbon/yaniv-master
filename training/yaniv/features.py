@@ -9,8 +9,11 @@ from __future__ import annotations
 import numpy as np
 
 from .engine import (
+    DECK_SIZE,
     MAX_PLIES,
     POINTS_OF,
+    RANKS,
+    SCORE_CUTS,
     YANIV_LIMIT,
     Action,
     View,
@@ -19,10 +22,14 @@ from .engine import (
     is_valid_combo,
     mask_points,
     popcount,
+    rank_of,
 )
 
-STATE_DIM = 256
-ACTION_DIM = 121
+# state: 4 card masks, 2 rank counts, suit counts, 19 scalars
+STATE_DIM = 4 * DECK_SIZE + 2 * RANKS + 4 + 19
+# action: thrown mask, face-up card, 14 scalars
+ACTION_DIM = 2 * DECK_SIZE + 14
+YANIV_SLOT = 2 * DECK_SIZE + 2
 INPUT_DIM = STATE_DIM + ACTION_DIM
 
 
@@ -35,7 +42,7 @@ def _discard_mask(view: View) -> int:
 
 def pool_mask(view: View) -> int:
     discard = _discard_mask(view)
-    all_cards = (1 << 52) - 1
+    all_cards = (1 << DECK_SIZE) - 1
     return all_cards & ~view.my_hand & ~discard & ~view.opp_known
 
 
@@ -52,20 +59,21 @@ def opp_min_points(view: View) -> int:
 
 
 def _rank_counts(mask: int) -> list[float]:
-    counts = [0.0] * 13
+    counts = [0.0] * RANKS
     for card in cards_from_mask(mask):
-        counts[card % 13] += 1.0
+        counts[rank_of(card)] += 1.0
     return [c / 4.0 for c in counts]
 
 
 def _suit_counts(mask: int) -> list[float]:
     counts = [0.0] * 4
     for card in cards_from_mask(mask):
-        counts[card // 13] += 1.0
+        if card < 52:
+            counts[card // 13] += 1.0
     return [c / 5.0 for c in counts]
 
 
-def _bits(mask: int, size: int = 52) -> list[float]:
+def _bits(mask: int, size: int = DECK_SIZE) -> list[float]:
     return [1.0 if (mask >> i) & 1 else 0.0 for i in range(size)]
 
 
@@ -91,6 +99,8 @@ def state_features(view: View) -> np.ndarray:
     open_card = view.discard[-1]
     yaniv_legal = 1.0 if my_size > 0 and my_pts <= YANIV_LIMIT else 0.0
     guaranteed = 1.0 if yaniv_legal and my_pts < minimum else 0.0
+    # Losing the round with this hand would land exactly on 50 or 100 and cut the score.
+    cut_if_lost = 1.0 if view.my_score + my_pts in SCORE_CUTS else 0.0
     vec = (
         _bits(view.my_hand)
         + _bits(discard)
@@ -118,6 +128,7 @@ def state_features(view: View) -> np.ndarray:
             minimum / 40.0,
             guaranteed,
             POINTS_OF[open_card] / 10.0,
+            cut_if_lost,
         ]
     )
     if len(vec) != STATE_DIM:
@@ -125,36 +136,19 @@ def state_features(view: View) -> np.ndarray:
     return np.asarray(vec, dtype=np.float32)
 
 
-def _extends(remaining: int, card: int) -> bool:
-    suit = card // 13
-    rank = card % 13
-    for held in cards_from_mask(remaining):
-        if held // 13 == suit and abs(held % 13 - rank) == 1:
-            return True
-    return False
-
-
 def _kept_pair(mask: int) -> bool:
-    seen = [0] * 13
+    seen = [0] * RANKS
     for card in cards_from_mask(mask):
-        seen[card % 13] += 1
-        if seen[card % 13] >= 2:
+        seen[rank_of(card)] += 1
+        if seen[rank_of(card)] >= 2:
             return True
     return False
-
-
-def _combo_kind(cards: list[int]) -> tuple[float, float, float]:
-    if len(cards) == 1:
-        return 0.0, 0.0, 1.0
-    if all(c % 13 == cards[0] % 13 for c in cards):
-        return 1.0, 0.0, 0.0
-    return 0.0, 1.0, 0.0
 
 
 def action_features(view: View, action: Action) -> np.ndarray:
     if action.kind == "yaniv":
-        vec = _bits(0) + _bits(0) + [0.0] * (ACTION_DIM - 104)
-        vec[106] = 1.0
+        vec = _bits(0) + _bits(0) + [0.0] * (ACTION_DIM - 2 * DECK_SIZE)
+        vec[YANIV_SLOT] = 1.0
         if len(vec) != ACTION_DIM:
             raise RuntimeError(f"action dim {len(vec)}")
         return np.asarray(vec, dtype=np.float32)
@@ -164,20 +158,18 @@ def action_features(view: View, action: Action) -> np.ndarray:
     remain_pts = mask_points(remaining)
     remain_n = popcount(remaining)
     discard_pts = sum(POINTS_OF[c] for c in chosen)
-    is_set, is_run, is_single = _combo_kind(chosen)
+    is_single = 1.0 if len(chosen) == 1 else 0.0
+    is_set = 1.0 - is_single
     draw_stock = 1.0 if action.draw == "stock" else 0.0
     draw_open = 1.0 if action.draw == "open" else 0.0
     open_card = view.discard[-1]
     pairs = 0.0
-    extends = 0.0
     incoming = 0.0
     result_callable = 0.0
     if draw_open:
         incoming = float(POINTS_OF[open_card])
-        if any(c % 13 == open_card % 13 for c in cards_from_mask(remaining)):
+        if any(rank_of(c) == rank_of(open_card) for c in cards_from_mask(remaining)):
             pairs = 1.0
-        if _extends(remaining, open_card):
-            extends = 1.0
         if remain_pts + POINTS_OF[open_card] <= YANIV_LIMIT:
             result_callable = 1.0
     elif draw_stock:
@@ -195,17 +187,14 @@ def action_features(view: View, action: Action) -> np.ndarray:
         + [
             draw_stock,
             draw_open,
-            0.0,
-            0.0,  # was "goes out"; every throw draws now, but the slot keeps the layout
+            0.0,  # YANIV_SLOT: 1 only for a Yaniv call
             discard_pts / 40.0,
             remain_pts / 40.0,
             remain_n / 5.0,
             POINTS_OF[action.top] / 10.0,
             incoming / 10.0,
             pairs,
-            extends,
             is_set,
-            is_run,
             is_single,
             kept,
             result_callable,

@@ -3,25 +3,28 @@
 Rules encoded here are the table the neural net trains on, and they must
 match the TypeScript port card for card.
 
-- 52-card deck. Ace is 1, numbers are face value, 10/J/Q/K are 10.
+- 54-card deck: 52 cards and two jokers. Ace is 1, numbers are face value,
+  10/J/Q/K are 10, a joker is 0.
 - Five cards each. One card starts the discard pile. The rest is the stock.
 - On your turn, throw one legal combination, then draw one card.
-  A combination is a single card, two or more of the same rank, or three or
-  more consecutive ranks of one suit. Ace is low only (A-2-3 is a run,
-  K-A-2 is not).
+  A combination is a single card or two or more of the same rank. There are
+  no runs. The two jokers are a rank of their own, so they pair only with
+  each other; a joker is not wild.
 - You choose which thrown card stays face up. The card you may draw from
   the discard is the one that was face up before you threw, not a card you
   just played.
 - Every throw is followed by a draw: the previous open card or the top of
   the stock. That holds when you throw your whole hand too, so a hand
   never empties and a round only ends by Yaniv or showdown.
-- At the start of your turn, with 5 points or fewer, you may call Yaniv
+- At the start of your turn, with 7 points or fewer, you may call Yaniv
   instead of throwing. If your hand is strictly lower than the opponent's,
   you score 0 and they score their hand. If they have the same or less,
   you are Assaf: you score your hand plus 30, and they score 0.
 - The stock is never reshuffled. Once it is empty you can only take the
   open card. After 48 throws the round ends in a showdown: the lower hand
   scores 0, a tie scores both hands, and there is no Assaf.
+- After a round's points are added, a score that lands exactly on 50 or
+  100 is cut by 50 (50 becomes 0, 100 becomes 50).
 - A match ends when someone reaches 100. The lower score wins.
 """
 
@@ -30,7 +33,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import lru_cache
 
-YANIV_LIMIT = 5
+YANIV_LIMIT = 7
 ASSAF_PENALTY = 30
 MATCH_LIMIT = 100
 MAX_PLIES = 48
@@ -38,9 +41,23 @@ MAX_PLIES = 48
 RANK_CHARS = "A23456789TJQK"
 SUIT_CHARS = "♣♦♥♠"
 
-# card id = suit * 13 + rank, rank 0 = Ace ... 12 = King
+DECK_SIZE = 54
+JOKERS = (52, 53)  # 52 is the red joker, 53 the black one
+JOKER_RANK = 13
+RANKS = 14  # Ace ... King, then the jokers
+SCORE_CUTS = {50: 0, 100: 50}  # a score landing exactly here drops to the value
+
+# card id = suit * 13 + rank for 0..51, rank 0 = Ace ... 12 = King; 52, 53 = jokers
 POINTS = [1 if r == 0 else 10 if r >= 9 else r + 1 for r in range(13)]
-POINTS_OF = [POINTS[c % 13] for c in range(52)]
+POINTS_OF = [POINTS[c % 13] for c in range(52)] + [0, 0]
+
+
+def is_joker(card: int) -> bool:
+    return card >= 52
+
+
+def rank_of(card: int) -> int:
+    return JOKER_RANK if card >= 52 else card % 13
 
 
 def card_points(card: int) -> int:
@@ -48,6 +65,8 @@ def card_points(card: int) -> int:
 
 
 def card_name(card: int) -> str:
+    if card >= 52:
+        return "★"
     return RANK_CHARS[card % 13] + SUIT_CHARS[card // 13]
 
 
@@ -76,78 +95,34 @@ def mask_points(mask: int) -> int:
 
 
 def is_valid_combo(cards: list[int]) -> bool:
-    n = len(cards)
-    if n == 0:
+    """A single card, or two or more of one rank. There are no runs."""
+    if not cards:
         return False
-    if n == 1:
-        return True
-    rank0 = cards[0] % 13
-    if all(c % 13 == rank0 for c in cards):
-        return True
-    if n < 3:
-        return False
-    suit0 = cards[0] // 13
-    if any(c // 13 != suit0 for c in cards):
-        return False
-    ranks = sorted(c % 13 for c in cards)
-    for i in range(1, n):
-        if ranks[i] != ranks[i - 1] + 1:
-            return False
-    return True
+    rank0 = rank_of(cards[0])
+    return all(rank_of(c) == rank0 for c in cards)
 
 
 @lru_cache(maxsize=250_000)
 def best_keep_points(mask: int) -> int:
     """Fewest points you can hold after one legal throw, before drawing.
 
-    Going out is 0. Points are positive, so the best throw is the legal
-    combination worth the most points: the highest single card, an entire
-    same-rank set, or an entire same-suit contiguous run.
+    Going out is 0. Points are never negative, so the best throw is the
+    legal combination worth the most points: the highest single card or an
+    entire same-rank set.
     """
     if mask == 0:
         return 0
     cards = cards_from_mask(mask)
-    if len(cards) == 1 or is_valid_combo(cards):
+    if is_valid_combo(cards):
         return 0
     total = 0
-    by_rank_points: dict[int, int] = {}
-    by_rank_count: dict[int, int] = {}
-    by_suit: dict[int, list[int]] = {}
-    max_single = 0
+    by_rank: dict[int, int] = {}
     for c in cards:
         p = POINTS_OF[c]
         total += p
-        if p > max_single:
-            max_single = p
-        rank = c % 13
-        by_rank_points[rank] = by_rank_points.get(rank, 0) + p
-        by_rank_count[rank] = by_rank_count.get(rank, 0) + 1
-        by_suit.setdefault(c // 13, []).append(c)
-    best = total - max_single
-    for rank, count in by_rank_count.items():
-        if count >= 2:
-            rem = total - by_rank_points[rank]
-            if rem < best:
-                best = rem
-    for group in by_suit.values():
-        if len(group) < 3:
-            continue
-        group.sort(key=lambda c: c % 13)
-        start = 0
-        while start < len(group):
-            end = start
-            while (
-                end + 1 < len(group)
-                and group[end + 1] % 13 == group[end] % 13 + 1
-            ):
-                end += 1
-            if end - start + 1 >= 3:
-                shed = sum(POINTS_OF[group[i]] for i in range(start, end + 1))
-                rem = total - shed
-                if rem < best:
-                    best = rem
-            start = end + 1
-    return best
+        rank = rank_of(c)
+        by_rank[rank] = by_rank.get(rank, 0) + p
+    return total - max(by_rank.values())
 
 
 def max_shed_points(mask: int) -> int:
@@ -261,7 +236,7 @@ def make_view(state: State, seat: int) -> View:
 
 
 def new_round(scores: list[int], leader: int, rng) -> State:
-    deck = list(range(52))
+    deck = list(range(DECK_SIZE))
     rng.shuffle(deck)
     hands = [0, 0]
     for i in range(10):
@@ -296,7 +271,8 @@ def _finish(
         reason=reason,
         winner=winner,
     )
-    state.scores = [state.scores[0] + added[0], state.scores[1] + added[1]]
+    totals = [state.scores[0] + added[0], state.scores[1] + added[1]]
+    state.scores = [SCORE_CUTS.get(t, t) for t in totals]
 
 
 def resolve_showdown(state: State) -> None:
@@ -356,7 +332,7 @@ def apply_action(state: State, action: Action, rng=None) -> None:
     me = state.turn
     if action.kind == "yaniv":
         if mask_points(state.hands[me]) > YANIV_LIMIT:
-            raise ValueError("Yaniv is only legal at 5 points or fewer")
+            raise ValueError(f"Yaniv is only legal at {YANIV_LIMIT} points or fewer")
         opp = 1 - me
         mine = mask_points(state.hands[me])
         theirs = mask_points(state.hands[opp])

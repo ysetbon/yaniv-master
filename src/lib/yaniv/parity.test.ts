@@ -4,8 +4,8 @@ import { bestKeepPoints, applyAction, legalActions, resolveShowdown, type Action
 import { actionFeatures, stateFeatures } from "./features";
 
 interface RawState {
-  hands: [number, number];
-  known: [number, number];
+  hands: [string, string];
+  known: [string, string];
   stock: number[];
   discard: number[];
   scores: [number, number];
@@ -15,7 +15,7 @@ interface RawState {
   result: {
     added: [number, number];
     points: [number, number];
-    hands: [number, number];
+    hands: [string, string];
     assaf: boolean;
     caller: number | null;
     reason: "yaniv" | "showdown";
@@ -25,19 +25,19 @@ interface RawState {
 
 interface RawAction {
   kind: "play" | "yaniv";
-  discard_mask: number;
+  discard_mask: string;
   top: number;
   draw: "stock" | "open" | "none";
 }
 
 const fixtures = JSON.parse(readFileSync(new URL("./fixtures.json", import.meta.url), "utf8")) as {
-  keeps: Array<{ mask: number; keep: number }>;
+  keeps: Array<{ mask: string; keep: number }>;
   steps: Array<{ before: RawState; action: RawAction | null; after: RawState }>;
   features: Array<{
     view: {
-      my_hand: number;
-      my_known: number;
-      opp_known: number;
+      my_hand: string;
+      my_known: string;
+      opp_known: string;
       opp_size: number;
       stock_size: number;
       discard: number[];

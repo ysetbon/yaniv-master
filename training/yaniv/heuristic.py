@@ -21,6 +21,7 @@ from .engine import (
     cards_from_mask,
     mask_points,
     popcount,
+    rank_of,
 )
 from .features import opp_min_points, pool_mask
 
@@ -110,6 +111,7 @@ def assaf_risk(view: View, samples: int = 36) -> float:
 
 
 def _call_threshold(points: int) -> float:
+    """Highest Assaf risk worth calling at, by hand total (0 to YANIV_LIMIT)."""
     if points <= 1:
         return 0.40
     if points == 2:
@@ -118,7 +120,11 @@ def _call_threshold(points: int) -> float:
         return 0.18
     if points == 4:
         return 0.12
-    return 0.08
+    if points == 5:
+        return 0.08
+    if points == 6:
+        return 0.06
+    return 0.04
 
 
 def should_call(view: View) -> bool:
@@ -189,7 +195,7 @@ def choose_greedy(view: View, actions: list[Action], rng=None) -> Action:
         if action.draw == "open":
             if POINTS_OF[open_card] <= 4:
                 open_helps = True
-            elif any(card % 13 == open_card % 13 for card in cards_from_mask(remaining)):
+            elif any(rank_of(card) == rank_of(open_card) for card in cards_from_mask(remaining)):
                 open_helps = True
         preference = 1 if open_helps else 0 if action.draw == "stock" else -1
         key = (mask_points(action.discard_mask), preference, POINTS_OF[action.top])

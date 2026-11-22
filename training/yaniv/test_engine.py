@@ -9,6 +9,8 @@ import numpy as np
 
 from .engine import (
     ASSAF_PENALTY,
+    DECK_SIZE,
+    RANKS,
     POINTS_OF,
     YANIV_LIMIT,
     Action,
@@ -61,34 +63,66 @@ def conserved(state) -> bool:
         if seen & bit:
             return False
         seen |= bit
-    return seen == (1 << 52) - 1
+    return seen == (1 << DECK_SIZE) - 1
 
 
 class RulesTest(unittest.TestCase):
-    def test_points_and_runs(self):
+    def test_points_sets_and_no_runs(self):
         self.assertEqual(POINTS_OF[0], 1)
         self.assertEqual(POINTS_OF[8], 9)
         self.assertEqual(POINTS_OF[9], 10)
         self.assertEqual(POINTS_OF[12], 10)
+        self.assertEqual((POINTS_OF[52], POINTS_OF[53]), (0, 0))
+        self.assertEqual(len(POINTS_OF), DECK_SIZE)
         ace, two, three = 0, 1, 2
-        self.assertTrue(is_valid_combo([ace, two, three]))
-        king, queen, ace_spade = 12, 11, 13 * 3
-        self.assertFalse(is_valid_combo([king, queen, ace_spade]))
-        self.assertTrue(is_valid_combo([12, 11, 10]))
+        self.assertFalse(is_valid_combo([ace, two, three]))  # runs are not legal
+        self.assertFalse(is_valid_combo([12, 11, 10]))
+        self.assertFalse(is_valid_combo([4, 5, 6, 7]))
         self.assertTrue(is_valid_combo([0, 13]))
         self.assertFalse(is_valid_combo([0, 14]))
         self.assertTrue(is_valid_combo([0, 13, 26, 39]))
         self.assertFalse(is_valid_combo([1, 2]))
+        self.assertTrue(is_valid_combo([52, 53]))  # the two jokers are a pair
+        self.assertFalse(is_valid_combo([52, 0]))  # a joker is not wild
+        self.assertTrue(is_valid_combo([52]))
 
-    def test_five_card_minimum_is_six(self):
-        aces = (1 << 0) | (1 << 13) | (1 << 26) | (1 << 39)
-        self.assertEqual(mask_points(aces | (1 << 1)), 6)
-        self.assertGreater(mask_points(aces | (1 << 1)), YANIV_LIMIT)
+    def test_yaniv_limit_is_seven(self):
+        self.assertEqual(YANIV_LIMIT, 7)
+        seven = (1 << 3) | (1 << 2)  # 4 + 3
+        eight = (1 << 4) | (1 << 2)  # 5 + 3
+        for hand, legal in ((seven, True), (eight, False)):
+            view = View(my_hand=hand, my_known=0, opp_known=0, opp_size=5, stock_size=30, discard=(20,),
+                        my_score=0, opp_score=0, ply=0, seat=0)
+            self.assertEqual(any(a.kind == "yaniv" for a in legal_actions(view)), legal)
+
+    def test_deck_has_two_jokers(self):
+        state = new_round([0, 0], 0, random.Random(5))
+        self.assertTrue(conserved(state))
+        self.assertEqual(len(state.stock) + len(state.discard) + 10, DECK_SIZE)
+
+    def test_landing_exactly_on_50_or_100_cuts_by_50(self):
+        from .engine import resolve_showdown
+
+        for start, hand, expected in ((40, 10, 0), (90, 10, 50), (40, 11, 51), (95, 10, 105), (0, 50, 0)):
+            state = new_round([start, 0], 0, random.Random(6))
+            loser = 0
+            for c in (9, 22, 35, 48, 12):  # five 10-pointers to build any total from 10 to 50
+                loser |= 1 << c
+            pick, total = 0, 0
+            for c in (9, 22, 35, 48, 12, 0):
+                if total + POINTS_OF[c] <= hand:
+                    pick |= 1 << c
+                    total += POINTS_OF[c]
+            self.assertEqual(total, hand)
+            state.hands = [pick, 1 << 52]  # the joker wins the showdown at 0
+            resolve_showdown(state)
+            self.assertEqual(state.result.added, [hand, 0])
+            self.assertEqual(state.scores[0], expected)
 
     def test_best_keep_matches_brute(self):
         rng = random.Random(2)
         for _ in range(400):
-            deck = list(range(52))
+            deck = list(range(DECK_SIZE))
             rng.shuffle(deck)
             mask = 0
             for card in deck[: rng.randint(1, 5)]:
@@ -99,7 +133,7 @@ class RulesTest(unittest.TestCase):
         state = new_round([0, 0], 0, random.Random(1))
         state.hands = [(1 << 0) | (1 << 1), (1 << 12) | (1 << 11) | (1 << 10)]
         state.known = [0, 0]
-        state.stock = [c for c in range(52) if not ((state.hands[0] | state.hands[1]) & (1 << c)) and c != 20]
+        state.stock = [c for c in range(DECK_SIZE) if not ((state.hands[0] | state.hands[1]) & (1 << c)) and c != 20]
         state.discard = [20]
         state.turn = 0
         state.ply = 0
@@ -116,7 +150,7 @@ class RulesTest(unittest.TestCase):
         caller = (1 << 1) | (1 << 2)  # 2♣ + 3♣ = 5, not a run
         catcher = (1 << 13) | (1 << 14) | (1 << 27)  # A♦ + 2♦ + 2♥ = 5
         used = caller | catcher
-        rest = [c for c in range(52) if not (used & (1 << c))]
+        rest = [c for c in range(DECK_SIZE) if not (used & (1 << c))]
         state.hands = [caller, catcher]
         state.known = [0, 0]
         state.discard = [rest[0]]
@@ -131,9 +165,9 @@ class RulesTest(unittest.TestCase):
         self.assertEqual(state.scores, [4 + 35, 9])
 
         state = new_round([0, 0], 0, random.Random(3))
-        run = (1 << 0) | (1 << 1) | (1 << 2)
+        run = (1 << 0) | (1 << 13) | (1 << 26)  # three aces, the whole hand
         opp = (1 << 12) | (1 << 25)
-        rest = [c for c in range(52) if c not in (0, 1, 2, 12, 25)]
+        rest = [c for c in range(DECK_SIZE) if c not in (0, 13, 26, 12, 25)]
         state.hands = [run, opp]
         state.known = [0, 0]
         state.discard = [rest[0]]
@@ -145,10 +179,10 @@ class RulesTest(unittest.TestCase):
         self.assertTrue(all(a.draw in ("stock", "open") for a in whole))
         before = state.to_json()
         with self.assertRaises(ValueError):
-            apply_action(state, Action("play", run, 2, "none"))
+            apply_action(state, Action("play", run, 26, "none"))
         self.assertEqual(state.to_json(), before)  # a rejected move changes nothing
         top_of_stock = state.stock[-1]
-        apply_action(state, Action("play", run, 2, "stock"))
+        apply_action(state, Action("play", run, 26, "stock"))
         self.assertFalse(state.terminal)
         self.assertEqual(state.hands[0], 1 << top_of_stock)
         self.assertEqual(state.turn, 1)
@@ -177,7 +211,7 @@ class RulesTest(unittest.TestCase):
         hand = (1 << clubs_king) | (1 << diamonds_king) | (1 << five) | (1 << four) | (1 << two)
         opp = (1 << 8) | (1 << 7) | (1 << 6) | (1 << 18) | (1 << 19)
         used = hand | opp | (1 << hearts_king)
-        stock = [c for c in range(52) if not (used & (1 << c))]
+        stock = [c for c in range(DECK_SIZE) if not (used & (1 << c))]
         from .engine import State
 
         state = State(
@@ -240,20 +274,23 @@ class RulesTest(unittest.TestCase):
         vec = state_features(view)
         self.assertEqual(vec.shape, (STATE_DIM,))
         self.assertEqual(float(vec[0]), 1.0)
-        self.assertEqual(float(vec[104 + 9]), 1.0)
-        self.assertEqual(float(vec[156 + 12]), 1.0)
-        self.assertAlmostEqual(float(vec[238]), 1 / 40, places=6)
-        self.assertAlmostEqual(float(vec[247]), 1.0, places=6)
-        self.assertAlmostEqual(float(vec[255]), 1.0, places=6)
+        d = DECK_SIZE
+        self.assertEqual(float(vec[2 * d + 9]), 1.0)  # open card
+        self.assertEqual(float(vec[3 * d + 12]), 1.0)  # opponent's known card
+        scalars = 4 * d + 2 * RANKS + 4
+        self.assertAlmostEqual(float(vec[scalars]), 1 / 40, places=6)  # my points
+        self.assertAlmostEqual(float(vec[scalars + 9]), 1.0, places=6)  # Yaniv is legal
+        self.assertAlmostEqual(float(vec[scalars + 17]), 1.0, places=6)  # open card is a 10
+        self.assertAlmostEqual(float(vec[scalars + 18]), 0.0, places=6)  # 10 + 1 does not land on 50
         call = action_features(view, Action("yaniv"))
         self.assertEqual(call.shape, (ACTION_DIM,))
-        self.assertEqual(float(call[106]), 1.0)
+        self.assertEqual(float(call[2 * d + 2]), 1.0)
         self.assertEqual(float(call.sum()), 1.0)
         thrown = action_features(view, Action("play", 1 << 0, 0, "open"))
         self.assertEqual(float(thrown[0]), 1.0)
-        self.assertEqual(float(thrown[52]), 1.0)
-        self.assertEqual(float(thrown[105]), 1.0)
-        self.assertEqual(float(thrown[107]), 0.0)
+        self.assertEqual(float(thrown[d]), 1.0)
+        self.assertEqual(float(thrown[2 * d + 1]), 1.0)
+        self.assertEqual(float(thrown[2 * d + 2]), 0.0)
 
     def test_heuristic_takes_the_third_king(self):
         clubs, diamonds, hearts = 12, 12 + 13, 12 + 26
@@ -263,7 +300,7 @@ class RulesTest(unittest.TestCase):
         for card in (8, 7, 6, 18, 19):
             opp |= 1 << card
         used = hand | opp | (1 << hearts)
-        stock = [c for c in range(52) if not (used & (1 << c))]
+        stock = [c for c in range(DECK_SIZE) if not (used & (1 << c))]
         from .engine import State
 
         state = State(
@@ -290,7 +327,7 @@ class RulesTest(unittest.TestCase):
         for card in (8, 9, 10, 11, 12):
             opp |= 1 << card
         used = caller | opp
-        rest = [c for c in range(52) if not (used & (1 << c))]
+        rest = [c for c in range(DECK_SIZE) if not (used & (1 << c))]
         state = State(
             hands=[caller, opp],
             known=[0, 0],
@@ -309,7 +346,7 @@ class RulesTest(unittest.TestCase):
         known_low = 1 << 14  # A♦
         hidden = 3  # 4♣
         used = mine | known_low | hidden
-        rest = [c for c in range(52) if not (used & (1 << c))]
+        rest = [c for c in range(DECK_SIZE) if not (used & (1 << c))]
         state = State(
             hands=[mine, known_low | (1 << hidden)],
             known=[0, known_low],

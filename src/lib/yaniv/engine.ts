@@ -1,9 +1,18 @@
 /**
  * Two-player Yaniv. Masks are bigint because JavaScript bitwise operators
- * are 32-bit and a deck needs 52 bits. This file matches training/yaniv/engine.py.
+ * are 32-bit and a deck needs 54 bits. This file matches training/yaniv/engine.py.
+ *
+ * Cards 0..51 are suit * 13 + rank (rank 0 = Ace ... 12 = King); 52 and 53
+ * are the red and black jokers, worth 0. Throws are a single card or a set
+ * of one rank; there are no runs, and a joker pairs only with the other
+ * joker. A score landing exactly on 50 or 100 after a round is cut by 50.
  */
 
-export const YANIV_LIMIT = 5;
+export const DECK_SIZE = 54;
+export const JOKER_RANK = 13;
+export const RANKS = 14;
+export const SCORE_CUTS: Readonly<Record<number, number>> = { 50: 0, 100: 50 };
+export const YANIV_LIMIT = 7;
 export const ASSAF_PENALTY = 30;
 export const MATCH_LIMIT = 100;
 export const MAX_PLIES = 48;
@@ -63,17 +72,27 @@ export interface Rng {
   random(): number;
 }
 
+export function isJoker(card: number): boolean {
+  return card >= 52;
+}
+
+export function rankOf(card: number): number {
+  return card >= 52 ? JOKER_RANK : card % 13;
+}
+
 export function cardPoints(card: number): number {
-  return POINTS[card % 13];
+  return card >= 52 ? 0 : POINTS[card % 13];
 }
 
 export function cardName(card: number): string {
+  if (card >= 52) return "★";
   const rank = card % 13;
   const label = rank === 9 ? "10" : RANK_CHARS[rank];
   return label + SUIT_CHARS[Math.floor(card / 13)];
 }
 
 export function cardLabel(card: number): string {
+  if (card >= 52) return card === 52 ? "red joker" : "black joker";
   const rank = ["ace", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "jack", "queen", "king"][card % 13];
   return `${rank} of ${SUIT_NAMES[Math.floor(card / 13)]}`;
 }
@@ -122,66 +141,23 @@ export function maskPoints(mask: bigint): number {
 }
 
 export function isValidCombo(cards: number[]): boolean {
-  const n = cards.length;
-  if (n === 0) return false;
-  if (n === 1) return true;
-  const rank0 = cards[0] % 13;
-  if (cards.every((card) => card % 13 === rank0)) return true;
-  if (n < 3) return false;
-  const suit0 = Math.floor(cards[0] / 13);
-  if (cards.some((card) => Math.floor(card / 13) !== suit0)) return false;
-  const ranks = cards.map((card) => card % 13).sort((a, b) => a - b);
-  for (let i = 1; i < n; i += 1) {
-    if (ranks[i] !== ranks[i - 1] + 1) return false;
-  }
-  return true;
+  if (cards.length === 0) return false;
+  const rank0 = rankOf(cards[0]);
+  return cards.every((card) => rankOf(card) === rank0);
 }
 
 export function bestKeepPoints(mask: bigint): number {
   if (mask === 0n) return 0;
   const cards = cardsFromMask(mask);
-  if (cards.length === 1 || isValidCombo(cards)) return 0;
+  if (isValidCombo(cards)) return 0;
   let total = 0;
-  let maxSingle = 0;
-  const byRankPoints = new Map<number, number>();
-  const byRankCount = new Map<number, number>();
-  const bySuit = new Map<number, number[]>();
+  const byRank = new Map<number, number>();
   for (const card of cards) {
     const points = cardPoints(card);
     total += points;
-    if (points > maxSingle) maxSingle = points;
-    const rank = card % 13;
-    byRankPoints.set(rank, (byRankPoints.get(rank) ?? 0) + points);
-    byRankCount.set(rank, (byRankCount.get(rank) ?? 0) + 1);
-    const suit = Math.floor(card / 13);
-    const group = bySuit.get(suit);
-    if (group) group.push(card);
-    else bySuit.set(suit, [card]);
+    byRank.set(rankOf(card), (byRank.get(rankOf(card)) ?? 0) + points);
   }
-  let best = total - maxSingle;
-  for (const [rank, count] of byRankCount) {
-    if (count >= 2) {
-      const rem = total - (byRankPoints.get(rank) ?? 0);
-      if (rem < best) best = rem;
-    }
-  }
-  for (const group of bySuit.values()) {
-    if (group.length < 3) continue;
-    group.sort((a, b) => (a % 13) - (b % 13));
-    let start = 0;
-    while (start < group.length) {
-      let end = start;
-      while (end + 1 < group.length && group[end + 1] % 13 === (group[end] % 13) + 1) end += 1;
-      if (end - start + 1 >= 3) {
-        let shed = 0;
-        for (let i = start; i <= end; i += 1) shed += cardPoints(group[i]);
-        const rem = total - shed;
-        if (rem < best) best = rem;
-      }
-      start = end + 1;
-    }
-  }
-  return best;
+  return total - Math.max(...byRank.values());
 }
 
 export function makeView(state: State, seat: number): View {
@@ -210,7 +186,7 @@ export function shuffle<T>(items: T[], rng: Rng): void {
 }
 
 export function newRound(scores: [number, number], leader: number, rng: Rng): State {
-  const deck = Array.from({ length: 52 }, (_, card) => card);
+  const deck = Array.from({ length: DECK_SIZE }, (_, card) => card);
   shuffle(deck, rng);
   const hands: [bigint, bigint] = [0n, 0n];
   for (let i = 0; i < 10; i += 1) hands[i % 2] |= 1n << BigInt(deck[i]);
@@ -245,7 +221,8 @@ function finish(
     reason,
     winner,
   };
-  state.scores = [state.scores[0] + added[0], state.scores[1] + added[1]];
+  const cut = (total: number) => SCORE_CUTS[total] ?? total;
+  state.scores = [cut(state.scores[0] + added[0]), cut(state.scores[1] + added[1])];
 }
 
 export function resolveShowdown(state: State): void {
@@ -294,7 +271,7 @@ export function applyAction(state: State, action: Action): void {
   }
   const me = state.turn;
   if (action.kind === "yaniv") {
-    if (maskPoints(state.hands[me]) > YANIV_LIMIT) throw new Error("Yaniv is only legal at 5 or fewer");
+    if (maskPoints(state.hands[me]) > YANIV_LIMIT) throw new Error(`Yaniv is only legal at ${YANIV_LIMIT} or fewer`);
     const opp = 1 - me;
     const mine = maskPoints(state.hands[me]);
     const theirs = maskPoints(state.hands[opp]);
@@ -372,5 +349,5 @@ export function defaultTop(cards: number[]): number {
 }
 
 export function sortHand(cards: number[]): number[] {
-  return cards.slice().sort((a, b) => (a % 13) - (b % 13) || a - b);
+  return cards.slice().sort((a, b) => rankOf(a) - rankOf(b) || a - b);
 }
