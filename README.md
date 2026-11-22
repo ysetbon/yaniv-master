@@ -57,6 +57,14 @@ The card counter only looks one move ahead. The search player looks further: for
 python main.py --generations 12 --search-rounds 300   # about an hour on 10 game processes
 ```
 
+To keep improving the net that is in the game instead of starting over from a copy of the counter, start from it. It becomes Gen 0, so only a generation that beats it on new games ships:
+
+```bash
+python main.py --start-from public/model/yaniv-net.json --generations 12 --search-rounds 300
+```
+
+Any saved net works, such as a run's `runs/<timestamp>/best.json`.
+
 ### How the genetic algorithm works (`--recipe genetic`)
 
 1. The first population is the copy plus 23 mutants of it. Every member keeps the same shape as the copy (389 → 192 → 192 → 1), so neuron *i* means roughly the same thing in every member.
@@ -93,6 +101,8 @@ The card counter's decisions are cached in `runs/.cache/` because they are the s
 Under the old rules, neither evolution nor self-play produced a net clearly stronger than the card counter: the best won about 52% of rounds and 49% of matches against it.
 
 Under the current rules, the search player itself beat the counter in 124 of 200 matches (62%). A short search run of 2 passes, about 2,200 searched decisions, lifted the net from 196–204 to 214–186 in matches against the counter on the same 400 new games. The gate replay agreed: 54% against Gen 0's 45.5%. Longer runs should go further; the final check still decides what ships.
+
+The net in the game now is Gen 6 of a 10-pass search run (250 rounds a pass). On 2,000 rounds and 600 matches it never saw, it won 322–278 matches against the counter (53.7%) and took 0.67 points a round fewer than the counter; on the same games the copy it started from won 299–301 and took 0.36 points more.
 
 ```bash
 python main.py --quick                  # small run to check everything works

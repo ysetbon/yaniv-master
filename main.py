@@ -35,6 +35,8 @@ def main() -> None:
     parser.add_argument("--recipe", choices=("search", "genetic", "selfplay"), default="search",
                         help="search copies a teacher that plays each move out (default); genetic evolves a "
                              "population of nets; selfplay fine-tunes one net on its wins")
+    parser.add_argument("--start-from", metavar="NET_JSON",
+                        help="start from a saved net instead of copying the counter, e.g. public/model/yaniv-net.json")
     parser.add_argument("--search-rounds", type=int, help="search: rounds labelled per pass (default 150)")
     parser.add_argument("--search-samples", type=int, help="search: imagined deals per searched move (default 48)")
     parser.add_argument("--search-confidence", type=float,
@@ -71,6 +73,10 @@ def main() -> None:
         cfg = TrainConfig.search(quick=args.quick)
     else:
         cfg = TrainConfig.quick() if args.quick else TrainConfig()
+    if args.start_from:
+        if not os.path.exists(args.start_from):
+            parser.error(f"--start-from: no such file {args.start_from}")
+        cfg.start_from = args.start_from
     if args.search_rounds is not None:
         cfg.search_rounds = max(1, args.search_rounds)
     if args.search_samples is not None:

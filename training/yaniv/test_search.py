@@ -136,6 +136,37 @@ class EndToEnd(unittest.TestCase):
         self.assertTrue(all(h["searched"] > 0 for h in searched))
         self.assertIn(report["best_generation"], (0, 1, 2))
 
+    def test_start_from_a_saved_net_skips_the_copy(self):
+        import tempfile
+        from pathlib import Path
+
+        import numpy as np
+
+        from .network import save_net
+
+        start = default_net(9)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "start.json"
+            save_net(start, path, {})
+            cfg = dataclasses.replace(TrainConfig.search(quick=True), workers=1, cache=False, generations=0,
+                                      start_from=str(path), eval_rounds=4, eval_matches=2, final_rounds=4,
+                                      final_matches=2)
+
+            class Keep(Observer):
+                def __init__(self):
+                    self.gens, self.nets = [], []
+
+                def generation(self, gen, net):
+                    self.gens.append(gen)
+                    self.nets.append(net)
+
+            obs = Keep()
+            report = run_training(cfg, obs, model_path=None, report_path=None)
+        self.assertFalse([h for h in report["history"] if h["phase"] == "imitation"])
+        self.assertEqual(obs.gens[0]["label"], "Started from start.json")
+        for a, b in zip(obs.nets[0].W, start.W):
+            np.testing.assert_allclose(a, b, rtol=1e-6)
+
 
 if __name__ == "__main__":
     unittest.main()

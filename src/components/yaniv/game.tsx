@@ -51,7 +51,7 @@ interface Report {
   self_play_games: number;
   self_play_winning_decisions: number;
   layers: number[];
-  seconds: number;
+  seconds: number | null;
   match_win_rate_vs_benchmark: number;
   match_record_vs_benchmark: { wins: number; losses: number; ties: number };
   round_win_rate_vs_benchmark: number;
@@ -814,7 +814,7 @@ function Dossier({ report }: { report: Report | null }) {
         averaging {report.round_record_vs_greedy.hero_avg.toFixed(1)} points to {report.round_record_vs_greedy.villain_avg.toFixed(1)}.
         Against random legal throws it wins {Math.round(report.round_win_rate_vs_random * 100)}%.
         The counter it copied wins {Math.round(report.benchmark_vs_greedy.win_rate * 100)}% of those same dump-the-fat-set rounds.
-        The network is {report.layers.join(" → ")}. The training run took {Math.round(report.seconds / 60)} minutes.
+        The network is {report.layers.join(" → ")}. {report.seconds ? `The training run took ${Math.round(report.seconds / 60)} minutes.` : ""}
       </p>
     </div>
   ) : (

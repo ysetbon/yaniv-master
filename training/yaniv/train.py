@@ -38,7 +38,7 @@ from .engine import (
 from .features import ACTION_DIM, INPUT_DIM, STATE_DIM, action_matrix, state_features
 from .heuristic import choose_greedy, choose_heuristic, choose_random
 from .backend import Device, as_numpy, build_net, resolve_device
-from .network import MLP, save_net
+from .network import MLP, load_net, save_net
 
 ROOT = Path(__file__).resolve().parents[2]
 MODEL_PATH = ROOT / "public" / "model" / "yaniv-net.json"
@@ -552,6 +552,10 @@ class TrainConfig:
     search_lr: float = 3e-4
     search_epochs: int = 3
     search_capacity: int = 60000  # searched decisions kept across passes, oldest dropped first
+    # A saved net (e.g. public/model/yaniv-net.json or a run's best.json) to
+    # start from instead of copying the counter. It becomes Gen 0, so the
+    # final check only ships a later generation that beats it.
+    start_from: str = ""
 
     @classmethod
     def search(cls, quick: bool = False) -> "TrainConfig":
@@ -708,7 +712,15 @@ def run_training(
         net = build_net(device, 11)
         history: list[dict] = []
         rng = random.Random(3)
-        for epoch in range(1, cfg.epochs + 1):
+        start_name = Path(cfg.start_from).name if cfg.start_from else ""
+        if cfg.start_from:
+            start = load_net(Path(cfg.start_from))
+            if start.dims[0] != INPUT_DIM:
+                raise ValueError(f"{cfg.start_from} takes {start.dims[0]} inputs, but these rules give {INPUT_DIM}: "
+                                 "it was trained on other rules")
+            net = _restart_from(net, start, device)
+            log(f"Starting from {cfg.start_from} ({' -> '.join(map(str, start.dims))}), so the copying step is skipped")
+        for epoch in range(1, (0 if cfg.start_from else cfg.epochs) + 1):
             lr = cfg.lr_for(epoch)
             obs.phase("imitation", f"Copying the counter, epoch {epoch} of {cfg.epochs}")
             t0 = time.time()
@@ -754,13 +766,13 @@ def run_training(
         tested: dict[int, tuple[dict, dict]] = {0: (best_round, best_match)}
         best_index = 0
         log(
-            f"After imitation rounds {best_round['win_rate']:.3f} ({best_round['hero_avg']:.2f} pts, "
+            f"{'Starting net' if cfg.start_from else 'After imitation'}: rounds {best_round['win_rate']:.3f} ({best_round['hero_avg']:.2f} pts, "
             f"assaf {best_round['assaf_rate']:.2f}) matches {best_match['win_rate']:.3f}"
         )
         entry = {"phase": "eval", "iteration": 0, "rounds": best_round, "matches": best_match}
         history.append(entry)
         obs.history(entry)
-        publish_generation(0, "Copied the counter", best_round, best_match, True,
+        publish_generation(0, f"Started from {start_name}" if start_name else "Copied the counter", best_round, best_match, True,
                            {"seconds": round(time.time() - t_gen, 1)})
 
         self_play_games = 0
