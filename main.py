@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Train the Yaniv net and watch it live in your browser.
 
-    python main.py                  # genetic algorithm: evolve a population of nets
-    python main.py --recipe search  # learn from a search teacher that plays each move out
+    python main.py                  # learn from a search teacher that plays each move out
+    python main.py --recipe genetic # evolve a population of nets instead
     python main.py --recipe selfplay  # fine-tune one net on its own wins instead
     python main.py --quick          # a two-minute smoke run
     python main.py --device cuda    # fail loudly if the NVIDIA GPU is not usable
@@ -32,9 +32,9 @@ def main() -> None:
     parser.add_argument("--quick", action="store_true", help="tiny run to check everything works")
     parser.add_argument("--device", default="auto", choices=CHOICES,
                         help="auto picks CUDA, then Apple MPS, then NumPy on the CPU")
-    parser.add_argument("--recipe", choices=("genetic", "search", "selfplay"), default="genetic",
-                        help="genetic evolves a population of nets (default); search copies a teacher that plays "
-                             "each move out; selfplay fine-tunes one net on its wins")
+    parser.add_argument("--recipe", choices=("search", "genetic", "selfplay"), default="search",
+                        help="search copies a teacher that plays each move out (default); genetic evolves a "
+                             "population of nets; selfplay fine-tunes one net on its wins")
     parser.add_argument("--search-rounds", type=int, help="search: rounds labelled per pass (default 150)")
     parser.add_argument("--search-samples", type=int, help="search: imagined deals per searched move (default 48)")
     parser.add_argument("--search-confidence", type=float,
@@ -43,7 +43,8 @@ def main() -> None:
     parser.add_argument("--fitness-rounds", type=int, help="genetic: rounds each network plays per generation, in mirrored pairs (default 1000)")
     parser.add_argument("--legacy", action="store_true",
                         help="the first recipe: fresh wins only, unweighted, 48 test matches, one core")
-    parser.add_argument("--generations", type=int, help="generations after the copied net (default 20 genetic, 8 self-play)")
+    parser.add_argument("--generations", type=int,
+                        help="generations after the copied net (default 8 search, 20 genetic, 8 self-play)")
     parser.add_argument("--games", type=int, help="self-play games per generation (default 800)")
     parser.add_argument("--batch", type=int, help="decisions per gradient step (default 72)")
     parser.add_argument("--workers", type=int,

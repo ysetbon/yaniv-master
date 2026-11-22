@@ -81,9 +81,13 @@ def _search_label(spec: Spec, n: int, seed: int, samples: int, width: int, match
     return collect_search(_net(spec), n, seed, samples, width, match_scores=match_scores, confidence=confidence)
 
 
+THREAD_VARS = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
+
+
 def _init_worker() -> None:
-    # Each worker plays one game at a time; extra BLAS threads only fight.
-    for key in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
+    # Too late to change NumPy's thread count (it is imported by then), but
+    # anything the worker starts itself inherits one thread.
+    for key in THREAD_VARS:
         os.environ[key] = "1"
 
 
@@ -117,6 +121,14 @@ class Workers:
 
     def _get_pool(self) -> ProcessPoolExecutor:
         if self._pool is None:
+            # Each worker plays one game at a time, so its BLAS gets one thread.
+            # A spawned worker reads these when it first imports NumPy, so they
+            # must be set before the pool starts any. With several threads per
+            # worker, all the workers' threads fight over the cores, and search
+            # labelling ran about 8 times slower than one process alone.
+            # NumPy in this process is already loaded and keeps its own setting.
+            for key in THREAD_VARS:
+                os.environ[key] = "1"
             self._pool = ProcessPoolExecutor(
                 self.count, mp_context=multiprocessing.get_context("spawn"), initializer=_init_worker
             )

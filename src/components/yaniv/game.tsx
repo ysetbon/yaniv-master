@@ -70,7 +70,7 @@ interface Report {
   recipe?: string;
   best_generation?: number;
   self_play_iterations?: number;
-  config?: { population?: number; fitness_rounds?: number };
+  config?: { population?: number; fitness_rounds?: number; search_samples?: number };
 }
 
 interface LogLine {
@@ -767,7 +767,19 @@ function MatchSheet({ scores, onRestart }: { scores: [number, number]; onRestart
 function Dossier({ report }: { report: Report | null }) {
   const body = report ? (
     <div className="space-y-3 text-sm leading-relaxed text-[#f6edd9]/90">
-      {report.recipe === "genetic" && !report.self_play_iterations ? (
+      {report.recipe === "search" && report.self_play_iterations ? (
+        <p>
+          It first copied a card counter for {report.expert_decisions.toLocaleString()} decisions across{" "}
+          {report.expert_rounds.toLocaleString()} rounds. Then a search teacher took over: over{" "}
+          {report.self_play_iterations} passes it played {report.self_play_games.toLocaleString()} rounds against the counter, and
+          for each of {report.self_play_winning_decisions.toLocaleString()} decisions it imagined{" "}
+          {report.config?.search_samples ?? "dozens of"} possible deals, played every candidate move to the end of the round, and
+          kept the best. The net learned those moves, and each improved net became the next teacher.{" "}
+          {report.best_generation === 0
+            ? "No pass beat the copy on new games, so the net here is the copy itself."
+            : `The net here is from pass ${report.best_generation}.`}
+        </p>
+      ) : (report.recipe === "genetic" || report.recipe === "search") && !report.self_play_iterations ? (
         <p>
           It copied a card counter for {report.expert_decisions.toLocaleString()} decisions across{" "}
           {report.expert_rounds.toLocaleString()} rounds of the current rules. It has not evolved past that copy yet, so it

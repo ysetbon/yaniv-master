@@ -40,9 +40,24 @@ python main.py
 - **Buttons:** *Stop after this generation* ends early and still tests and saves the best. *Use best in game* writes it to `public/model/` for the game.
 - **Past runs:** results from earlier runs saved under `runs/`.
 
-Generation 0 is always the copy of the card counter. After that, `main.py` runs a genetic algorithm by default. `--recipe selfplay` uses the earlier self-play recipe instead.
+Generation 0 is always the copy of the card counter. After that, `main.py` learns from a search teacher by default. `--recipe genetic` evolves a population instead, and `--recipe selfplay` uses the first self-play recipe.
 
-### How the genetic algorithm works
+### How the search recipe works (the default)
+
+The card counter only looks one move ahead. The search player looks further: for each decision it imagines 48 deals that fit what it can see, plays every candidate move to the end of the round in each of them, and keeps the move with the best average result. The net then learns to pick the searched moves.
+
+1. The best net so far plays the card counter for `--search-rounds` rounds (default 150). Two in five start from random match scores, so play near 100 gets practice.
+2. At every decision with a real choice, the search compares the net's own move, its four next-best plays, and a Yaniv call when legal. It plays each one out with the net in both seats. A move's value is the point margin of the round, plus or minus 100 when the round ends the match.
+3. The opponent's hidden cards are imagined leaning low. The counter throws high cards and keeps low ones, so by mid-round its hidden cards average about 3 points, not the 6 of a random draw.
+4. Another move replaces the net's own only when it wins on the same imagined deals by 1.5 standard errors (`--search-confidence`). Without that bar the search switched on luck between close moves and lost to the counter.
+5. The net learns the searched moves, mixed with a share of the counter's own moves that shrinks from one each to one in four.
+6. The gate ranks each pass by point margin per round, then matches, because matches are decided by total points. The pass it keeps becomes the next teacher, so the playouts get better as the net does.
+
+```bash
+python main.py --generations 12 --search-rounds 300   # about an hour on 10 game processes
+```
+
+### How the genetic algorithm works (`--recipe genetic`)
 
 1. The first population is the copy plus 23 mutants of it. Every member keeps the same shape as the copy (389 → 192 → 192 → 1), so neuron *i* means roughly the same thing in every member.
 2. Each generation, every member plays the same 1,000 rounds against the card counter. Fitness is the share of rounds won, with the points margin as a tie-breaker. Using the same deals means members differ only where their moves differ, not through luck of the deal.
@@ -75,7 +90,9 @@ The card counter's decisions are cached in `runs/.cache/` because they are the s
 
 ### What the numbers say so far
 
-On a test of 1,000 rounds and 400 matches on new games, no recipe has yet produced a generation clearly stronger than the plain copy of the counter. Every candidate won 44–46% of rounds and 38–42% of matches, and those differences are within chance. Learning only from its own wins keeps the net close to the player it copied. The final check exists so a generation that scored well by luck during training does not ship.
+Under the old rules, neither evolution nor self-play produced a net clearly stronger than the card counter: the best won about 52% of rounds and 49% of matches against it.
+
+Under the current rules, the search player itself beat the counter in 124 of 200 matches (62%). A short search run of 2 passes, about 2,200 searched decisions, lifted the net from 196–204 to 214–186 in matches against the counter on the same 400 new games. The gate replay agreed: 54% against Gen 0's 45.5%. Longer runs should go further; the final check still decides what ships.
 
 ```bash
 python main.py --quick                  # small run to check everything works
