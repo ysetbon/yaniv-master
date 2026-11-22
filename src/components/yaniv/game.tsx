@@ -344,9 +344,16 @@ export function Game() {
               onClick={() => throwCards("stock")}
               className="group text-center disabled:opacity-70"
             >
-              <div className="relative mx-auto h-[6.6rem] w-16 sm:h-32 sm:w-[4.4rem]">
-                <PlayingCard faceDown className="absolute top-1 left-1" />
-                <PlayingCard faceDown />
+              {/* Box = card size + the 0.25rem offset of the back card. PlayingCard
+                  always carries `relative`, which overrides an `absolute` passed via
+                  className, so each card is positioned through a wrapper instead. */}
+              <div className="relative mx-auto h-[5.85rem] w-[2.75rem] sm:h-[7.25rem] sm:w-[4.65rem]">
+                <div className="absolute top-1 left-1">
+                  <PlayingCard faceDown />
+                </div>
+                <div className="absolute top-0 left-0">
+                  <PlayingCard faceDown />
+                </div>
                 <span className="absolute -right-2 -bottom-2 rounded-full bg-[#1a120c] px-1.5 text-[10px] text-[#f6edd9]">
                   {state.stock.length}
                 </span>
