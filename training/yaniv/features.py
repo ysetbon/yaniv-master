@@ -165,7 +165,6 @@ def action_features(view: View, action: Action) -> np.ndarray:
     remain_n = popcount(remaining)
     discard_pts = sum(POINTS_OF[c] for c in chosen)
     is_set, is_run, is_single = _combo_kind(chosen)
-    go_out = 1.0 if action.draw == "none" else 0.0
     draw_stock = 1.0 if action.draw == "stock" else 0.0
     draw_open = 1.0 if action.draw == "open" else 0.0
     open_card = view.discard[-1]
@@ -173,9 +172,7 @@ def action_features(view: View, action: Action) -> np.ndarray:
     extends = 0.0
     incoming = 0.0
     result_callable = 0.0
-    if go_out:
-        result_callable = 1.0
-    elif draw_open:
+    if draw_open:
         incoming = float(POINTS_OF[open_card])
         if any(c % 13 == open_card % 13 for c in cards_from_mask(remaining)):
             pairs = 1.0
@@ -199,7 +196,7 @@ def action_features(view: View, action: Action) -> np.ndarray:
             draw_stock,
             draw_open,
             0.0,
-            go_out,
+            0.0,  # was "goes out"; every throw draws now, but the slot keeps the layout
             discard_pts / 40.0,
             remain_pts / 40.0,
             remain_n / 5.0,

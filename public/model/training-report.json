@@ -9,208 +9,423 @@
     1
   ],
   "expert_rounds": 2400,
-  "expert_decisions": 44163,
-  "self_play_games": 3200,
-  "self_play_winning_decisions": 27884,
-  "self_play_iterations": 4,
+  "expert_decisions": 46076,
+  "self_play_games": 6400,
+  "self_play_winning_decisions": 55409,
+  "self_play_iterations": 8,
   "imitation_epochs": 6,
-  "seconds": 701.4,
-  "match_win_rate_vs_benchmark": 0.4166666666666667,
+  "seconds": 944.2,
+  "device": "CPU (NumPy)",
+  "best_generation": 0,
+  "fresh_test": {
+    "2": {
+      "rounds": {
+        "wins": 478,
+        "losses": 516,
+        "ties": 6,
+        "calls": 464,
+        "assafs": 19,
+        "win_rate": 0.478,
+        "hero_avg": 5.686,
+        "villain_avg": 5.059,
+        "assaf_rate": 0.040948275862068964
+      },
+      "matches": {
+        "wins": 153,
+        "losses": 247,
+        "ties": 0,
+        "win_rate": 0.3825
+      }
+    },
+    "0": {
+      "rounds": {
+        "wins": 479,
+        "losses": 515,
+        "ties": 6,
+        "calls": 464,
+        "assafs": 19,
+        "win_rate": 0.479,
+        "hero_avg": 5.715,
+        "villain_avg": 4.962,
+        "assaf_rate": 0.040948275862068964
+      },
+      "matches": {
+        "wins": 155,
+        "losses": 245,
+        "ties": 0,
+        "win_rate": 0.3875
+      }
+    }
+  },
+  "match_win_rate_vs_benchmark": 0.3875,
   "match_record_vs_benchmark": {
-    "wins": 20,
-    "losses": 28,
+    "wins": 155,
+    "losses": 245,
     "ties": 0,
-    "win_rate": 0.4166666666666667
+    "win_rate": 0.3875
   },
-  "round_win_rate_vs_benchmark": 0.42777777777777776,
+  "round_win_rate_vs_benchmark": 0.479,
   "round_record_vs_benchmark": {
-    "wins": 77,
-    "losses": 102,
-    "ties": 1,
-    "win_rate": 0.42777777777777776,
-    "hero_avg": 6.205555555555556,
-    "villain_avg": 4.394444444444445,
-    "calls": 52,
-    "assafs": 4,
-    "assaf_rate": 0.07692307692307693
+    "wins": 479,
+    "losses": 515,
+    "ties": 6,
+    "calls": 464,
+    "assafs": 19,
+    "win_rate": 0.479,
+    "hero_avg": 5.715,
+    "villain_avg": 4.962,
+    "assaf_rate": 0.040948275862068964
   },
-  "round_win_rate_vs_greedy": 0.6555555555555556,
+  "round_win_rate_vs_greedy": 0.6225,
   "round_record_vs_greedy": {
-    "wins": 118,
-    "losses": 60,
-    "ties": 2,
-    "win_rate": 0.6555555555555556,
-    "hero_avg": 3.977777777777778,
-    "villain_avg": 5.933333333333334,
-    "calls": 89,
-    "assafs": 6,
-    "assaf_rate": 0.06741573033707865
+    "wins": 249,
+    "losses": 142,
+    "ties": 9,
+    "calls": 274,
+    "assafs": 31,
+    "win_rate": 0.6225,
+    "hero_avg": 5.13,
+    "villain_avg": 6.1975,
+    "assaf_rate": 0.11313868613138686
   },
-  "round_win_rate_vs_random": 0.9888888888888889,
+  "round_win_rate_vs_random": 0.985,
   "benchmark_vs_greedy": {
-    "wins": 99,
-    "losses": 58,
-    "ties": 3,
-    "win_rate": 0.61875,
-    "hero_avg": 4.15,
-    "villain_avg": 6.5375,
-    "calls": 77,
-    "assafs": 6,
-    "assaf_rate": 0.07792207792207792
+    "wins": 102,
+    "losses": 57,
+    "ties": 1,
+    "calls": 106,
+    "assafs": 10,
+    "win_rate": 0.6375,
+    "hero_avg": 4.4875,
+    "villain_avg": 6.86875,
+    "assaf_rate": 0.09433962264150944
   },
   "history": [
     {
       "phase": "imitation",
       "epoch": 1,
-      "accuracy": 0.8881869438217512,
-      "holdout": 0.9289099526066351,
-      "ce": 0.41115163247902264
+      "accuracy": 0.8862097404288567,
+      "holdout": 0.9040632054176072,
+      "ce": 0.4181601848474167,
+      "seconds": 5.19
     },
     {
       "phase": "imitation",
       "epoch": 2,
-      "accuracy": 0.933790729796436,
-      "holdout": 0.9324644549763034,
-      "ce": 0.22930864571803702
+      "accuracy": 0.9336530948867089,
+      "holdout": 0.9040632054176072,
+      "ce": 0.23021208727056042,
+      "seconds": 4.72
     },
     {
       "phase": "imitation",
       "epoch": 3,
-      "accuracy": 0.9489618006023142,
-      "holdout": 0.9395734597156398,
-      "ce": 0.1792620091567353
+      "accuracy": 0.9475865960586857,
+      "holdout": 0.9255079006772009,
+      "ce": 0.179474304536322,
+      "seconds": 3.68
     },
     {
       "phase": "imitation",
       "epoch": 4,
-      "accuracy": 0.9592871861060164,
-      "holdout": 0.9383886255924171,
-      "ce": 0.14423053221441387
+      "accuracy": 0.9572879590242208,
+      "holdout": 0.9243792325056434,
+      "ce": 0.1454094651351829,
+      "seconds": 3.61
     },
     {
       "phase": "imitation",
       "epoch": 5,
-      "accuracy": 0.9666010008378054,
-      "holdout": 0.9407582938388626,
-      "ce": 0.12153273630282951
+      "accuracy": 0.9649058077958156,
+      "holdout": 0.9255079006772009,
+      "ce": 0.12148157943435743,
+      "seconds": 3.73
     },
     {
       "phase": "imitation",
       "epoch": 6,
-      "accuracy": 0.9707447410728438,
-      "holdout": 0.9395734597156398,
-      "ce": 0.10576538045654248
+      "accuracy": 0.9705703620105912,
+      "holdout": 0.9255079006772009,
+      "ce": 0.10491719215110543,
+      "seconds": 4.21
     },
     {
       "phase": "eval",
       "iteration": 0,
       "rounds": {
-        "wins": 80,
-        "losses": 99,
-        "ties": 1,
-        "win_rate": 0.4444444444444444,
-        "hero_avg": 6.444444444444445,
-        "villain_avg": 4.461111111111111,
-        "calls": 59,
-        "assafs": 5,
-        "assaf_rate": 0.0847457627118644
+        "wins": 185,
+        "losses": 215,
+        "ties": 0,
+        "calls": 180,
+        "assafs": 9,
+        "win_rate": 0.4625,
+        "hero_avg": 5.6625,
+        "villain_avg": 4.8525,
+        "assaf_rate": 0.05
       },
       "matches": {
-        "wins": 19,
-        "losses": 29,
+        "wins": 74,
+        "losses": 126,
         "ties": 0,
-        "win_rate": 0.3958333333333333
+        "win_rate": 0.37
       }
     },
     {
       "phase": "self_play",
       "iteration": 1,
-      "winning_decisions": 7006,
+      "winning_decisions": 6762,
       "rounds": {
-        "wins": 76,
-        "losses": 103,
-        "ties": 1,
-        "win_rate": 0.4222222222222222,
-        "hero_avg": 5.938888888888889,
-        "villain_avg": 4.183333333333334,
-        "calls": 52,
-        "assafs": 2,
-        "assaf_rate": 0.038461538461538464
+        "wins": 183,
+        "losses": 215,
+        "ties": 2,
+        "calls": 178,
+        "assafs": 5,
+        "win_rate": 0.4575,
+        "hero_avg": 5.72,
+        "villain_avg": 4.8175,
+        "assaf_rate": 0.028089887640449437
       },
       "matches": {
-        "wins": 17,
-        "losses": 31,
+        "wins": 75,
+        "losses": 125,
         "ties": 0,
-        "win_rate": 0.3541666666666667
+        "win_rate": 0.375
       }
     },
     {
       "phase": "self_play",
       "iteration": 2,
-      "winning_decisions": 6914,
+      "winning_decisions": 6891,
       "rounds": {
-        "wins": 77,
-        "losses": 102,
-        "ties": 1,
-        "win_rate": 0.42777777777777776,
-        "hero_avg": 6.205555555555556,
-        "villain_avg": 4.394444444444445,
-        "calls": 52,
-        "assafs": 4,
-        "assaf_rate": 0.07692307692307693
+        "wins": 198,
+        "losses": 198,
+        "ties": 4,
+        "calls": 199,
+        "assafs": 14,
+        "win_rate": 0.495,
+        "hero_avg": 5.7375,
+        "villain_avg": 5.3,
+        "assaf_rate": 0.07035175879396985
       },
       "matches": {
-        "wins": 20,
-        "losses": 28,
+        "wins": 84,
+        "losses": 116,
         "ties": 0,
-        "win_rate": 0.4166666666666667
+        "win_rate": 0.42
       }
     },
     {
       "phase": "self_play",
       "iteration": 3,
-      "winning_decisions": 7041,
+      "winning_decisions": 7079,
       "rounds": {
-        "wins": 86,
-        "losses": 94,
-        "ties": 0,
-        "win_rate": 0.4777777777777778,
-        "hero_avg": 5.788888888888889,
-        "villain_avg": 5.566666666666666,
-        "calls": 62,
-        "assafs": 4,
-        "assaf_rate": 0.06451612903225806
+        "wins": 208,
+        "losses": 191,
+        "ties": 1,
+        "calls": 210,
+        "assafs": 13,
+        "win_rate": 0.52,
+        "hero_avg": 5.35,
+        "villain_avg": 5.295,
+        "assaf_rate": 0.06190476190476191
       },
       "matches": {
-        "wins": 14,
-        "losses": 34,
+        "wins": 79,
+        "losses": 121,
         "ties": 0,
-        "win_rate": 0.2916666666666667
+        "win_rate": 0.395
       }
     },
     {
       "phase": "self_play",
       "iteration": 4,
-      "winning_decisions": 6923,
+      "winning_decisions": 6897,
       "rounds": {
-        "wins": 91,
-        "losses": 87,
-        "ties": 2,
-        "win_rate": 0.5055555555555555,
-        "hero_avg": 5.455555555555556,
-        "villain_avg": 5.727777777777778,
-        "calls": 63,
-        "assafs": 3,
-        "assaf_rate": 0.047619047619047616
+        "wins": 183,
+        "losses": 213,
+        "ties": 4,
+        "calls": 179,
+        "assafs": 9,
+        "win_rate": 0.4575,
+        "hero_avg": 5.7525,
+        "villain_avg": 4.8725,
+        "assaf_rate": 0.05027932960893855
       },
       "matches": {
-        "wins": 19,
-        "losses": 29,
+        "wins": 81,
+        "losses": 119,
         "ties": 0,
-        "win_rate": 0.3958333333333333
+        "win_rate": 0.405
       }
+    },
+    {
+      "phase": "self_play",
+      "iteration": 5,
+      "winning_decisions": 7005,
+      "rounds": {
+        "wins": 183,
+        "losses": 214,
+        "ties": 3,
+        "calls": 182,
+        "assafs": 11,
+        "win_rate": 0.4575,
+        "hero_avg": 5.57,
+        "villain_avg": 4.8625,
+        "assaf_rate": 0.06043956043956044
+      },
+      "matches": {
+        "wins": 75,
+        "losses": 125,
+        "ties": 0,
+        "win_rate": 0.375
+      }
+    },
+    {
+      "phase": "self_play",
+      "iteration": 6,
+      "winning_decisions": 6867,
+      "rounds": {
+        "wins": 206,
+        "losses": 192,
+        "ties": 2,
+        "calls": 203,
+        "assafs": 8,
+        "win_rate": 0.515,
+        "hero_avg": 5.265,
+        "villain_avg": 4.9525,
+        "assaf_rate": 0.03940886699507389
+      },
+      "matches": {
+        "wins": 73,
+        "losses": 127,
+        "ties": 0,
+        "win_rate": 0.365
+      }
+    },
+    {
+      "phase": "self_play",
+      "iteration": 7,
+      "winning_decisions": 6991,
+      "rounds": {
+        "wins": 200,
+        "losses": 200,
+        "ties": 0,
+        "calls": 189,
+        "assafs": 8,
+        "win_rate": 0.5,
+        "hero_avg": 5.245,
+        "villain_avg": 5.3925,
+        "assaf_rate": 0.042328042328042326
+      },
+      "matches": {
+        "wins": 73,
+        "losses": 127,
+        "ties": 0,
+        "win_rate": 0.365
+      }
+    },
+    {
+      "phase": "self_play",
+      "iteration": 8,
+      "winning_decisions": 6917,
+      "rounds": {
+        "wins": 191,
+        "losses": 207,
+        "ties": 2,
+        "calls": 190,
+        "assafs": 9,
+        "win_rate": 0.4775,
+        "hero_avg": 5.755,
+        "villain_avg": 4.985,
+        "assaf_rate": 0.04736842105263158
+      },
+      "matches": {
+        "wins": 78,
+        "losses": 122,
+        "ties": 0,
+        "win_rate": 0.39
+      }
+    },
+    {
+      "phase": "fresh_test",
+      "chosen": 0,
+      "results": {
+        "2": {
+          "rounds": {
+            "wins": 478,
+            "losses": 516,
+            "ties": 6,
+            "calls": 464,
+            "assafs": 19,
+            "win_rate": 0.478,
+            "hero_avg": 5.686,
+            "villain_avg": 5.059,
+            "assaf_rate": 0.040948275862068964
+          },
+          "matches": {
+            "wins": 153,
+            "losses": 247,
+            "ties": 0,
+            "win_rate": 0.3825
+          }
+        },
+        "0": {
+          "rounds": {
+            "wins": 479,
+            "losses": 515,
+            "ties": 6,
+            "calls": 464,
+            "assafs": 19,
+            "win_rate": 0.479,
+            "hero_avg": 5.715,
+            "villain_avg": 4.962,
+            "assaf_rate": 0.040948275862068964
+          },
+          "matches": {
+            "wins": 155,
+            "losses": 245,
+            "ties": 0,
+            "win_rate": 0.3875
+          }
+        }
+      },
+      "rounds": 1000,
+      "matches": 400
     }
   ],
+  "config": {
+    "expert_rounds": 2400,
+    "holdout_rounds": 240,
+    "epochs": 6,
+    "generations": 8,
+    "games_per_generation": 800,
+    "eval_rounds": 400,
+    "eval_matches": 200,
+    "bench_rounds": 160,
+    "lrs": [
+      0.0012,
+      0.0008,
+      0.0005,
+      0.0003,
+      0.0002,
+      0.00012
+    ],
+    "batch": 72,
+    "temperature": 0.32,
+    "fine_tune_lr": 0.00015,
+    "fine_tune_epochs": 2,
+    "replay_capacity": 60000,
+    "expert_mix_start": 2.0,
+    "expert_mix_end": 0.5,
+    "weighted": true,
+    "match_scores": true,
+    "revert_on_reject": false,
+    "final_rounds": 1000,
+    "final_matches": 400,
+    "ladder_rounds": 0,
+    "workers": 3,
+    "cache": true
+  },
   "rules": {
     "yaniv_max": 5,
     "assaf_penalty": 30,

@@ -435,8 +435,6 @@ def print_sample(log=print) -> None:
         names = " ".join(_card(c) for c in _cards(view.my_hand))
         if choice.kind == "yaniv":
             played = "calls Yaniv"
-        elif choice.draw == "none":
-            played = "goes out"
         else:
             thrown = " ".join(_card(c) for c in _cards(choice.discard_mask))
             source = "the deck" if choice.draw == "stock" else _card(view.discard[-1])

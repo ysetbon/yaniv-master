@@ -44,7 +44,6 @@ export function describeAction(view: View, action: Action, ranked: ScoredAction[
   const thrown = cardsFromMask(action.discardMask);
   const names = thrown.map(cardName).join(" ");
   const shed = thrown.reduce((sum, card) => sum + cardPoints(card), 0);
-  if (action.draw === "none") return `Throws ${names} and goes out for zero.`;
   const open = view.discard[view.discard.length - 1];
   const draw = action.draw === "open" ? `takes the ${cardName(open)}` : "draws from the deck";
   let line = `Throws ${names} (${shed} points) and ${draw}.`;

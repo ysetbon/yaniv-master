@@ -37,8 +37,6 @@ def describe(view: View, action: Action) -> str:
     if action.kind == "yaniv":
         return f"calls Yaniv on {mask_points(view.my_hand)}"
     thrown = " ".join(card_name(c) for c in cards_from_mask(action.discard_mask))
-    if action.draw == "none":
-        return f"throws {thrown} and goes out"
     source = "draws from the deck" if action.draw == "stock" else f"takes the {card_name(view.discard[-1])}"
     top = f" ({card_name(action.top)} on top)" if action.discard_mask & (action.discard_mask - 1) else ""
     return f"throws {thrown}{top}, {source}"
@@ -239,7 +237,7 @@ class Showcase(threading.Thread):
                     "thrown": cards_from_mask(action.discard_mask),
                     "top": action.top,
                     "draw": action.draw,
-                    "drawn": drawn[0] if drawn and action.draw != "none" else None,
+                    "drawn": drawn[0] if drawn else None,
                 }
                 self._board(state, players, round_no, last=last, thinking=think)
                 if not self._wait(self.control["delay"]):
@@ -271,8 +269,6 @@ class Showcase(threading.Thread):
     def _round_note(state, players) -> str:
         r = state.result
         names = [p.label for p in players]
-        if r.reason == "go_out":
-            return f"{names[r.winner]} went out for zero."
         if r.reason == "showdown":
             return f"Showdown after {MAX_PLIES} throws: {r.points[0]} to {r.points[1]}."
         caller = names[r.caller]

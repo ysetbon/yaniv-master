@@ -12,8 +12,9 @@ match the TypeScript port card for card.
 - You choose which thrown card stays face up. The card you may draw from
   the discard is the one that was face up before you threw, not a card you
   just played.
-- If the whole hand is one combination, you may throw it and go out for 0.
-- Otherwise you draw the previous open card or the top of the stock.
+- Every throw is followed by a draw: the previous open card or the top of
+  the stock. That holds when you throw your whole hand too, so a hand
+  never empties and a round only ends by Yaniv or showdown.
 - At the start of your turn, with 5 points or fewer, you may call Yaniv
   instead of throwing. If your hand is strictly lower than the opponent's,
   you score 0 and they score their hand. If they have the same or less,
@@ -187,7 +188,7 @@ class RoundResult:
     hands: list[int]
     assaf: bool
     caller: int | None
-    reason: str  # "yaniv", "go_out", "showdown"
+    reason: str  # "yaniv" or "showdown"
     winner: int | None
 
     def to_json(self) -> dict:
@@ -327,10 +328,6 @@ def legal_actions(view: View) -> list[Action]:
         mask = 0
         for c in chosen:
             mask |= 1 << c
-        if len(chosen) == n:
-            top = max(chosen, key=lambda c: (POINTS_OF[c], c))
-            actions.append(Action("play", mask, top, "none"))
-            continue
         for top in chosen:
             if stock_ok:
                 actions.append(Action("play", mask, top, "stock"))
@@ -379,19 +376,15 @@ def apply_action(state: State, action: Action, rng=None) -> None:
     chosen = cards_from_mask(discard_mask)
     if not is_valid_combo(chosen) or action.top not in chosen:
         raise ValueError("illegal combination")
+    if action.draw not in ("stock", "open"):
+        raise ValueError("every throw must draw from the stock or the open card")
+    if action.draw == "stock" and not state.stock:
+        raise ValueError("stock is empty")
     remaining = hand & ~discard_mask
     ordered = [c for c in chosen if c != action.top] + [action.top]
     state.known[me] &= ~discard_mask
     state.discard.extend(ordered)
     state.ply += 1
-    if remaining == 0:
-        state.hands[me] = 0
-        state.known[me] = 0
-        opp = 1 - me
-        added = [0, 0]
-        added[opp] = mask_points(state.hands[opp])
-        _finish(state, added, False, None, "go_out", me)
-        return
     if action.draw == "stock":
         if not state.stock:
             raise ValueError("stock is empty")
@@ -402,7 +395,7 @@ def apply_action(state: State, action: Action, rng=None) -> None:
         del state.discard[idx]
         state.known[me] |= 1 << card
     else:
-        raise ValueError("a throw that leaves cards must draw")
+        raise ValueError("every throw must draw from the stock or the open card")
     state.hands[me] = remaining | (1 << card)
     state.turn = 1 - me
 
