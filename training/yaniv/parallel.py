@@ -150,6 +150,23 @@ class Workers:
         parts = self._run(_rounds, jobs, [size for _, size in chunks], n, progress)
         return _merge_rounds(parts, n)
 
+    def rounds_many(self, specs: list[Spec], opponent: Spec, n: int, seed: int, progress=None) -> list[dict]:
+        """Each spec plays `n` rounds against `opponent` on the same deals (same seed).
+
+        One job per spec, so each network's weights are sent once.
+        """
+        if self.count == 1:
+            from .train import round_duel
+
+            out = []
+            for i, spec in enumerate(specs):
+                out.append(round_duel(chooser(spec), chooser(opponent), n, seed))
+                if progress is not None:
+                    progress((i + 1) * n, len(specs) * n)
+            return out
+        jobs = [(spec, opponent, n, seed) for spec in specs]
+        return self._run(_rounds, jobs, [n] * len(specs), len(specs) * n, progress)
+
     def matches(self, a: Spec, b: Spec, n: int, seed: int, progress=None) -> dict:
         if self.count == 1:
             from .train import match_duel

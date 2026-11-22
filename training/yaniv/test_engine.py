@@ -95,7 +95,7 @@ class RulesTest(unittest.TestCase):
                 mask |= 1 << card
             self.assertEqual(best_keep_points(mask), brute_keep(mask))
 
-    def test_yaniv_assaf_and_go_out(self):
+    def test_yaniv_assaf_and_whole_hand_throw(self):
         state = new_round([0, 0], 0, random.Random(1))
         state.hands = [(1 << 0) | (1 << 1), (1 << 12) | (1 << 11) | (1 << 10)]
         state.known = [0, 0]
@@ -139,12 +139,37 @@ class RulesTest(unittest.TestCase):
         state.discard = [rest[0]]
         state.stock = rest[1:]
         state.turn = 0
-        apply_action(state, Action("play", run, 2, "none"))
-        self.assertEqual(state.result.reason, "go_out")
-        self.assertEqual(state.result.added[0], 0)
-        self.assertEqual(state.result.points[0], 0)
-        self.assertEqual(state.result.winner, 0)
-        self.assertGreater(state.result.added[1], 0)
+        # Throwing the whole hand still needs a draw, so the hand never empties.
+        whole = [a for a in legal_actions(make_view(state, 0)) if a.kind == "play" and a.discard_mask == run]
+        self.assertTrue(whole)
+        self.assertTrue(all(a.draw in ("stock", "open") for a in whole))
+        before = state.to_json()
+        with self.assertRaises(ValueError):
+            apply_action(state, Action("play", run, 2, "none"))
+        self.assertEqual(state.to_json(), before)  # a rejected move changes nothing
+        top_of_stock = state.stock[-1]
+        apply_action(state, Action("play", run, 2, "stock"))
+        self.assertFalse(state.terminal)
+        self.assertEqual(state.hands[0], 1 << top_of_stock)
+        self.assertEqual(state.turn, 1)
+        self.assertTrue(conserved(state))
+
+    def test_every_throw_draws_and_hands_never_empty(self):
+        rng = random.Random(8)
+        for game in range(60):
+            state = new_round([0, 0], game % 2, rng)
+            while not state.terminal and state.ply < 48:
+                actions = legal_actions(make_view(state, state.turn))
+                for action in actions:
+                    if action.kind == "play":
+                        self.assertIn(action.draw, ("stock", "open"))
+                apply_action(state, rng.choice(actions))
+                if not state.terminal:
+                    self.assertGreater(state.hands[0], 0)
+                    self.assertGreater(state.hands[1], 0)
+                    self.assertTrue(conserved(state))
+            if state.terminal:
+                self.assertIn(state.result.reason, ("yaniv", "showdown"))
 
     def test_draw_open_tracks_known_card_and_top(self):
         clubs_king, diamonds_king, hearts_king = 12, 12 + 13, 12 + 26

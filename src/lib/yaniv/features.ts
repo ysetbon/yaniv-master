@@ -152,7 +152,6 @@ export function actionFeatures(view: View, action: Action): number[] {
   const remainN = popcount(remaining);
   const discardPts = chosen.reduce((sum, card) => sum + cardPoints(card), 0);
   const [isSet, isRun, isSingle] = comboKind(chosen);
-  const goOut = action.draw === "none" ? 1 : 0;
   const drawStock = action.draw === "stock" ? 1 : 0;
   const drawOpen = action.draw === "open" ? 1 : 0;
   const openCard = view.discard[view.discard.length - 1];
@@ -160,8 +159,7 @@ export function actionFeatures(view: View, action: Action): number[] {
   let extendsFlag = 0;
   let incoming = 0;
   let resultCallable = 0;
-  if (goOut) resultCallable = 1;
-  else if (drawOpen) {
+  if (drawOpen) {
     incoming = cardPoints(openCard);
     if (cardsFromMask(remaining).some((card) => card % 13 === openCard % 13)) pairs = 1;
     if (extendsRun(remaining, openCard)) extendsFlag = 1;
@@ -182,7 +180,7 @@ export function actionFeatures(view: View, action: Action): number[] {
       drawStock,
       drawOpen,
       0,
-      goOut,
+      0, // was "goes out"; every throw draws now, but the slot keeps the layout
       discardPts / 40,
       remainPts / 40,
       remainN / 5,

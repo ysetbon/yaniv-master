@@ -18,7 +18,7 @@ interface RawState {
     hands: [number, number];
     assaf: boolean;
     caller: number | null;
-    reason: "yaniv" | "go_out" | "showdown";
+    reason: "yaniv" | "showdown";
     winner: number | null;
   } | null;
 }

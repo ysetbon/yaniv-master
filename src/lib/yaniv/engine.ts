@@ -15,7 +15,7 @@ export const SUIT_NAMES = ["clubs", "diamonds", "hearts", "spades"] as const;
 export const POINTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10];
 
 export type Draw = "stock" | "open" | "none";
-export type RoundReason = "yaniv" | "go_out" | "showdown";
+export type RoundReason = "yaniv" | "showdown";
 
 export interface Action {
   kind: "play" | "yaniv";
@@ -267,16 +267,6 @@ export function legalActions(view: View): Action[] {
     for (let i = 0; i < n; i += 1) if (subset & (1 << i)) chosen.push(cards[i]);
     if (!isValidCombo(chosen)) continue;
     const discardMask = maskOf(chosen);
-    if (chosen.length === n) {
-      const top = chosen.reduce((best, card) => {
-        const bestPoints = cardPoints(best);
-        const points = cardPoints(card);
-        if (points > bestPoints || (points === bestPoints && card > best)) return card;
-        return best;
-      });
-      actions.push({ kind: "play", discardMask, top, draw: "none" });
-      continue;
-    }
     for (const top of chosen) {
       if (stockOk) actions.push({ kind: "play", discardMask, top, draw: "stock" });
       actions.push({ kind: "play", discardMask, top, draw: "open" });
@@ -324,20 +314,13 @@ export function applyAction(state: State, action: Action): void {
   if (discardMask === 0n || (discardMask & hand) !== discardMask) throw new Error("discard is not in hand");
   const chosen = cardsFromMask(discardMask);
   if (!isValidCombo(chosen) || !chosen.includes(action.top)) throw new Error("illegal combination");
+  if (action.draw !== "stock" && action.draw !== "open") throw new Error("every throw must draw from the deck or the open card");
+  if (action.draw === "stock" && state.stock.length === 0) throw new Error("stock is empty");
   const remaining = hand & ~discardMask;
   const ordered = chosen.filter((card) => card !== action.top).concat(action.top);
   state.known[me] &= ~discardMask;
   state.discard.push(...ordered);
   state.ply += 1;
-  if (remaining === 0n) {
-    state.hands[me] = 0n;
-    state.known[me] = 0n;
-    const opp = 1 - me;
-    const added: [number, number] = [0, 0];
-    added[opp] = maskPoints(state.hands[opp]);
-    finish(state, added, false, null, "go_out", me);
-    return;
-  }
   let card: number;
   if (action.draw === "stock") {
     const drawn = state.stock.pop();
@@ -349,7 +332,7 @@ export function applyAction(state: State, action: Action): void {
     state.discard.splice(idx, 1);
     state.known[me] |= 1n << BigInt(card);
   } else {
-    throw new Error("a throw that leaves cards must draw");
+    throw new Error("every throw must draw from the deck or the open card");
   }
   state.hands[me] = remaining | (1n << BigInt(card));
   state.turn = 1 - me;

@@ -68,6 +68,10 @@ interface Report {
   round_record_vs_greedy: { hero_avg: number; villain_avg: number };
   round_win_rate_vs_random: number;
   benchmark_vs_greedy: { wins: number; losses: number; win_rate: number; hero_avg: number; villain_avg: number; assaf_rate: number };
+  recipe?: string;
+  best_generation?: number;
+  self_play_iterations?: number;
+  config?: { population?: number; fitness_rounds?: number };
 }
 
 interface LogLine {
@@ -142,7 +146,6 @@ export function Game() {
   const points = maskPoints(state.hands[0]);
   const selectionValid = selected.length > 0 && isValidCombo(selected);
   const top = selected.length && selected.includes(topOverride ?? -1) ? (topOverride as number) : selected.length ? defaultTop(selected) : -1;
-  const goingOut = selectionValid && selected.length === hand.length;
   const canCall = !state.terminal && state.turn === 0 && points <= YANIV_LIMIT && points > 0;
   const openCard = state.discard[state.discard.length - 1];
 
@@ -205,16 +208,12 @@ export function Game() {
     setMatch((current) => ({ ...current, state: next }));
   }
 
-  function throwCards(draw: "stock" | "open" | "none") {
+  function throwCards(draw: "stock" | "open") {
     if (!selectionValid || state.turn !== 0 || state.terminal) return;
-    if (draw === "none" && !goingOut) return;
     if (draw === "stock" && state.stock.length === 0) return;
     const action: Action = { kind: "play", discardMask: maskOf(selected), top, draw };
     const thrown = selected.map(cardName).join(" ");
-    const line =
-      draw === "none"
-        ? `You throw ${thrown} and go out.`
-        : `You throw ${thrown} and ${draw === "open" ? `take the ${cardName(openCard)}` : "draw from the deck"}.`;
+    const line = `You throw ${thrown} and ${draw === "open" ? `take the ${cardName(openCard)}` : "draw from the deck"}.`;
     commit(action, line);
   }
 
@@ -340,7 +339,7 @@ export function Game() {
           <div className="mx-auto mt-6 flex max-w-md items-end justify-center gap-6 sm:mt-8">
             <button
               type="button"
-              disabled={!selectionValid || goingOut || state.turn !== 0 || state.stock.length === 0}
+              disabled={!selectionValid || state.turn !== 0 || state.stock.length === 0}
               onClick={() => throwCards("stock")}
               className="group text-center disabled:opacity-70"
             >
@@ -355,7 +354,7 @@ export function Game() {
             </button>
             <button
               type="button"
-              disabled={!selectionValid || goingOut || state.turn !== 0}
+              disabled={!selectionValid || state.turn !== 0}
               onClick={() => throwCards("open")}
               className="text-center disabled:opacity-80"
             >
@@ -390,28 +389,20 @@ export function Game() {
           </div>
 
           <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
-            {goingOut ? (
-              <Button className="h-11 bg-[#e6c27a] text-[#2a2118] hover:bg-[#efd7a4]" onClick={() => throwCards("none")}>
-                Go out for 0
-              </Button>
-            ) : (
-              <>
-                <Button
-                  className="h-11 bg-[#f6edd9] text-[#1c1916] hover:bg-white"
-                  disabled={!selectionValid || state.turn !== 0 || state.stock.length === 0 || aiTurn}
-                  onClick={() => throwCards("stock")}
-                >
-                  Throw, then draw blind
-                </Button>
-                <Button
-                  className="h-11 bg-[#245c3e] text-[#f6edd9] hover:bg-[#2d7350]"
-                  disabled={!selectionValid || state.turn !== 0 || aiTurn}
-                  onClick={() => throwCards("open")}
-                >
-                  Throw, then take {cardName(openCard)}
-                </Button>
-              </>
-            )}
+            <Button
+              className="h-11 bg-[#f6edd9] text-[#1c1916] hover:bg-white"
+              disabled={!selectionValid || state.turn !== 0 || state.stock.length === 0 || aiTurn}
+              onClick={() => throwCards("stock")}
+            >
+              Throw, then draw blind
+            </Button>
+            <Button
+              className="h-11 bg-[#245c3e] text-[#f6edd9] hover:bg-[#2d7350]"
+              disabled={!selectionValid || state.turn !== 0 || aiTurn}
+              onClick={() => throwCards("open")}
+            >
+              Throw, then take {cardName(openCard)}
+            </Button>
             <Button
               className="h-11 border border-[#e6c27a] bg-transparent text-[#e6c27a] hover:bg-[#e6c27a]/15"
               disabled={!canCall || aiTurn}
@@ -430,7 +421,7 @@ export function Game() {
                 ? `Throwing ${shed} points${selected.length > 1 ? `, ${cardName(top)} stays face up` : ""}. ${points - shed} remain before the draw.`
                 : "That selection is not one combination."}
           </p>
-          {selectionValid && selected.length > 1 && !goingOut && (
+          {selectionValid && selected.length > 1 && (
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <span className="text-xs text-[#f6edd9]/80">Leave face up</span>
               {selected.map((card) => (
@@ -498,9 +489,6 @@ function Score({ name, value, hot }: { name: string; value: number; hot: boolean
 function resultHeadline(result: RoundResult, seat: number): string {
   const mine = result.points[seat];
   const theirs = result.points[1 - seat];
-  if (result.reason === "go_out") {
-    return result.winner === seat ? "You emptied your hand. That is zero, and there is no Assaf." : "The net went out for zero.";
-  }
   if (result.reason === "showdown") return `Showdown. You have ${mine}, the net has ${theirs}.`;
   if (result.assaf && result.caller === seat) return `Assaf. The net had ${theirs}, which catches your ${mine}.`;
   if (result.assaf && result.caller !== seat) return `Assaf. You had ${mine}, enough to catch the call.`;
@@ -520,7 +508,7 @@ function ResultSheet({
   return (
     <div className="fixed inset-0 z-40 grid place-items-center bg-black/55 p-4">
       <div className="w-full max-w-lg rounded-2xl bg-[#fbf6ee] p-5 text-[#241c14] shadow-2xl">
-        <p className="text-xs tracking-[0.16em] text-[#8a6232] uppercase">{result.assaf ? "Assaf" : result.reason === "go_out" ? "Out" : "Yaniv"}</p>
+        <p className="text-xs tracking-[0.16em] text-[#8a6232] uppercase">{result.assaf ? "Assaf" : result.reason === "showdown" ? "Showdown" : "Yaniv"}</p>
         <h2 className="font-display text-3xl leading-tight">{resultHeadline(result, 0)}</h2>
         <p className="mt-2 text-sm text-[#5c5144]">
           {result.assaf
@@ -581,12 +569,25 @@ function MatchSheet({ scores, onRestart }: { scores: [number, number]; onRestart
 function Dossier({ report }: { report: Report | null }) {
   const body = report ? (
     <div className="space-y-3 text-sm text-[#f6edd9]">
-      <p>
-        It first copied a card counter for {report.expert_decisions.toLocaleString()} decisions
-        across {report.expert_rounds.toLocaleString()} rounds, then played {report.self_play_games.toLocaleString()} games
-        against itself and that counter. Only the throws from rounds it won were kept
-        ({report.self_play_winning_decisions.toLocaleString()} of them).
-      </p>
+      {report.recipe === "genetic" ? (
+        <p>
+          It first copied a card counter for {report.expert_decisions.toLocaleString()} decisions
+          across {report.expert_rounds.toLocaleString()} rounds. Then a population of {report.config?.population ?? "many"} networks
+          evolved for {report.self_play_iterations ?? 0} generations. Each generation every network played{" "}
+          {report.config?.fitness_rounds ?? "a few hundred"} rounds against the counter on the same deals, and the fittest were kept
+          or bred into the next generation by crossover and mutation.{" "}
+          {report.best_generation === 0
+            ? "No evolved champion beat the copy on new games, so the net here is the copy itself."
+            : `The net here is the champion of generation ${report.best_generation}.`}
+        </p>
+      ) : (
+        <p>
+          It first copied a card counter for {report.expert_decisions.toLocaleString()} decisions
+          across {report.expert_rounds.toLocaleString()} rounds, then played {report.self_play_games.toLocaleString()} games
+          against itself and that counter. Only the throws from rounds it won were kept
+          ({report.self_play_winning_decisions.toLocaleString()} of them).
+        </p>
+      )}
       <p>
         In direct matches it won {report.match_record_vs_benchmark.wins}, lost {report.match_record_vs_benchmark.losses},
         and tied {report.match_record_vs_benchmark.ties}. Over the measured rounds it averages {report.round_record_vs_benchmark.hero_avg.toFixed(1)} points
@@ -617,7 +618,9 @@ function Dossier({ report }: { report: Report | null }) {
         <SheetContent side="bottom" className="max-h-[80dvh] overflow-y-auto bg-[#1a140f] pb-8 text-[#f6edd9]">
           <SheetHeader>
             <SheetTitle className="text-[#f6edd9]">How it learned</SheetTitle>
-            <SheetDescription className="text-[#f6edd9]/70">Self-play against a card counter, then more self-play.</SheetDescription>
+            <SheetDescription className="text-[#f6edd9]/70">
+              {report?.recipe === "genetic" ? "Copied a card counter, then evolved a population of nets." : "Copied a card counter, then learned from its own wins."}
+            </SheetDescription>
           </SheetHeader>
           {body}
         </SheetContent>
@@ -641,7 +644,7 @@ function RulesButton() {
           <li>Five cards each. Ace is 1, numbers are their pips, and 10, jack, queen, and king are 10.</li>
           <li>On your turn throw one combination: a single card, two or more of a rank, or three or more consecutive cards of one suit. Ace is low only, so A-2-3 is a run and queen-king-ace is not.</li>
           <li>You choose which thrown card stays face up. Then draw either the previous open card or the top of the deck. You cannot draw a card you just threw.</li>
-          <li>If your whole hand is one combination, you may throw it and go out for 0. That cannot be Assaf.</li>
+          <li>If your whole hand is one combination you may throw all of it, but you still draw, so you always hold at least one card.</li>
           <li>With 5 points or fewer you may call Yaniv instead of throwing. If your hand is strictly lower, you score 0 and the net scores its hand. If the net has the same or less, you are Assaf: you take your points plus 30, and the net scores 0.</li>
           <li>The deck is not reshuffled. When it is empty you can only take the open card. After 48 throws the hands are shown and the lower one scores 0.</li>
           <li>Scores add up. When someone reaches 100, the lower score wins the match.</li>

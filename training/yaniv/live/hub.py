@@ -17,6 +17,8 @@ class Hub:
         self._lock = threading.Lock()
         self._subscribers: list[queue.Queue] = []
         self.nets: dict[int, MLP] = {}
+        self.pop_nets: list[MLP] = []
+        self.pop_info: list[dict] = []
         self.stop_requested = False
         self.started = time.time()
         self.state: dict = {
@@ -29,7 +31,8 @@ class Hub:
             "generations": [],
             "ladder": [],
             "logs": [],
-            "board": None,
+            "boards": {},
+            "population": [],
             "showcase": None,
             "report": None,
             "paths": {},
@@ -91,9 +94,28 @@ class Hub:
             self._logs.append(line)
         self.publish("log", line)
 
+    def set_board(self, table: int, board: dict) -> None:
+        """One table's latest position. Sent as a "board" event that carries its table number."""
+        with self._lock:
+            self.state["boards"][str(table)] = board
+        self.publish("board", board)
+
     def add_net(self, index: int, net: MLP) -> None:
         with self._lock:
             self.nets[index] = net
+
+    def set_population(self, nets: list[MLP], info: list[dict]) -> None:
+        with self._lock:
+            self.pop_nets = list(nets)
+            self.pop_info = list(info)
+
+    def population_member(self, slot: int) -> tuple[MLP, dict] | None:
+        """Member `slot` of the newest population, best first, wrapping around."""
+        with self._lock:
+            if not self.pop_nets:
+                return None
+            i = slot % len(self.pop_nets)
+            return self.pop_nets[i], self.pop_info[i]
 
     def net(self, index: int) -> MLP | None:
         with self._lock:
@@ -136,6 +158,10 @@ class HubObserver(Observer):
         self.hub.append("generation", "generations", gen)
         if gen["index"] > 0 and gen["kept"]:
             self.hub.toast("good", f"Gen {gen['index']} is the new best: {int(gen['matches']['win_rate']*100 + 0.5)}% of matches won against the counter")
+
+    def population(self, summary: dict, nets: list[MLP]) -> None:
+        self.hub.set_population(nets, summary["members"])
+        self.hub.append("population", "population", summary)
 
     def should_stop(self) -> bool:
         return self.hub.stop_requested

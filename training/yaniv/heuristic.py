@@ -150,9 +150,6 @@ def _score_action(view: View, action: Action, pool: list[int]) -> tuple[float, f
 
 def choose_heuristic(view: View, actions: list[Action], rng=None) -> Action:
     del rng
-    for action in actions:
-        if action.kind == "play" and action.draw == "none":
-            return action
     call = next((action for action in actions if action.kind == "yaniv"), None)
     if call is not None and mask_points(view.my_hand) < opp_min_points(view):
         return call
@@ -177,9 +174,6 @@ def choose_heuristic(view: View, actions: list[Action], rng=None) -> Action:
 def choose_greedy(view: View, actions: list[Action], rng=None) -> Action:
     """Throw the fattest combination. Take the open card only when it is cheap."""
     del rng
-    for action in actions:
-        if action.kind == "play" and action.draw == "none":
-            return action
     mine = mask_points(view.my_hand)
     if mine <= YANIV_LIMIT and (mine <= 3 or view.opp_size >= 5):
         call = next(action for action in actions if action.kind == "yaniv")
