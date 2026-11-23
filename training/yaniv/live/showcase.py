@@ -22,7 +22,7 @@ from ..engine import (
     new_round,
     resolve_showdown,
 )
-from ..features import INPUT_DIM, net_actions, score_actions
+from ..features import INPUT_DIM, net_actions, score_actions, state_features
 from ..heuristic import choose_greedy, choose_heuristic, choose_random
 from .hub import Hub
 
@@ -49,10 +49,18 @@ class Player:
         self.label = label
         self.net = net
         self.bot = bot
+        self.last_experts: dict | None = None  # the decider's weights at this player's last move, for a mixture
 
     def choose(self, view: View, actions: list[Action], rng) -> tuple[Action, list[dict] | None]:
+        self.last_experts = None
         if self.bot is not None:
             return self.bot(view, actions, rng), None
+        if hasattr(self.net, "experts"):
+            from ..moe import stage_of_state
+
+            state = state_features(view)[None, :]
+            self.last_experts = {"weights": [round(float(w), 3) for w in self.net.weights_for(state)[0]],
+                                 "rule": int(stage_of_state(state)[0])}
         if self.net.dims[0] == INPUT_DIM:
             actions = net_actions(actions)[0]  # suit-only twins are one move to the net
         scores = score_actions(self.net, view, actions).astype(np.float64)
@@ -294,6 +302,8 @@ class Table(threading.Thread):
                 before = state.hands[seat]
                 text = describe(view, action)
                 think = None if thinking is None else {"seat": seat, "moves": thinking}
+                if think is not None and players[seat].last_experts is not None:
+                    think["experts"] = players[seat].last_experts
                 if think is not None and players[seat].id != "gen:0":
                     copy = show.player("gen:0")
                     if copy is not None:

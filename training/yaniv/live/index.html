@@ -180,6 +180,14 @@ select{background:var(--raised);border:1px solid var(--line-strong);border-radiu
 .think-row .track{height:7px;background:var(--raised);border-radius:4px;overflow:hidden}
 .think-row .fill{height:100%;background:var(--s2)}
 .think-row .v{font-family:var(--mono);font-size:.75rem;text-align:right;color:var(--ink-2)}
+.decider{display:flex;flex-direction:column;gap:6px}
+.dec-row{display:grid;grid-template-columns:minmax(0,1fr) 90px 48px;gap:8px;align-items:center;font-size:.83rem;padding:3px 6px;border-radius:6px}
+.dec-row.lead{background:rgba(230,194,122,.12)}
+.dec-row .track{height:7px;background:var(--raised);border-radius:4px;overflow:hidden}
+.dec-row .fill{height:100%;background:var(--s1)}
+.dec-row.lead .fill{background:var(--gold)}
+.dec-row .v{font-family:var(--mono);font-size:.75rem;text-align:right;color:var(--ink-2)}
+.tile-dec{font-family:var(--mono);font-size:.7rem;color:var(--ink-2);letter-spacing:.02em}
 .tally-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;gap:2px;background:var(--raised)}
 .tally-bar div{height:100%}
 .tally-txt{display:flex;justify-content:space-between;gap:8px;font-size:.82rem;font-variant-numeric:tabular-nums}
@@ -295,6 +303,11 @@ select{background:var(--raised);border:1px solid var(--line-strong);border-radiu
       <h3 id="think-title">What the net weighed</h3>
       <p class="caption" id="think-who">The top moves by score for each net decision, with the chance the net gives each one.</p>
       <div class="think" id="think"></div>
+    </div>
+    <div class="block" id="decider-block" hidden>
+      <h3>The decider</h3>
+      <p class="caption" id="decider-who">How much weight each expert net gets for this position. The move's score is their scores mixed by these weights.</p>
+      <div class="decider" id="decider"></div>
     </div>
     <div class="block">
       <h3>This pairing so far, all tables</h3>
@@ -575,6 +588,7 @@ function renderBoard(){
   if (b.last && !b.note && !pend && !moveLog.some(m => m.ply === b.ply)) moveLog.push({ply:b.ply, seat:b.last.seat, who:b.players[b.last.seat].label, text:b.last.text});
   $('movelog').innerHTML = moveLog.slice().reverse().map(m => '<li><span class="who"><span class="tag '+(m.seat?'b':'a')+'"></span> '+esc(m.who)+'</span><span>'+esc(m.text)+'</span></li>').join('') || '<li class="muted">No throws yet this round.</li>';
   const seat = pend ? pend.seat : b.last ? b.last.seat : null;
+  renderDecider(b.thinking);
   if (b.thinking){
     $('think-who').textContent = b.players[b.thinking.seat].label+"'s top moves by score, with the chance it gives each one.";
     const ref = b.thinking.reference;
@@ -584,6 +598,24 @@ function renderBoard(){
     $('think-who').textContent = b.players[seat].label+' follows fixed rules, so there are no scores to show.';
     $('think').innerHTML = '';
   }
+}
+
+/* ---------- the decider of a mixture net ---------- */
+const STAGE_NAMES = ['Opening', 'Middle', 'Endgame'];
+function expertNames(n){ return n === 3 ? STAGE_NAMES.map(s => s+' expert') : Array.from({length:n}, (_, i) => 'Expert '+(i+1)); }
+function renderDecider(think){
+  const ex = think && think.experts;
+  $('decider-block').hidden = !ex;
+  if (!ex) return;
+  const names = expertNames(ex.weights.length), lead = ex.weights.indexOf(Math.max(...ex.weights));
+  $('decider').innerHTML = ex.weights.map((w, i) => '<div class="dec-row'+(i === lead ? ' lead' : '')+'"><span>'+names[i]+'</span><div class="track"><div class="fill" style="width:'+(w*100)+'%"></div></div><span class="v">'+(w*100).toFixed(0)+'%</span></div>').join('')
+    + '<p class="caption">The stage rule the decider started from would call this position <b>'+STAGE_NAMES[ex.rule].toLowerCase()+'</b>'+(ex.weights.length === 3 ? (ex.rule === lead ? ', and the decider agrees.' : ', but the decider has learned to lean on the '+names[lead].toLowerCase()+'.') : '.')+'</p>';
+}
+function tileDecider(think){
+  const ex = think && think.experts;
+  if (!ex) return '';
+  const short = ex.weights.length === 3 ? ['O', 'M', 'E'] : ex.weights.map((_, i) => 'X'+(i+1));
+  return '<span class="tile-dec" title="The decider\'s weight for each expert at the last net move">decider '+ex.weights.map((w, i) => short[i]+' '+Math.round(w*100)).join(' · ')+'</span>';
 }
 
 /* ---------- wall of tables ---------- */
@@ -602,7 +634,7 @@ function renderTile(b){
   const open = b.pile[b.pile.length-1];
   const line = b.note ? '<span class="res">'+esc(b.note)+'</span>' : pend ? '<span>'+esc(b.players[pend.seat].label)+' '+esc(pend.text)+'…</span>' : b.last ? '<span>'+esc(b.players[b.last.seat].label)+' '+esc(b.last.text)+'</span>' : '<span>Dealing</span>';
   el.setAttribute('aria-label', 'Table '+(b.table+1)+': '+b.players[0].label+' '+b.scores[0]+', '+b.players[1].label+' '+b.scores[1]+'. Select to feature it.');
-  el.innerHTML = '<div class="tile-head"><b>Table '+(b.table+1)+'</b><span>match '+b.match+' · round '+b.round+' · throw '+b.ply+'</span></div>'+seat(1)+'<div class="tile-mid">'+(open != null ? mini(open) : '')+'<span class="mono">'+b.stock+' left</span>'+line+'</div>'+seat(0);
+  el.innerHTML = '<div class="tile-head"><b>Table '+(b.table+1)+'</b><span>match '+b.match+' · round '+b.round+' · throw '+b.ply+'</span></div>'+seat(1)+'<div class="tile-mid">'+(open != null ? mini(open) : '')+'<span class="mono">'+b.stock+' left</span>'+line+'</div>'+seat(0)+tileDecider(b.thinking);
   const flash = b.note && b.result && tilePrev[b.table] !== b.match+':'+b.round;
   if (flash){ tilePrev[b.table] = b.match+':'+b.round; el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 900); }
 }

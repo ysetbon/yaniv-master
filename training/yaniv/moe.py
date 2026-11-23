@@ -61,6 +61,7 @@ class MoE:
         self.experts = experts
         self._weights: np.ndarray | None = None
         self._scores: np.ndarray | None = None
+        self._fused: list[tuple[np.ndarray, np.ndarray]] | None = None
 
     @property
     def dims(self) -> list[int]:
@@ -73,8 +74,35 @@ class MoE:
     def weights_for(self, states: np.ndarray) -> np.ndarray:
         return _softmax(self.gate.forward(states))
 
+    def _fuse(self) -> list[tuple[np.ndarray, np.ndarray]]:
+        """The experts' layers stacked, so all of them run as one batched product."""
+        if self._fused is None:
+            self._fused = [(np.stack([e.W[i] for e in self.experts]), np.stack([e.b[i] for e in self.experts])[:, None, :])
+                           for i in range(len(self.experts[0].W))]
+        return self._fused
+
+    def _play_forward(self, x: np.ndarray) -> np.ndarray:
+        """Scores for play, the same as the training forward, about twice as fast.
+
+        Every row of a decision shares its table, so the decider runs once when
+        they do, and the experts run as one stacked product per layer.
+        """
+        state = x[:, :STATE_DIM]
+        same_table = len(x) > 1 and np.array_equal(state[0], state[-1]) and np.array_equal(state[0], state[len(x) // 2])
+        weights = _softmax(self.gate.forward(state[:1] if same_table else state))
+        h = x[None, :, :]
+        layers = self._fuse()
+        for i, (w, b) in enumerate(layers):
+            h = h @ w + b
+            if i < len(layers) - 1:
+                h = np.maximum(h, 0)
+        scores = h[:, :, 0].T  # (rows, experts)
+        return (weights * scores).sum(axis=1, keepdims=True).astype(np.float32)
+
     def forward(self, x: np.ndarray, cache: bool = False) -> np.ndarray:
         x = x.astype(np.float32, copy=False)
+        if not cache:
+            return self._play_forward(x)
         weights = _softmax(self.gate.forward(x[:, :STATE_DIM], cache=cache))
         scores = np.concatenate([e.forward(x, cache=cache) for e in self.experts], axis=1)
         if cache:
@@ -98,6 +126,7 @@ class MoE:
         self.gate.step(n_examples, lr)
         for e in self.experts:
             e.step(n_examples, lr)
+        self._fused = None  # the experts changed
 
     def clone(self) -> "MoE":
         return MoE(self.gate.clone(), [e.clone() for e in self.experts])
