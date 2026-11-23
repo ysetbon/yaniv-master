@@ -110,4 +110,4 @@ def build_net(device: Device, seed: int):
 
 def as_numpy(net) -> MLP:
     """Weights as a NumPy MLP for playing games. Shares memory for a NumPy net."""
-    return net if isinstance(net, MLP) else net.to_numpy()
+    return net if isinstance(net, MLP) or hasattr(net, "experts") else net.to_numpy()

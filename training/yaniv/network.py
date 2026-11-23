@@ -125,29 +125,51 @@ def _b64(array: np.ndarray) -> str:
     return base64.b64encode(raw).decode("ascii")
 
 
-def save_net(net: MLP, path: Path, meta: dict | None = None) -> None:
-    payload = {
-        "version": 1,
-        "dims": net.dims,
-        "layers": [
-            {"in": int(weight.shape[0]), "out": int(weight.shape[1]), "w": _b64(weight), "b": _b64(bias)}
-            for weight, bias in zip(net.W, net.b)
-        ],
-    }
+def _layers(net: MLP) -> list[dict]:
+    return [{"in": int(weight.shape[0]), "out": int(weight.shape[1]), "w": _b64(weight), "b": _b64(bias)}
+            for weight, bias in zip(net.W, net.b)]
+
+
+def _mlp(dims: list[int], layers: list[dict]) -> MLP:
+    net = MLP(dims, seed=0)
+    for layer, spec in zip(range(len(net.W)), layers):
+        raw_w = base64.b64decode(spec["w"])
+        raw_b = base64.b64decode(spec["b"])
+        net.W[layer] = np.frombuffer(raw_w, dtype="<f4").reshape(spec["in"], spec["out"]).copy()
+        net.b[layer] = np.frombuffer(raw_b, dtype="<f4").copy()
+    return net
+
+
+def save_net(net, path: Path, meta: dict | None = None) -> None:
+    """A plain net as version 1; a decider with expert nets (moe.MoE) as version 2, kind "moe"."""
+    payload = net_payload(net)
     if meta:
         payload["meta"] = meta
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
-def load_net(path: Path) -> MLP:
+def net_payload(net) -> dict:
+    """The JSON the game loads (src/lib/ai/net.ts reads both kinds)."""
+    if hasattr(net, "experts"):
+        payload = {
+            "version": 2,
+            "kind": "moe",
+            "dims": net.dims,
+            "gate": {"dims": net.gate.dims, "layers": _layers(net.gate)},
+            "experts": [{"dims": e.dims, "layers": _layers(e)} for e in net.experts],
+        }
+    else:
+        payload = {"version": 1, "dims": net.dims, "layers": _layers(net)}
+    return payload
+
+
+def load_net(path: Path):
+    """An MLP, or a moe.MoE for a file saved with a decider and expert nets."""
     payload = json.loads(path.read_text(encoding="utf-8"))
-    net = MLP(payload["dims"], seed=0)
-    for layer, spec in zip(range(len(net.W)), payload["layers"]):
-        raw_w = base64.b64decode(spec["w"])
-        raw_b = base64.b64decode(spec["b"])
-        weight = np.frombuffer(raw_w, dtype="<f4").reshape(spec["in"], spec["out"]).copy()
-        bias = np.frombuffer(raw_b, dtype="<f4").copy()
-        net.W[layer] = weight
-        net.b[layer] = bias
-    return net
+    if payload.get("kind") == "moe":
+        from .moe import MoE
+
+        gate = _mlp(payload["gate"]["dims"], payload["gate"]["layers"])
+        return MoE(gate, [_mlp(e["dims"], e["layers"]) for e in payload["experts"]])
+    return _mlp(payload["dims"], payload["layers"])

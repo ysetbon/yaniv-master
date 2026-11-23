@@ -306,3 +306,31 @@ class RunRecord(unittest.TestCase):
             self.assertIn("| 1 | Search pass 1 |", summary)
             self.assertIn("ships.", summary)
             self.assertEqual((results / "20990101-000000.md").read_text(), summary)
+
+
+class Experts(unittest.TestCase):
+    def test_mixture_learns_and_runs_in_the_search_recipe(self):
+        import tempfile
+        from pathlib import Path
+
+        import numpy as np
+
+        from .moe import MoE
+        from .network import load_net, save_net
+
+        start = default_net(9)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "start.json"
+            save_net(start, path, {})
+            cfg = dataclasses.replace(TrainConfig.search(quick=True), workers=2, cache=False, generations=2, experts=3,
+                                      start_from=str(path), search_rounds=2, search_samples=4, eval_rounds=4,
+                                      eval_matches=2, gate_rounds=4, gate_matches=2, final_rounds=4, final_matches=2,
+                                      expert_rounds=20, holdout_rounds=4)
+            run_dir = Path(tmp) / "run"
+            report = run_training(cfg, Observer(), model_path=None, report_path=None, run_dir=run_dir, results_dir=None)
+            gen1 = load_net(run_dir / "gen-01.json")
+        self.assertIsInstance(gen1, MoE)
+        self.assertEqual(len(gen1.experts), 3)
+        self.assertEqual(report["experts"] in (1, 3), True)  # Gen 0 stays a plain net and may still ship
+        x = np.random.default_rng(1).random((5, start.dims[0])).astype(np.float32)
+        self.assertEqual(gen1.forward(x).shape, (5, 1))

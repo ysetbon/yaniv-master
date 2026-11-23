@@ -42,6 +42,9 @@ def main() -> None:
     parser.add_argument("--copied-share", type=float, metavar="RATIO",
                         help="search: card-counter moves mixed in per searched move (default 1 sliding to 0.25, "
                              "or 0 with --start-from)")
+    parser.add_argument("--experts", type=int, metavar="N",
+                        help="search: after Gen 0, use a learned decider and N expert nets, each starting as a "
+                             "copy of Gen 0 (e.g. 3 for opening, middle and endgame)")
     parser.add_argument("--copy-from", metavar="NET_JSON",
                         help="copy a saved net instead of the card counter (it may use the older 389 inputs), "
                              "e.g. runs/<timestamp>/best.json")
@@ -83,6 +86,12 @@ def main() -> None:
         cfg = TrainConfig.search(quick=args.quick)
     else:
         cfg = TrainConfig.quick() if args.quick else TrainConfig()
+    if args.experts is not None:
+        if cfg.recipe != "search":
+            parser.error("--experts works with the search recipe")
+        if not 2 <= args.experts <= 6:
+            parser.error("--experts: give 2 to 6 expert nets, e.g. 3")
+        cfg.experts = args.experts
     if args.copy_from and args.start_from:
         parser.error("use --copy-from or --start-from, not both")
     if args.copy_from:

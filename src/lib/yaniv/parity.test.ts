@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { bestKeepPoints, applyAction, legalActions, resolveShowdown, type Action, type State, type View } from "./engine";
 import { actionFeatures, netActions, stateFeatures } from "./features";
+import { netFromJson, scoreActions } from "../ai/net";
 
 interface RawState {
   hands: [string, string];
@@ -155,4 +156,12 @@ for (const feature of fixtures.features) {
   });
 }
 
+const moe = (fixtures as unknown as {
+  moe: { net: Parameters<typeof netFromJson>[0]; cases: Array<{ state: number[]; actions: number[][]; scores: number[] }> };
+}).moe;
+const mixture = netFromJson(moe.net);
+assert.equal(mixture.kind, "moe");
+for (const c of moe.cases) close(Array.from(scoreActions(mixture, c.state, c.actions)), c.scores, "moe score");
+
+console.log(`moe ok: ${moe.cases.length} cases`);
 console.log(`parity ok: ${fixtures.keeps.length} keeps, ${fixtures.steps.length} steps, ${fixtures.features.length} views`);
