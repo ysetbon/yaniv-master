@@ -114,6 +114,16 @@ The card counter's decisions are cached in `runs/.cache/` because they are the s
 python main.py --start-from public/model/yaniv-net.json --experts 3 --effort 0.7 --generations 12 --search-rounds 300
 ```
 
+### Playing for matches, and overnight runs
+
+The search values a move by how much it changes the chance of winning the match, not by the round's point margin (`--search-value points` brings that back). At the start of a run, 4,000 rounds of Gen 0 against the counter give a table of the chance of winning from every pair of scores, so a ten-point round counts for a lot at 92 and little at 20, and landing on 50 or 100 counts as the cut it is. Every generation is tested on the same 1,000 rounds and 400 matches, and the gate ranks by matches won, then point margin.
+
+`--hours 7.5` stops starting new passes after 7.5 hours; the gate replay and the final check still run, so an overnight run ends with a result:
+
+```bash
+python main.py --start-from public/model/yaniv-net.json --effort 0.7 --generations 200 --search-rounds 300 --hours 7.5
+```
+
 ### Records of each run
 
 Each run writes `runs/<timestamp>/log.txt` (every trainer line, with times) and a short summary to `runs/<timestamp>/summary.md` and `results/<timestamp>.md`. The `results/` folder is tracked by git, so committing and pushing it shares how a run went without its nets.

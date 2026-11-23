@@ -42,6 +42,12 @@ def main() -> None:
     parser.add_argument("--copied-share", type=float, metavar="RATIO",
                         help="search: card-counter moves mixed in per searched move (default 1 sliding to 0.25, "
                              "or 0 with --start-from)")
+    parser.add_argument("--hours", type=float,
+                        help="stop starting new passes after this many hours, then run the gate and the final check "
+                             "(e.g. 7.5 for an overnight run)")
+    parser.add_argument("--search-value", choices=("match", "points"),
+                        help="search: value moves by the change in the chance of winning the match (default) "
+                             "or by the round's point margin")
     parser.add_argument("--experts", type=int, metavar="N",
                         help="search: after Gen 0, use a learned decider and N expert nets, each starting as a "
                              "copy of Gen 0 (e.g. 3 for opening, middle and endgame)")
@@ -86,6 +92,10 @@ def main() -> None:
         cfg = TrainConfig.search(quick=args.quick)
     else:
         cfg = TrainConfig.quick() if args.quick else TrainConfig()
+    if args.hours is not None:
+        cfg.hours = max(0.0, args.hours)
+    if args.search_value is not None:
+        cfg.search_value = args.search_value
     if args.experts is not None:
         if cfg.recipe != "search":
             parser.error("--experts works with the search recipe")

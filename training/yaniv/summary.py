@@ -36,7 +36,7 @@ def render_summary(name: str, cfg: dict, report: dict, generations: list[dict], 
         ("Started from", cfg.get("start_from") or "–"),
         ("Copied", cfg.get("copy_from") or ("–" if cfg.get("start_from") else "the card counter")),
         ("Passes", cfg.get("generations")),
-        ("Took", _minutes(report.get("seconds"))),
+        ("Took", _minutes(report.get("seconds")) + (f" (limit {cfg['hours']:g} h)" if cfg.get("hours") else "")),
     ]
     if cfg.get("recipe") == "search":
         settings += [
@@ -44,9 +44,14 @@ def render_summary(name: str, cfg: dict, report: dict, generations: list[dict], 
             ("Imagined deals a move", cfg.get("search_samples")),
             ("Confidence bar", cfg.get("search_confidence")),
             ("Teacher", cfg.get("search_teacher")),
+            ("Moves valued by", "the change in the chance of winning the match"
+             if cfg.get("search_value", "points") == "match" else "the round's point margin"),
             ("Counter moves mixed in", f"{cfg.get('expert_mix_start')} → {cfg.get('expert_mix_end')} per searched move"),
         ]
-    settings.append(("Each pass tested on", f"{cfg.get('eval_rounds')} rounds and {cfg.get('eval_matches')} matches"))
+    settings.append(("Each pass tested on", f"{cfg.get('eval_rounds')} rounds and {cfg.get('eval_matches')} matches"
+                     + (", the same deals for every generation" if cfg.get("recipe") == "search" else "")))
+    settings.append(("Gate ranks by", {"matches": "matches won, then point margin", "margin": "point margin, then matches",
+                                       "rounds": "rounds won, then matches"}.get(cfg.get("gate_metric"), cfg.get("gate_metric"))))
     lines += ["| Setting | Value |", "| --- | --- |"] + [f"| {k} | {v} |" for k, v in settings] + [""]
 
     lines += ["## Generations", "",

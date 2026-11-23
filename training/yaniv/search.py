@@ -95,8 +95,17 @@ def playout(state: State, policy: Chooser, rng: random.Random) -> State:
     return state
 
 
-def round_value(state: State, me: int) -> float:
-    """Point margin for `me`, plus MATCH_BONUS either way if the round ended the match."""
+def round_value(state: State, me: int, table=None) -> float:
+    """How good a finished round was for `me`.
+
+    With a match table (match_value.win_table): the chance of winning the
+    match from the scores after the round, in percentage points. Without one:
+    the point margin, plus MATCH_BONUS either way if the round ended the match.
+    """
+    if table is not None:
+        from .match_value import win_chance
+
+        return 100.0 * win_chance(table, state.scores[me], state.scores[1 - me])
     added = state.result.added
     value = float(added[1 - me] - added[me])
     mine, theirs = state.scores[me], state.scores[1 - me]
@@ -106,7 +115,7 @@ def round_value(state: State, me: int) -> float:
 
 
 def sample_values(view: View, candidates: list[Action], policy: Chooser, samples: int,
-                  rng: random.Random) -> np.ndarray:
+                  rng: random.Random, table=None) -> np.ndarray:
     """Value of each candidate (columns) on each of `samples` shared sampled deals (rows)."""
     values = np.zeros((max(1, samples), len(candidates)))
     for row in range(samples):
@@ -115,14 +124,14 @@ def sample_values(view: View, candidates: list[Action], policy: Chooser, samples
             state = _copy(deal)
             apply_action(state, action)
             playout(state, policy, rng)
-            values[row, i] = round_value(state, view.seat)
+            values[row, i] = round_value(state, view.seat, table)
     return values
 
 
 def evaluate_moves(view: View, candidates: list[Action], policy: Chooser, samples: int,
-                   rng: random.Random) -> np.ndarray:
+                   rng: random.Random, table=None) -> np.ndarray:
     """Average value of each candidate over `samples` shared sampled deals."""
-    return sample_values(view, candidates, policy, samples, rng).mean(axis=0)
+    return sample_values(view, candidates, policy, samples, rng, table).mean(axis=0)
 
 
 def pick_move(values: np.ndarray, default: int, confidence: float) -> int:
@@ -177,7 +186,7 @@ def candidate_moves(view: View, actions: list[Action], default: Action,
 
 
 def search_chooser(policy: Chooser, prior: Callable[[View, list[Action]], list[Action]], samples: int = 48,
-                   width: int = 4, seed: int = 0, confidence: float = 1.5) -> Chooser:
+                   width: int = 4, seed: int = 0, confidence: float = 1.5, table=None) -> Chooser:
     """A chooser that plays the policy's move unless the search finds a clearly better one."""
     own = random.Random(seed)
 
@@ -186,14 +195,14 @@ def search_chooser(policy: Chooser, prior: Callable[[View, list[Action]], list[A
         candidates = candidate_moves(view, actions, default, prior, width)
         if len(candidates) <= 1:
             return default
-        values = sample_values(view, candidates, policy, samples, own)
+        values = sample_values(view, candidates, policy, samples, own, table)
         return candidates[pick_move(values, 0, confidence)]
 
     return choose
 
 
 def collect_search(net, n_rounds: int, seed: int, samples: int, width: int, progress=None,
-                   match_scores: bool = True, confidence: float = 1.5) -> list[tuple[View, int]]:
+                   match_scores: bool = True, confidence: float = 1.5, table=None) -> list[tuple[View, int]]:
     """Label positions for the net to copy: (view, index of the searched move in legal_actions).
 
     The net plays the card counter, seats alternating; 40% of rounds start
@@ -228,7 +237,7 @@ def collect_search(net, n_rounds: int, seed: int, samples: int, width: int, prog
             default = play_net(view, actions, searcher)
             candidates = candidate_moves(view, actions, default, prior, width)
             if len(candidates) > 1:
-                values = sample_values(view, candidates, play_net, samples, searcher)
+                values = sample_values(view, candidates, play_net, samples, searcher, table)
                 rows.append((view, actions.index(candidates[pick_move(values, 0, confidence)])))
             mover = play_net if state.turn == net_seat else choose_heuristic
             apply_action(state, mover(view, actions, rng))
