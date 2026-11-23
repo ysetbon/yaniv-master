@@ -9,7 +9,7 @@ import {
   legalActions,
   maskPoints,
 } from "../yaniv/engine";
-import { actionFeatures, stateFeatures } from "../yaniv/features";
+import { actionFeatures, netActions, stateFeatures } from "../yaniv/features";
 
 export interface ScoredAction {
   action: Action;
@@ -17,7 +17,8 @@ export interface ScoredAction {
 }
 
 export function chooseAction(net: Net, view: View): ScoredAction[] {
-  const actions = legalActions(view);
+  // Moves that differ only by suit (which 7 is thrown, which card stays up) are one move to the net.
+  const actions = netActions(legalActions(view));
   if (!actions.length) return [];
   const state = stateFeatures(view);
   const rows = actions.map((action) => actionFeatures(view, action));

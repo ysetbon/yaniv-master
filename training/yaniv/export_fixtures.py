@@ -17,7 +17,7 @@ from training.yaniv.engine import (
     new_round,
     resolve_showdown,
 )
-from training.yaniv.features import action_features, state_features
+from training.yaniv.features import action_features, net_actions, state_features
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "src" / "lib" / "yaniv" / "fixtures.json"
@@ -106,6 +106,24 @@ def main() -> None:
         seat=0,
     )
     features = [feature_case(anchor)]
+    # Low hands where Yaniv is legal, with jokers, so the exact Assaf chance
+    # and the leaning estimate of the opponent's hand are checked too.
+    for hand, known, opp_size, discard, ply in (
+        ((0, 1), 0, 2, (9, 22, 35, 48, 12, 25), 10),  # ace and two against two hidden cards
+        ((52, 3), 1 << 13, 3, (8, 21, 34), 6),  # a joker and a four; the opponent shows an ace
+        ((53,), 0, 1, (10, 23, 36, 49, 11, 24, 37, 50), 20),  # a lone black joker against one card
+        ((0, 13, 2), 1 << 52, 4, (5, 18), 4),  # two aces and a three; the opponent took the red joker
+    ):
+        mask = 0
+        for card in hand:
+            mask |= 1 << card
+        seen = mask | known
+        for card in discard:
+            seen |= 1 << card
+        stock = 54 - bin(seen).count("1") - (opp_size - bin(known).count("1"))
+        features.append(feature_case(View(my_hand=mask, my_known=0, opp_known=known, opp_size=opp_size,
+                                          stock_size=stock, discard=discard, my_score=30, opp_score=48,
+                                          ply=ply, seat=0)))
     probe = random.Random(8)
     for i in range(6):
         state = new_round([i, 3], 0, probe)
@@ -120,7 +138,7 @@ def main() -> None:
 
 
 def feature_case(view: View) -> dict:
-    actions = legal_actions(view)
+    actions = net_actions(legal_actions(view))[0]
     return {
         "view": {
             "my_hand": view.my_hand,

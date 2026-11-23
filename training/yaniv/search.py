@@ -37,16 +37,9 @@ from .engine import (
     make_view,
     resolve_showdown,
 )
-from .features import action_matrix, pool_mask, state_features
+from .features import HIDDEN_BETA, action_key, net_actions, pool_mask, score_actions
 
 MATCH_BONUS = 100.0
-
-# The opponent throws high cards and keeps low ones, so its hidden cards are
-# lower than a uniform draw from the unseen cards: about 3 points a card by
-# mid-round against a uniform guess of 6. Hidden cards are drawn with weight
-# exp(-beta * points), beta growing with the throws made so far (ply // 2).
-# Fitted on card-counter games so the sampled average matches the real one.
-HIDDEN_BETA = (0.04, 0.09, 0.14, 0.18, 0.21, 0.24, 0.26)
 
 Chooser = Callable[[View, list[Action], random.Random], Action]
 
@@ -54,8 +47,10 @@ Chooser = Callable[[View, list[Action], random.Random], Action]
 def deal_from_view(view: View, rng: random.Random) -> State:
     """A full state consistent with `view`.
 
-    The opponent's hidden cards lean low (HIDDEN_BETA); the stock is the rest
-    of the unseen cards in random order.
+    The opponent's hidden cards lean low (HIDDEN_BETA in features.py: it
+    keeps low cards, so they average about 3 points by mid-round, not the 6
+    of a uniform draw); the stock is the rest of the unseen cards in random
+    order.
     """
     pool = cards_from_mask(pool_mask(view))
     need = view.opp_size - view.opp_known.bit_count()
@@ -152,17 +147,16 @@ def counter_prior(view: View, actions: list[Action]) -> list[Action]:
     from .heuristic import _score_action
 
     pool = cards_from_mask(pool_mask(view))
-    plays = [a for a in actions if a.kind == "play"]
+    plays = net_actions([a for a in actions if a.kind == "play"])[0]
     return sorted(plays, key=lambda a: _score_action(view, a, pool))
 
 
 def net_prior(net) -> Callable[[View, list[Action]], list[Action]]:
     def rank(view: View, actions: list[Action]) -> list[Action]:
-        plays = [a for a in actions if a.kind == "play"]
+        plays = net_actions([a for a in actions if a.kind == "play"])[0]  # suit-only twins searched once
         if not plays:
             return []
-        state = np.repeat(state_features(view)[None, :], len(plays), axis=0)
-        scores = net.forward(np.concatenate([state, action_matrix(view, plays)], axis=1))[:, 0]
+        scores = score_actions(net, view, plays)
         return [plays[i] for i in np.argsort(-scores, kind="stable")]
 
     return rank
@@ -170,10 +164,14 @@ def net_prior(net) -> Callable[[View, list[Action]], list[Action]]:
 
 def candidate_moves(view: View, actions: list[Action], default: Action,
                     prior: Callable[[View, list[Action]], list[Action]], width: int) -> list[Action]:
-    """The policy's own move first, then the `width` best plays by `prior`, then Yaniv when legal."""
-    out = [default]
+    """The policy's own move first, then the `width` best plays by `prior`, then Yaniv when legal.
+
+    Moves that differ only by suit play out the same, so each is searched once.
+    """
+    out, keys = [default], {action_key(default)}
     for action in prior(view, actions)[:width] + [a for a in actions if a.kind == "yaniv"]:
-        if action not in out:
+        if action_key(action) not in keys:
+            keys.add(action_key(action))
             out.append(action)
     return out
 

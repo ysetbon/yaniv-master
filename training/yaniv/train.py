@@ -35,7 +35,7 @@ from .engine import (
     play_round,
     resolve_showdown,
 )
-from .features import ACTION_DIM, INPUT_DIM, STATE_DIM, action_matrix, state_features
+from .features import ACTION_DIM, INPUT_DIM, STATE_DIM, action_matrix, net_actions, score_actions, state_features
 from .heuristic import choose_greedy, choose_heuristic, choose_random
 from .backend import Device, as_numpy, build_net, resolve_device
 from .network import MLP, load_net, save_net
@@ -121,11 +121,71 @@ def expert_dataset(n_rounds: int, seed: int, progress=None, log=print, cache: bo
     return data
 
 
+def collect_teacher(net: MLP, n_rounds: int, seed: int, progress=None) -> list[tuple[View, int]]:
+    """A saved net's decisions to copy: (view, index of its move in legal_actions).
+
+    The net plays the card counter, seats alternating, 40% of rounds from
+    random match scores. Every position, on both sides of the table, is
+    labelled with the move the net would make there.
+    """
+    rng = random.Random(seed)
+    teacher = net_chooser(net, 0.0)
+    rows: list[tuple[View, int]] = []
+    for i in range(n_rounds):
+        _tick(progress, i + 1, n_rounds)
+        scores = [rng.randint(0, 95), rng.randint(0, 95)] if rng.random() < 0.4 else [0, 0]
+        state = new_round(scores, (i // 2) % 2, rng)
+        net_seat = i % 2
+        while not state.terminal:
+            if state.ply >= MAX_PLIES:
+                resolve_showdown(state)
+                break
+            view = make_view(state, state.turn)
+            actions = legal_actions(view)
+            if not actions:
+                resolve_showdown(state)
+                break
+            choice = teacher(view, actions, rng)
+            rows.append((view, actions.index(choice)))
+            apply_action(state, choice if state.turn == net_seat else choose_heuristic(view, actions))
+    return rows
+
+
+def teacher_dataset(path: Path, n_rounds: int, seed: int, workers, progress=None, log=print,
+                    cache: bool = True) -> Dataset:
+    """`collect_teacher` for the net saved at `path`, cached by the file's contents."""
+    import hashlib
+
+    net = load_net(path)
+    digest = hashlib.sha1(Path(path).read_bytes()).hexdigest()[:10]
+    cached = CACHE_DIR / f"teacher-{digest}-{n_rounds}-{seed}-{_rules_signature()}.npz"
+    if cache and cached.exists():
+        try:
+            data = Dataset.load(cached)
+            log(f"Loaded {len(data)} decisions of {Path(path).name} from {cached.name}")
+            return data
+        except (OSError, ValueError, KeyError):
+            pass
+    t0 = time.time()
+    rows = workers.teacher_label(net, n_rounds, seed, progress)
+    data = materialize(rows)
+    log(f"Collected and packed {len(data)} decisions of {Path(path).name} in {time.time() - t0:.1f}s")
+    if cache:
+        try:
+            data.save(cached)
+        except OSError:
+            pass
+    return data
+
+
 def net_chooser(net: MLP, temperature: float):
+    # A suit-free net sees moves that differ only by suit as one move, so it
+    # picks (and samples) among those; an older 389-input net scores each.
+    suit_free = net.dims[0] == INPUT_DIM
+
     def choose(view: View, actions: list[Action], rng) -> Action:
-        packed_state = np.repeat(state_features(view)[None, :], len(actions), axis=0)
-        packed = np.concatenate([packed_state, action_matrix(view, actions)], axis=1)
-        scores = net.forward(packed)[:, 0]
+        actions = net_actions(actions)[0] if suit_free else actions
+        scores = score_actions(net, view, actions)
         best = int(np.argmax(scores))
         if temperature <= 1e-6 or rng is None:
             return actions[best]
@@ -175,7 +235,12 @@ def collect_expert(n_rounds: int, seed: int, progress=None) -> list[tuple[View, 
 
 
 def materialize(rows: list) -> Dataset:
-    """Rows are (view, label) or (view, label, weight)."""
+    """Rows are (view, label) or (view, label, weight); `label` indexes legal_actions(view).
+
+    The net sees moves that differ only by suit as one move (`net_actions`),
+    so each decision keeps one row per distinct move and the label becomes
+    the chosen move's row.
+    """
     states = np.empty((len(rows), STATE_DIM), dtype=np.float32)
     blocks: list[np.ndarray] = []
     offsets = np.empty(len(rows) + 1, dtype=np.int32)
@@ -186,11 +251,11 @@ def materialize(rows: list) -> Dataset:
         view, label = row[0], row[1]
         if len(row) > 2:
             weights[index] = row[2]
-        actions = legal_actions(view)
-        matrix = action_matrix(view, actions)
+        unique, where = net_actions(legal_actions(view))
+        matrix = action_matrix(view, unique)
         states[index] = state_features(view)
         blocks.append(matrix)
-        labels[index] = label
+        labels[index] = where[label]
         offsets[index + 1] = offsets[index] + matrix.shape[0]
     packed = np.concatenate(blocks) if blocks else np.zeros((0, ACTION_DIM), np.float32)
     return Dataset(states, packed, offsets, labels, weights)
@@ -561,6 +626,10 @@ class TrainConfig:
     # start from instead of copying the counter. It becomes Gen 0, so the
     # final check only ships a later generation that beats it.
     start_from: str = ""
+    # A saved net to copy instead of the card counter: it plays the counter
+    # and the new net learns its moves. It may use the older 389-number
+    # inputs, so a net trained before the suit-free layout can teach one.
+    copy_from: str = ""
 
     @classmethod
     def search(cls, quick: bool = False) -> "TrainConfig":
@@ -711,10 +780,17 @@ def run_training(
             f"avg {bench['hero_avg']:.2f}-{bench['villain_avg']:.2f} assaf {bench['assaf_rate']:.2f}"
         )
 
-        obs.phase("expert", f"Card counter plays {cfg.expert_rounds:,} rounds to copy")
-        log(f"Collecting {cfg.expert_rounds} expert rounds")
-        expert = expert_dataset(cfg.expert_rounds, 2024, job("expert"), log, cfg.cache)
-        holdout = expert_dataset(cfg.holdout_rounds, 909, None, log, cfg.cache)
+        copy_name = Path(cfg.copy_from).name if cfg.copy_from else ""
+        if cfg.copy_from:
+            obs.phase("expert", f"{copy_name} plays {cfg.expert_rounds:,} rounds against the counter to copy")
+            log(f"Collecting {cfg.expert_rounds} rounds of {cfg.copy_from} to copy")
+            expert = teacher_dataset(Path(cfg.copy_from), cfg.expert_rounds, 2024, workers, job("expert"), log, cfg.cache)
+            holdout = teacher_dataset(Path(cfg.copy_from), cfg.holdout_rounds, 909, workers, None, log, cfg.cache)
+        else:
+            obs.phase("expert", f"Card counter plays {cfg.expert_rounds:,} rounds to copy")
+            log(f"Collecting {cfg.expert_rounds} expert rounds")
+            expert = expert_dataset(cfg.expert_rounds, 2024, job("expert"), log, cfg.cache)
+            holdout = expert_dataset(cfg.holdout_rounds, 909, None, log, cfg.cache)
         log(f"Expert decisions {len(expert)}, action rows {expert.actions.shape[0]}")
 
         net = build_net(device, 11)
@@ -730,7 +806,7 @@ def run_training(
             log(f"Starting from {cfg.start_from} ({' -> '.join(map(str, start.dims))}), so the copying step is skipped")
         for epoch in range(1, (0 if cfg.start_from else cfg.epochs) + 1):
             lr = cfg.lr_for(epoch)
-            obs.phase("imitation", f"Copying the counter, epoch {epoch} of {cfg.epochs}")
+            obs.phase("imitation", f"Copying {copy_name or 'the counter'}, epoch {epoch} of {cfg.epochs}")
             t0 = time.time()
             ce, acc = train_dataset(net, expert, lr, cfg.batch, rng, job("imitation"))
             hold = agreement(net, holdout)
@@ -780,7 +856,8 @@ def run_training(
         entry = {"phase": "eval", "iteration": 0, "rounds": best_round, "matches": best_match}
         history.append(entry)
         obs.history(entry)
-        publish_generation(0, f"Started from {start_name}" if start_name else "Copied the counter", best_round, best_match, True,
+        gen0_label = f"Started from {start_name}" if start_name else f"Copied {copy_name}" if copy_name else "Copied the counter"
+        publish_generation(0, gen0_label, best_round, best_match, True,
                            {"seconds": round(time.time() - t_gen, 1)})
 
         self_play_games = 0

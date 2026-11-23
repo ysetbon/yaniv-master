@@ -273,24 +273,27 @@ class RulesTest(unittest.TestCase):
         )
         vec = state_features(view)
         self.assertEqual(vec.shape, (STATE_DIM,))
-        self.assertEqual(float(vec[0]), 1.0)
-        d = DECK_SIZE
-        self.assertEqual(float(vec[2 * d + 9]), 1.0)  # open card
-        self.assertEqual(float(vec[3 * d + 12]), 1.0)  # opponent's known card
-        scalars = 4 * d + 2 * RANKS + 4
+        r = RANKS
+        self.assertEqual(float(vec[0]), 0.25)  # one ace in hand
+        self.assertEqual(float(vec[r + 5]), 0.25)  # a six thrown and out of play
+        self.assertEqual(float(vec[2 * r + 9]), 1.0)  # a ten is the open card
+        self.assertEqual(float(vec[3 * r + 12]), 0.25)  # the opponent is known to hold a king
+        scalars = 5 * r
         self.assertAlmostEqual(float(vec[scalars]), 1 / 40, places=6)  # my points
         self.assertAlmostEqual(float(vec[scalars + 9]), 1.0, places=6)  # Yaniv is legal
         self.assertAlmostEqual(float(vec[scalars + 17]), 1.0, places=6)  # open card is a 10
         self.assertAlmostEqual(float(vec[scalars + 18]), 0.0, places=6)  # 10 + 1 does not land on 50
+        self.assertEqual(float(vec[scalars + 19 + 1]), 1.0)  # the opponent holds 2 cards
+        self.assertEqual(float(vec[scalars + 25]), 0.0)  # its known king alone beats my ace: no Assaf
         call = action_features(view, Action("yaniv"))
         self.assertEqual(call.shape, (ACTION_DIM,))
-        self.assertEqual(float(call[2 * d + 2]), 1.0)
+        self.assertEqual(float(call[r + 3]), 1.0)
         self.assertEqual(float(call.sum()), 1.0)
         thrown = action_features(view, Action("play", 1 << 0, 0, "open"))
-        self.assertEqual(float(thrown[0]), 1.0)
-        self.assertEqual(float(thrown[d]), 1.0)
-        self.assertEqual(float(thrown[2 * d + 1]), 1.0)
-        self.assertEqual(float(thrown[2 * d + 2]), 0.0)
+        self.assertEqual(float(thrown[0]), 1.0)  # an ace thrown
+        self.assertEqual(float(thrown[r]), 0.25)  # one card
+        self.assertEqual(float(thrown[r + 2]), 1.0)  # takes the open card
+        self.assertEqual(float(thrown[r + 3]), 0.0)  # not a Yaniv call
 
     def test_heuristic_takes_the_third_king(self):
         clubs, diamonds, hearts = 12, 12 + 13, 12 + 26

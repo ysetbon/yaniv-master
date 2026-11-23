@@ -42,6 +42,9 @@ def main() -> None:
     parser.add_argument("--copied-share", type=float, metavar="RATIO",
                         help="search: card-counter moves mixed in per searched move (default 1 sliding to 0.25, "
                              "or 0 with --start-from)")
+    parser.add_argument("--copy-from", metavar="NET_JSON",
+                        help="copy a saved net instead of the card counter (it may use the older 389 inputs), "
+                             "e.g. runs/<timestamp>/best.json")
     parser.add_argument("--start-from", metavar="NET_JSON",
                         help="start from a saved net instead of copying the counter, e.g. public/model/yaniv-net.json")
     parser.add_argument("--search-rounds", type=int, help="search: rounds labelled per pass (default 150)")
@@ -80,6 +83,12 @@ def main() -> None:
         cfg = TrainConfig.search(quick=args.quick)
     else:
         cfg = TrainConfig.quick() if args.quick else TrainConfig()
+    if args.copy_from and args.start_from:
+        parser.error("use --copy-from or --start-from, not both")
+    if args.copy_from:
+        if not os.path.exists(args.copy_from):
+            parser.error(f"--copy-from: no such file {args.copy_from}")
+        cfg.copy_from = args.copy_from
     if args.start_from:
         if not os.path.exists(args.start_from):
             parser.error(f"--start-from: no such file {args.start_from}")

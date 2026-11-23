@@ -74,6 +74,12 @@ def _self_play(spec: Spec, n: int, seed: int, temperature: float, weighted: bool
                              match_scores=match_scores)
 
 
+def _teacher_label(spec: Spec, n: int, seed: int) -> list:
+    from .train import collect_teacher
+
+    return collect_teacher(_net(spec), n, seed)
+
+
 def _search_label(spec: Spec, n: int, seed: int, samples: int, width: int, match_scores: bool,
                   confidence: float) -> list:
     from .search import collect_search
@@ -217,6 +223,17 @@ class Workers:
         jobs = [(a, b, size, seed * 7919 + i) for i, (_, size) in enumerate(chunks)]
         parts = self._run(_matches, jobs, [size for _, size in chunks], n, progress)
         return _merge_matches(parts, n)
+
+    def teacher_label(self, net: MLP, n: int, seed: int, progress=None) -> list:
+        """(view, label) rows: `n` rounds of `net` against the counter, every position labelled with its move."""
+        if self.count == 1:
+            from .train import collect_teacher
+
+            return collect_teacher(net, n, seed, progress)
+        chunks = self._chunks(n, 2)
+        jobs = [(net_spec(net), size, seed * 7919 + i) for i, (_, size) in enumerate(chunks)]
+        parts = self._run(_teacher_label, jobs, [size for _, size in chunks], n, progress)
+        return [row for part in parts for row in part]
 
     def search_label(self, net: MLP, n: int, seed: int, samples: int, width: int, progress=None,
                      match_scores: bool = True, confidence: float = 1.5) -> list:

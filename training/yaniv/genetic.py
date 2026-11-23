@@ -1,6 +1,6 @@
 """Neuroevolution for the Yaniv net: a population of networks, bred by fitness.
 
-Every member has the same shape as the copied net (389 -> 192 -> 192 -> 1)
+Every member has the same shape as the copied net (125 -> 128 -> 128 -> 1)
 and descends from it, so neuron i means roughly the same thing in every
 member and crossover can swap whole neurons between parents.
 

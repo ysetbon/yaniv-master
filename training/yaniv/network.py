@@ -112,7 +112,12 @@ class MLP:
 
 
 def default_net(seed: int = 7) -> MLP:
-    return MLP([INPUT_DIM, 192, 192, 1], seed=seed)
+    """125 suit-free inputs, two hidden layers of 128: about 33,000 weights.
+
+    In a test copying Gen 2, this played better than 192-wide layers and
+    than the older 389-input net, with about a third of their weights.
+    """
+    return MLP([INPUT_DIM, 128, 128, 1], seed=seed)
 
 
 def _b64(array: np.ndarray) -> str:

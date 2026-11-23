@@ -198,7 +198,7 @@ class FastFeatures(unittest.TestCase):
         import numpy as np
 
         from .engine import View
-        from .features import action_matrix, state_features
+        from .features import action_matrix, net_actions, state_features
 
         path = Path(__file__).resolve().parents[2] / "src" / "lib" / "yaniv" / "fixtures.json"
         for case in json.loads(path.read_text())["features"]:
@@ -207,7 +207,7 @@ class FastFeatures(unittest.TestCase):
                         opp_size=raw["opp_size"], stock_size=raw["stock_size"], discard=tuple(raw["discard"]),
                         my_score=raw["my_score"], opp_score=raw["opp_score"], ply=raw["ply"], seat=raw["seat"])
             np.testing.assert_allclose(state_features(view), case["state"], atol=1e-6)
-            rows = action_matrix(view, legal_actions(view)[:len(case["actions"])])
+            rows = action_matrix(view, net_actions(legal_actions(view))[0][:len(case["actions"])])
             np.testing.assert_allclose(rows, [a["features"] for a in case["actions"]], atol=1e-6)
 
 
@@ -221,3 +221,67 @@ class Effort(unittest.TestCase):
         self.assertEqual(default_workers(1.0), cores)
         self.assertEqual(default_workers(0.7), max(1, round(cores * 0.7)))
         self.assertEqual(default_workers(0.01), 1)
+
+
+class AssafChance(unittest.TestCase):
+    def test_exact_chance_matches_counting_every_hand(self):
+        import itertools
+        from math import comb
+
+        from .engine import View
+        from .features import assaf_chance, pool_mask
+
+        rng = random.Random(4)
+        for _ in range(40):
+            deck = list(range(DECK_SIZE))
+            rng.shuffle(deck)
+            hand = sum(1 << c for c in deck[:rng.randint(1, 3)])
+            known = sum(1 << c for c in deck[3:3 + rng.randint(0, 1)])
+            discard = tuple(deck[5:5 + rng.randint(1, 12)])
+            opp_size = rng.randint(1, 4)
+            view = View(my_hand=hand, my_known=0, opp_known=known, opp_size=opp_size, stock_size=20, discard=discard,
+                        my_score=0, opp_score=0, ply=8, seat=0)
+            mine = sum(POINTS_OF[c] for c in cards_from_mask(hand))
+            known_pts = sum(POINTS_OF[c] for c in cards_from_mask(known))
+            pool = cards_from_mask(pool_mask(view))
+            need = opp_size - bin(known).count("1")
+            if need <= 0:
+                expected = 1.0 if known_pts <= mine else 0.0
+            else:
+                caught = sum(1 for combo in itertools.combinations(pool, need)
+                             if known_pts + sum(POINTS_OF[c] for c in combo) <= mine)
+                expected = caught / comb(len(pool), need)
+            self.assertAlmostEqual(assaf_chance(view), expected, places=12)
+
+
+class CopyFrom(unittest.TestCase):
+    def test_copy_an_older_389_input_net(self):
+        import tempfile
+        from pathlib import Path
+
+        from . import features_v1
+        from .network import MLP, save_net
+
+        old = MLP([features_v1.INPUT_DIM, 8, 8, 1], seed=4)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "old-best.json"
+            save_net(old, path, {})
+            cfg = dataclasses.replace(TrainConfig.search(quick=True), workers=1, cache=False, generations=0,
+                                      copy_from=str(path), expert_rounds=4, holdout_rounds=2, epochs=1,
+                                      eval_rounds=4, eval_matches=2, final_rounds=4, final_matches=2)
+
+            class Keep(Observer):
+                def __init__(self):
+                    self.gens = []
+
+                def generation(self, gen, net):
+                    self.gens.append((gen, net))
+
+            obs = Keep()
+            report = run_training(cfg, obs, model_path=None, report_path=None)
+        gen, net = obs.gens[0]
+        self.assertEqual(gen["label"], "Copied old-best.json")
+        from .features import INPUT_DIM
+
+        self.assertEqual(net.dims[0], INPUT_DIM)  # the copy uses the suit-free inputs
+        self.assertTrue([h for h in report["history"] if h["phase"] == "imitation"])

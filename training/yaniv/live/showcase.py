@@ -22,7 +22,7 @@ from ..engine import (
     new_round,
     resolve_showdown,
 )
-from ..features import action_matrix, state_features
+from ..features import INPUT_DIM, net_actions, score_actions
 from ..heuristic import choose_greedy, choose_heuristic, choose_random
 from .hub import Hub
 
@@ -53,9 +53,9 @@ class Player:
     def choose(self, view: View, actions: list[Action], rng) -> tuple[Action, list[dict] | None]:
         if self.bot is not None:
             return self.bot(view, actions, rng), None
-        packed_state = np.repeat(state_features(view)[None, :], len(actions), axis=0)
-        packed = np.concatenate([packed_state, action_matrix(view, actions)], axis=1)
-        scores = self.net.forward(packed)[:, 0].astype(np.float64)
+        if self.net.dims[0] == INPUT_DIM:
+            actions = net_actions(actions)[0]  # suit-only twins are one move to the net
+        scores = score_actions(self.net, view, actions).astype(np.float64)
         probs = np.exp(scores - scores.max())
         probs /= probs.sum()
         order = np.argsort(-scores)
