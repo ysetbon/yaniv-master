@@ -132,9 +132,31 @@ def main() -> None:
             apply_action(state, legal_actions(make_view(state, state.turn))[0])
             features.append(feature_case(make_view(state, state.turn)))
 
-    payload = masks_as_strings({"keeps": keeps, "steps": steps, "features": features})
+    payload = masks_as_strings({"keeps": keeps, "steps": steps, "features": features, "moe": moe_case(features)})
     OUT.write_text(json.dumps(payload), encoding="utf-8")
     print(f"wrote {OUT} keeps={len(keeps)} steps={len(steps)} features={len(features)}")
+
+
+def moe_case(features: list[dict]) -> dict:
+    """A small decider with three experts, and the scores Python gives some real feature rows."""
+    import numpy as np
+
+    from training.yaniv.features import INPUT_DIM, STATE_DIM
+    from training.yaniv.moe import MoE
+    from training.yaniv.network import MLP, net_payload
+
+    moe = MoE(MLP([STATE_DIM, 6, 3], seed=31), [MLP([INPUT_DIM, 8, 1], seed=40 + k) for k in range(3)])
+    for expert in moe.experts:
+        expert.W[-1] *= 60.0  # wake up the small last layer, so the experts disagree
+    moe.gate.W[-1] *= 60.0
+    cases = []
+    for case in features[:6]:
+        state = np.asarray(case["state"], dtype=np.float32)
+        rows = np.asarray([a["features"] for a in case["actions"]], dtype=np.float32)
+        packed = np.concatenate([np.repeat(state[None, :], len(rows), axis=0), rows], axis=1)
+        cases.append({"state": case["state"], "actions": [a["features"] for a in case["actions"]],
+                      "scores": moe.forward(packed)[:, 0].tolist()})
+    return {"net": net_payload(moe), "cases": cases}
 
 
 def feature_case(view: View) -> dict:

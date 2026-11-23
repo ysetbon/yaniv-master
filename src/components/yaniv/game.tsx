@@ -71,6 +71,8 @@ interface Report {
   best_generation?: number;
   self_play_iterations?: number;
   config?: { population?: number; fitness_rounds?: number; search_samples?: number; copy_from?: string };
+  experts?: number;
+  decider?: number[] | null;
 }
 
 interface LogLine {
@@ -821,7 +823,9 @@ function Dossier({ report }: { report: Report | null }) {
         averaging {report.round_record_vs_greedy.hero_avg.toFixed(1)} points to {report.round_record_vs_greedy.villain_avg.toFixed(1)}.
         Against random legal throws it wins {Math.round(report.round_win_rate_vs_random * 100)}%.
         The counter it copied wins {Math.round(report.benchmark_vs_greedy.win_rate * 100)}% of those same dump-the-fat-set rounds.
-        The network is {report.layers.join(" → ")}. {report.seconds ? `The training run took ${Math.round(report.seconds / 60)} minutes.` : ""}
+        {report.experts && report.experts > 1 && report.decider
+          ? `It is a learned decider (${report.decider.join(" → ")}) that weighs ${report.experts} nets of ${report.layers.join(" → ")}, so different nets can lead in different parts of a round.`
+          : `The network is ${report.layers.join(" → ")}.`} {report.seconds ? `The training run took ${Math.round(report.seconds / 60)} minutes.` : ""}
       </p>
     </div>
   ) : (

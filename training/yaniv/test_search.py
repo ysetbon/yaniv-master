@@ -285,3 +285,52 @@ class CopyFrom(unittest.TestCase):
 
         self.assertEqual(net.dims[0], INPUT_DIM)  # the copy uses the suit-free inputs
         self.assertTrue([h for h in report["history"] if h["phase"] == "imitation"])
+
+
+class RunRecord(unittest.TestCase):
+    def test_a_run_writes_its_log_and_summary(self):
+        import tempfile
+        from pathlib import Path
+
+        cfg = dataclasses.replace(TrainConfig.search(quick=True), workers=1, cache=False, generations=1,
+                                  search_rounds=2, search_samples=4, eval_rounds=4, eval_matches=2, gate_rounds=4,
+                                  gate_matches=2, final_rounds=4, final_matches=2)
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir, results = Path(tmp) / "20990101-000000", Path(tmp) / "results"
+            run_training(cfg, Observer(), model_path=None, report_path=None, run_dir=run_dir, results_dir=results)
+            log = (run_dir / "log.txt").read_text()
+            summary = (run_dir / "summary.md").read_text()
+            self.assertIn("Search 1:", log)
+            self.assertTrue(log.splitlines()[0].startswith("0:00:0"))
+            self.assertIn("## Generations", summary)
+            self.assertIn("| 1 | Search pass 1 |", summary)
+            self.assertIn("ships.", summary)
+            self.assertEqual((results / "20990101-000000.md").read_text(), summary)
+
+
+class Experts(unittest.TestCase):
+    def test_mixture_learns_and_runs_in_the_search_recipe(self):
+        import tempfile
+        from pathlib import Path
+
+        import numpy as np
+
+        from .moe import MoE
+        from .network import load_net, save_net
+
+        start = default_net(9)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "start.json"
+            save_net(start, path, {})
+            cfg = dataclasses.replace(TrainConfig.search(quick=True), workers=2, cache=False, generations=2, experts=3,
+                                      start_from=str(path), search_rounds=2, search_samples=4, eval_rounds=4,
+                                      eval_matches=2, gate_rounds=4, gate_matches=2, final_rounds=4, final_matches=2,
+                                      expert_rounds=20, holdout_rounds=4)
+            run_dir = Path(tmp) / "run"
+            report = run_training(cfg, Observer(), model_path=None, report_path=None, run_dir=run_dir, results_dir=None)
+            gen1 = load_net(run_dir / "gen-01.json")
+        self.assertIsInstance(gen1, MoE)
+        self.assertEqual(len(gen1.experts), 3)
+        self.assertEqual(report["experts"] in (1, 3), True)  # Gen 0 stays a plain net and may still ship
+        x = np.random.default_rng(1).random((5, start.dims[0])).astype(np.float32)
+        self.assertEqual(gen1.forward(x).shape, (5, 1))

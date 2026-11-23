@@ -106,6 +106,18 @@ The gate ranks by rounds won rather than matches won, because rounds are far mor
 
 The card counter's decisions are cached in `runs/.cache/` because they are the same every run. `python main.py --legacy` runs the first recipe for comparison.
 
+### A learned decider with expert nets (`--experts`)
+
+`--experts 3` turns the net into a small decider and three expert nets after Gen 0. The decider reads the table and gives each expert a weight that adds up to 1, and a move's score is the experts' scores mixed by those weights. Every expert starts as a copy of Gen 0, and the decider is first taught a simple stage rule (opening: under 4 throws; endgame: a hand of 12 points or less, an opponent with 2 cards or fewer, or a deck of 10 or fewer; middle: the rest), so the mixture starts by playing exactly like Gen 0. The search passes then train all of them together: the experts can specialise, and the decider learns its own boundaries. It trains with NumPy on the CPU. Gen 0 stays a plain net, so the final check compares the mixture with the net it came from.
+
+```bash
+python main.py --start-from public/model/yaniv-net.json --experts 3 --effort 0.7 --generations 12 --search-rounds 300
+```
+
+### Records of each run
+
+Each run writes `runs/<timestamp>/log.txt` (every trainer line, with times) and a short summary to `runs/<timestamp>/summary.md` and `results/<timestamp>.md`. The `results/` folder is tracked by git, so committing and pushing it shares how a run went without its nets.
+
 ### What the numbers say so far
 
 Under the old rules, neither evolution nor self-play produced a net clearly stronger than the card counter: the best won about 52% of rounds and 49% of matches against it.

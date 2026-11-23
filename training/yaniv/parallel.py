@@ -22,8 +22,15 @@ from .network import MLP
 Spec = tuple  # ("counter",) | ("greedy",) | ("random",) | ("net", dims, weights, biases, temperature)
 
 
-def net_spec(net: MLP, temperature: float = 0.0) -> Spec:
-    return ("net", list(net.dims), [np.asarray(w) for w in net.W], [np.asarray(b) for b in net.b], temperature)
+def _parts(net: MLP) -> tuple:
+    return list(net.dims), [np.asarray(w) for w in net.W], [np.asarray(b) for b in net.b]
+
+
+def net_spec(net, temperature: float = 0.0) -> Spec:
+    """A plain net as ("net", dims, W, b, temperature); a decider with experts as ("moe", gate, experts, temperature)."""
+    if hasattr(net, "experts"):
+        return ("moe", _parts(net.gate), [_parts(e) for e in net.experts], temperature)
+    return ("net", *_parts(net), temperature)
 
 
 def bot_spec(name: str) -> Spec:
@@ -41,16 +48,24 @@ def chooser(spec: Spec):
         return choose_greedy
     if kind == "random":
         return choose_random
-    if kind == "net":
-        return net_chooser(_net(spec), spec[4])
+    if kind in ("net", "moe"):
+        return net_chooser(_net(spec), spec[-1])
     raise ValueError(f"unknown player {kind}")
 
 
-def _net(spec: Spec) -> MLP:
-    net = MLP(spec[1], seed=0)
-    net.W = [w.astype(np.float32, copy=False) for w in spec[2]]
-    net.b = [b.astype(np.float32, copy=False) for b in spec[3]]
+def _mlp(dims, weights, biases) -> MLP:
+    net = MLP(dims, seed=0)
+    net.W = [w.astype(np.float32, copy=False) for w in weights]
+    net.b = [b.astype(np.float32, copy=False) for b in biases]
     return net
+
+
+def _net(spec: Spec):
+    if spec[0] == "moe":
+        from .moe import MoE
+
+        return MoE(_mlp(*spec[1]), [_mlp(*parts) for parts in spec[2]])
+    return _mlp(spec[1], spec[2], spec[3])
 
 
 # ---- work done inside a worker -------------------------------------------

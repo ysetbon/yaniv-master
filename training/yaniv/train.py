@@ -41,6 +41,7 @@ from .backend import Device, as_numpy, build_net, resolve_device
 from .network import MLP, load_net, save_net
 
 ROOT = Path(__file__).resolve().parents[2]
+RESULTS_DIR = ROOT / "results"  # tracked by git: one Markdown summary per finished run
 MODEL_PATH = ROOT / "public" / "model" / "yaniv-net.json"
 REPORT_PATH = ROOT / "public" / "model" / "training-report.json"
 
@@ -275,7 +276,7 @@ def concat_datasets(parts: list[Dataset]) -> Dataset:
 
 
 def train_dataset(net, data: Dataset, lr: float, batch_size: int, rng: random.Random, progress=None) -> tuple[float, float]:
-    if not isinstance(net, MLP):
+    if not isinstance(net, MLP) and not hasattr(net, "experts"):  # a PyTorch net trains itself
         return net.train_epoch(data, lr, batch_size, rng, progress)
     count = len(data)
     order = list(range(count))
@@ -626,6 +627,10 @@ class TrainConfig:
     # start from instead of copying the counter. It becomes Gen 0, so the
     # final check only ships a later generation that beats it.
     start_from: str = ""
+    # More than 1: after Gen 0, play with a learned decider and this many
+    # expert nets (moe.py). Each expert starts as a copy of Gen 0 and the
+    # decider starts from the opening / middle / endgame rule.
+    experts: int = 0
     # A saved net to copy instead of the card counter: it plays the counter
     # and the new net learns its moves. It may use the older 389-number
     # inputs, so a net trained before the suit-free layout can teach one.
@@ -746,6 +751,7 @@ def run_training(
     model_path: Path | None = MODEL_PATH,
     report_path: Path | None = REPORT_PATH,
     run_dir: Path | None = None,
+    results_dir: Path | None = RESULTS_DIR,
 ) -> dict:
     """Clone the card counter, then improve by self-play. Returns the report.
 
@@ -756,13 +762,26 @@ def run_training(
 
     obs = observer or Observer()
     device = device or resolve_device("numpy")
-    log = obs.log
     workers = Workers(cfg.workers or default_workers(cfg.effort or None))
+    started = time.time()
+    log_file = None
+    if run_dir is not None:
+        run_dir.mkdir(parents=True, exist_ok=True)
+        log_file = (run_dir / "log.txt").open("a", encoding="utf-8")
+
+    def log(message: str) -> None:
+        """The observer's log, also written to the run's log.txt with the time since the start."""
+        obs.log(message)
+        if log_file is not None:
+            elapsed = int(time.time() - started)
+            log_file.write(f"{elapsed // 3600}:{elapsed % 3600 // 60:02d}:{elapsed % 60:02d} {message}\n")
+            log_file.flush()
+
+    generation_rows: list[dict] = []
 
     def job(name: str):
         return lambda done, total: obs.progress(name, done, total)
 
-    started = time.time()
     log(f"Training on {device.label()}, playing games on {workers.count} CPU process{'es' if workers.count > 1 else ''}")
     if device.note:
         log(device.note)
@@ -833,6 +852,7 @@ def run_training(
                 save_net(current, run_dir / f"gen-{index:02d}.json", {"generation": index, "label": label})
             gen = {"index": index, "label": label, "rounds": rounds, "matches": matches, "kept": kept,
                    "elapsed": round(time.time() - started, 1), **extra}
+            generation_rows.append(gen)
             obs.generation(gen, current)
             if cfg.ladder_rounds > 0 and index > 0:
                 obs.phase("ladder", f"Gen {index} plays every earlier generation, {cfg.ladder_rounds} rounds each")
@@ -859,6 +879,16 @@ def run_training(
         gen0_label = f"Started from {start_name}" if start_name else f"Copied {copy_name}" if copy_name else "Copied the counter"
         publish_generation(0, gen0_label, best_round, best_match, True,
                            {"seconds": round(time.time() - t_gen, 1)})
+
+        if cfg.experts > 1:
+            from .moe import warm_moe
+
+            net, decider_agree = warm_moe(as_numpy(net).clone(), expert.states, cfg.experts)
+            log(f"From here on: {net.describe()}. Every net starts as a copy of Gen 0, and the decider "
+                f"was taught the opening / middle / endgame rule (it follows it on {decider_agree:.1%} of positions); "
+                "now they all learn together")
+            if device.kind != "numpy":
+                log("The decider and its nets learn with NumPy on the CPU; the GPU is not used for them")
 
         self_play_games = 0
         self_play_decisions = 0
@@ -1119,6 +1149,8 @@ def run_training(
         "action_dim": ACTION_DIM,
         "input_dim": INPUT_DIM,
         "layers": best.dims,
+        "experts": len(best.experts) if hasattr(best, "experts") else 1,
+        "decider": best.gate.dims if hasattr(best, "experts") else None,
         "expert_rounds": cfg.expert_rounds,
         "expert_decisions": len(expert),
         "self_play_games": self_play_games,
@@ -1164,8 +1196,22 @@ def run_training(
         f"Best is gen {best_index}: vs counter matches {best_match['wins']}-{best_match['losses']}-{best_match['ties']} "
         f"rounds {best_round['win_rate']:.3f}, vs greedy {greedy_rec['win_rate']:.3f}, vs random {randoms['win_rate']:.3f}"
     )
+    if run_dir is not None:
+        from .summary import render_summary
+
+        text = render_summary(run_dir.name, asdict(cfg), report, generation_rows, device.label(), workers.count)
+        targets = [run_dir / "summary.md"] + ([results_dir / f"{run_dir.name}.md"] if results_dir is not None else [])
+        for target in targets:
+            try:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(text, encoding="utf-8")
+                paths["summary" if target.parent == run_dir else "result"] = str(target)
+            except OSError as err:
+                log(f"Could not write {target}: {err}")
     for where in paths.values():
         log(f"Saved {where}")
+    if log_file is not None:
+        log_file.close()
     obs.done(report, paths)
     return report
 
