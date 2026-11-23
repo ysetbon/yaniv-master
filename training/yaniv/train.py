@@ -41,6 +41,7 @@ from .backend import Device, as_numpy, build_net, resolve_device
 from .network import MLP, load_net, save_net
 
 ROOT = Path(__file__).resolve().parents[2]
+RESULTS_DIR = ROOT / "results"  # tracked by git: one Markdown summary per finished run
 MODEL_PATH = ROOT / "public" / "model" / "yaniv-net.json"
 REPORT_PATH = ROOT / "public" / "model" / "training-report.json"
 
@@ -746,6 +747,7 @@ def run_training(
     model_path: Path | None = MODEL_PATH,
     report_path: Path | None = REPORT_PATH,
     run_dir: Path | None = None,
+    results_dir: Path | None = RESULTS_DIR,
 ) -> dict:
     """Clone the card counter, then improve by self-play. Returns the report.
 
@@ -756,13 +758,26 @@ def run_training(
 
     obs = observer or Observer()
     device = device or resolve_device("numpy")
-    log = obs.log
     workers = Workers(cfg.workers or default_workers(cfg.effort or None))
+    started = time.time()
+    log_file = None
+    if run_dir is not None:
+        run_dir.mkdir(parents=True, exist_ok=True)
+        log_file = (run_dir / "log.txt").open("a", encoding="utf-8")
+
+    def log(message: str) -> None:
+        """The observer's log, also written to the run's log.txt with the time since the start."""
+        obs.log(message)
+        if log_file is not None:
+            elapsed = int(time.time() - started)
+            log_file.write(f"{elapsed // 3600}:{elapsed % 3600 // 60:02d}:{elapsed % 60:02d} {message}\n")
+            log_file.flush()
+
+    generation_rows: list[dict] = []
 
     def job(name: str):
         return lambda done, total: obs.progress(name, done, total)
 
-    started = time.time()
     log(f"Training on {device.label()}, playing games on {workers.count} CPU process{'es' if workers.count > 1 else ''}")
     if device.note:
         log(device.note)
@@ -833,6 +848,7 @@ def run_training(
                 save_net(current, run_dir / f"gen-{index:02d}.json", {"generation": index, "label": label})
             gen = {"index": index, "label": label, "rounds": rounds, "matches": matches, "kept": kept,
                    "elapsed": round(time.time() - started, 1), **extra}
+            generation_rows.append(gen)
             obs.generation(gen, current)
             if cfg.ladder_rounds > 0 and index > 0:
                 obs.phase("ladder", f"Gen {index} plays every earlier generation, {cfg.ladder_rounds} rounds each")
@@ -1164,8 +1180,22 @@ def run_training(
         f"Best is gen {best_index}: vs counter matches {best_match['wins']}-{best_match['losses']}-{best_match['ties']} "
         f"rounds {best_round['win_rate']:.3f}, vs greedy {greedy_rec['win_rate']:.3f}, vs random {randoms['win_rate']:.3f}"
     )
+    if run_dir is not None:
+        from .summary import render_summary
+
+        text = render_summary(run_dir.name, asdict(cfg), report, generation_rows, device.label(), workers.count)
+        targets = [run_dir / "summary.md"] + ([results_dir / f"{run_dir.name}.md"] if results_dir is not None else [])
+        for target in targets:
+            try:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(text, encoding="utf-8")
+                paths["summary" if target.parent == run_dir else "result"] = str(target)
+            except OSError as err:
+                log(f"Could not write {target}: {err}")
     for where in paths.values():
         log(f"Saved {where}")
+    if log_file is not None:
+        log_file.close()
     obs.done(report, paths)
     return report
 

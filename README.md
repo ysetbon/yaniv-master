@@ -106,6 +106,10 @@ The gate ranks by rounds won rather than matches won, because rounds are far mor
 
 The card counter's decisions are cached in `runs/.cache/` because they are the same every run. `python main.py --legacy` runs the first recipe for comparison.
 
+### Records of each run
+
+Each run writes `runs/<timestamp>/log.txt` (every trainer line, with times) and a short summary to `runs/<timestamp>/summary.md` and `results/<timestamp>.md`. The `results/` folder is tracked by git, so committing and pushing it shares how a run went without its nets.
+
 ### What the numbers say so far
 
 Under the old rules, neither evolution nor self-play produced a net clearly stronger than the card counter: the best won about 52% of rounds and 49% of matches against it.

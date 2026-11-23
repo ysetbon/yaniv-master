@@ -285,3 +285,24 @@ class CopyFrom(unittest.TestCase):
 
         self.assertEqual(net.dims[0], INPUT_DIM)  # the copy uses the suit-free inputs
         self.assertTrue([h for h in report["history"] if h["phase"] == "imitation"])
+
+
+class RunRecord(unittest.TestCase):
+    def test_a_run_writes_its_log_and_summary(self):
+        import tempfile
+        from pathlib import Path
+
+        cfg = dataclasses.replace(TrainConfig.search(quick=True), workers=1, cache=False, generations=1,
+                                  search_rounds=2, search_samples=4, eval_rounds=4, eval_matches=2, gate_rounds=4,
+                                  gate_matches=2, final_rounds=4, final_matches=2)
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir, results = Path(tmp) / "20990101-000000", Path(tmp) / "results"
+            run_training(cfg, Observer(), model_path=None, report_path=None, run_dir=run_dir, results_dir=results)
+            log = (run_dir / "log.txt").read_text()
+            summary = (run_dir / "summary.md").read_text()
+            self.assertIn("Search 1:", log)
+            self.assertTrue(log.splitlines()[0].startswith("0:00:0"))
+            self.assertIn("## Generations", summary)
+            self.assertIn("| 1 | Search pass 1 |", summary)
+            self.assertIn("ships.", summary)
+            self.assertEqual((results / "20990101-000000.md").read_text(), summary)
