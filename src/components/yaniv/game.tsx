@@ -70,7 +70,7 @@ interface Report {
   recipe?: string;
   best_generation?: number;
   self_play_iterations?: number;
-  config?: { population?: number; fitness_rounds?: number; search_samples?: number };
+  config?: { population?: number; fitness_rounds?: number; search_samples?: number; copy_from?: string };
 }
 
 interface LogLine {
@@ -767,7 +767,14 @@ function MatchSheet({ scores, onRestart }: { scores: [number, number]; onRestart
 function Dossier({ report }: { report: Report | null }) {
   const body = report ? (
     <div className="space-y-3 text-sm leading-relaxed text-[#f6edd9]/90">
-      {report.recipe === "search" && report.self_play_iterations ? (
+      {report.config?.copy_from && !report.self_play_iterations ? (
+        <p>
+          It learned by copying an earlier net that a search teacher had trained, over{" "}
+          {report.expert_decisions.toLocaleString()} decisions across {report.expert_rounds.toLocaleString()} rounds. It
+          reads the cards by rank only, since no rule here looks at suits, and that makes it play better than the net it
+          copied.
+        </p>
+      ) : report.recipe === "search" && report.self_play_iterations ? (
         <p>
           It first copied a card counter for {report.expert_decisions.toLocaleString()} decisions across{" "}
           {report.expert_rounds.toLocaleString()} rounds. Then a search teacher took over: over{" "}

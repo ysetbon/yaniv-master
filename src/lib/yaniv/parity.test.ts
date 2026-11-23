@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { bestKeepPoints, applyAction, legalActions, resolveShowdown, type Action, type State, type View } from "./engine";
-import { actionFeatures, stateFeatures } from "./features";
+import { actionFeatures, netActions, stateFeatures } from "./features";
 
 interface RawState {
   hands: [string, string];
@@ -143,7 +143,7 @@ for (const step of fixtures.steps) {
 for (const feature of fixtures.features) {
   const view = asView(feature.view);
   close(stateFeatures(view), feature.state, "state");
-  const legal = legalActions(view);
+  const legal = netActions(legalActions(view));
   assert.ok(legal.length >= feature.actions.length);
   feature.actions.forEach((row, index) => {
     const action = asAction(row.action);

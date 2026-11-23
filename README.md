@@ -17,6 +17,8 @@ The trained weights already live in `public/model`, so you can play without trai
 
 Training lives in `training/yaniv`. It plays a full Yaniv rules engine, scores every legal throw with a small multilayer perceptron, and writes `public/model/yaniv-net.json`.
 
+The net reads the table by rank only, because no rule looks at suits: 96 numbers for the table (ranks in your hand, thrown, the open card, the opponent's known cards and the unseen cards; the scores and counts; the opponent's card count; its estimated hand total, leaning low as real hands do; and the exact chance a Yaniv call now gets caught) and 29 for each move. Moves that differ only by suit, such as which 7 of three is thrown, are one move. The layout is listed in `training/yaniv/features.py`, and `src/lib/yaniv/features.ts` must match it number for number. The net is 125 → 128 → 128 → 1, about 33,000 weights. Nets trained on the older 389-number layout still run through `features_v1.py`, so they can be copied.
+
 ```bash
 python3 -m training.yaniv.train
 npm run test:rules
@@ -65,11 +67,17 @@ python main.py --start-from public/model/yaniv-net.json --generations 12 --searc
 
 Any saved net works, such as a run's `runs/<timestamp>/best.json`.
 
+To start a new net from a saved one's moves instead of the counter's, copy it. This also moves a net onto a new input layout:
+
+```bash
+python main.py --copy-from runs/20261123-091156/best.json --generations 12 --search-rounds 300
+```
+
 `--effort 0.7` uses about 70% of the computer: game processes on 70% of the CPU's logical cores, at below-normal priority so the computer stays responsive, and a 70% cap on GPU memory. The GPU only runs the learning step, a few seconds a pass. The search spends its time on game rules and on building the net's inputs in Python, and asks the net about one position at a time, so it stays on the CPU, where it is faster than sending each small batch to the GPU.
 
 ### How the genetic algorithm works (`--recipe genetic`)
 
-1. The first population is the copy plus 23 mutants of it. Every member keeps the same shape as the copy (389 → 192 → 192 → 1), so neuron *i* means roughly the same thing in every member.
+1. The first population is the copy plus 23 mutants of it. Every member keeps the same shape as the copy (125 → 128 → 128 → 1), so neuron *i* means roughly the same thing in every member.
 2. Each generation, every member plays the same 1,000 rounds against the card counter. Fitness is the share of rounds won, with the points margin as a tie-breaker. Using the same deals means members differ only where their moves differ, not through luck of the deal.
 3. The two fittest members carry over unchanged (elites). The rest are children:
    - Parents are picked by tournament: the best of three random members.
@@ -104,7 +112,7 @@ Under the old rules, neither evolution nor self-play produced a net clearly stro
 
 Under the current rules, the search player itself beat the counter in 124 of 200 matches (62%). A short search run of 2 passes, about 2,200 searched decisions, lifted the net from 196–204 to 214–186 in matches against the counter on the same 400 new games. The gate replay agreed: 54% against Gen 0's 45.5%. Longer runs should go further; the final check still decides what ships.
 
-The net in the game now is Gen 6 of a 10-pass search run (250 rounds a pass). On 2,000 rounds and 600 matches it never saw, it won 322–278 matches against the counter (53.7%) and took 0.67 points a round fewer than the counter; on the same games the copy it started from won 299–301 and took 0.36 points more.
+The net in the game now is a suit-free copy of Gen 2 from a 12-pass search run. Copying a net onto the rank-only inputs made it play better than the net it copied: on the same 2,000 rounds and 600 matches against the counter, Gen 2 won 331–269 and took 0.60 points a round fewer than the counter, and its copy won 362–238 and took 1.26 fewer.
 
 ```bash
 python main.py --quick                  # small run to check everything works

@@ -1,54 +1,76 @@
 {
-  "state_dim": 267,
-  "action_dim": 122,
-  "input_dim": 389,
+  "state_dim": 96,
+  "action_dim": 29,
+  "input_dim": 125,
   "layers": [
-    389,
-    192,
-    192,
+    125,
+    128,
+    128,
     1
   ],
-  "recipe": "search",
-  "best_generation": 6,
-  "self_play_iterations": 6,
-  "self_play_games": 1500,
-  "self_play_winning_decisions": 20192,
   "expert_rounds": 2400,
-  "expert_decisions": 32714,
+  "expert_decisions": 33852,
+  "self_play_games": 0,
+  "self_play_winning_decisions": 0,
+  "self_play_iterations": 0,
   "imitation_epochs": 6,
-  "seconds": null,
-  "match_win_rate_vs_benchmark": 0.5366666666666666,
+  "seconds": 46.7,
+  "device": "CPU (NumPy)",
+  "best_generation": 0,
+  "gate_replay": null,
+  "fresh_test": {
+    "0": {
+      "rounds": {
+        "wins": 516,
+        "losses": 484,
+        "ties": 0,
+        "calls": 486,
+        "assafs": 19,
+        "win_rate": 0.516,
+        "hero_avg": 6.706,
+        "villain_avg": 7.547,
+        "assaf_rate": 0.03909465020576132
+      },
+      "matches": {
+        "wins": 236,
+        "losses": 164,
+        "ties": 0,
+        "win_rate": 0.59
+      }
+    }
+  },
+  "match_win_rate_vs_benchmark": 0.59,
   "match_record_vs_benchmark": {
-    "wins": 322,
-    "losses": 278,
+    "wins": 236,
+    "losses": 164,
     "ties": 0,
-    "win_rate": 0.5366666666666666
+    "win_rate": 0.59
   },
-  "round_win_rate_vs_benchmark": 0.522,
+  "round_win_rate_vs_benchmark": 0.516,
   "round_record_vs_benchmark": {
-    "wins": 1044,
-    "losses": 956,
+    "wins": 516,
+    "losses": 484,
     "ties": 0,
-    "calls": 996,
-    "assafs": 48,
-    "win_rate": 0.522,
-    "hero_avg": 6.844,
-    "villain_avg": 7.519,
-    "assaf_rate": 0.04819277108433735
+    "calls": 486,
+    "assafs": 19,
+    "win_rate": 0.516,
+    "hero_avg": 6.706,
+    "villain_avg": 7.547,
+    "assaf_rate": 0.03909465020576132
   },
-  "round_win_rate_vs_greedy": 0.669,
+  "round_win_rate_vs_greedy": 0.682,
   "round_record_vs_greedy": {
-    "wins": 669,
-    "losses": 329,
+    "wins": 682,
+    "losses": 316,
     "ties": 2,
-    "calls": 735,
-    "assafs": 87,
-    "win_rate": 0.669,
-    "hero_avg": 5.568,
-    "villain_avg": 8.181,
-    "assaf_rate": 0.11836734693877551
+    "calls": 730,
+    "assafs": 75,
+    "win_rate": 0.682,
+    "hero_avg": 5.229,
+    "villain_avg": 8.387,
+    "assaf_rate": 0.10273972602739725
   },
-  "round_win_rate_vs_random": 0.995,
+  "round_win_rate_vs_random": 0.992,
   "benchmark_vs_greedy": {
     "wins": 107,
     "losses": 53,
@@ -60,13 +82,111 @@
     "villain_avg": 8.075,
     "assaf_rate": 0.13114754098360656
   },
+  "history": [
+    {
+      "phase": "imitation",
+      "epoch": 1,
+      "accuracy": 0.8018137776202292,
+      "holdout": 0.8582857142857143,
+      "ce": 0.5771425681013009,
+      "seconds": 1.19
+    },
+    {
+      "phase": "imitation",
+      "epoch": 2,
+      "accuracy": 0.8450903934774903,
+      "holdout": 0.8605714285714285,
+      "ce": 0.39421108258001425,
+      "seconds": 1.54
+    },
+    {
+      "phase": "imitation",
+      "epoch": 3,
+      "accuracy": 0.8514120288313837,
+      "holdout": 0.8662857142857143,
+      "ce": 0.37458897830453824,
+      "seconds": 1.41
+    },
+    {
+      "phase": "imitation",
+      "epoch": 4,
+      "accuracy": 0.8547500886210564,
+      "holdout": 0.8674285714285714,
+      "ce": 0.3641695907600787,
+      "seconds": 1.51
+    },
+    {
+      "phase": "imitation",
+      "epoch": 5,
+      "accuracy": 0.8577632045373981,
+      "holdout": 0.8674285714285714,
+      "ce": 0.35735842082462704,
+      "seconds": 1.7
+    },
+    {
+      "phase": "imitation",
+      "epoch": 6,
+      "accuracy": 0.8581176887628501,
+      "holdout": 0.872,
+      "ce": 0.3525381925886718,
+      "seconds": 1.49
+    },
+    {
+      "phase": "eval",
+      "iteration": 0,
+      "rounds": {
+        "wins": 517,
+        "losses": 483,
+        "ties": 0,
+        "calls": 497,
+        "assafs": 20,
+        "win_rate": 0.517,
+        "hero_avg": 6.592,
+        "villain_avg": 7.435,
+        "assaf_rate": 0.04024144869215292
+      },
+      "matches": {
+        "wins": 118,
+        "losses": 82,
+        "ties": 0,
+        "win_rate": 0.59
+      }
+    },
+    {
+      "phase": "fresh_test",
+      "chosen": 0,
+      "results": {
+        "0": {
+          "rounds": {
+            "wins": 516,
+            "losses": 484,
+            "ties": 0,
+            "calls": 486,
+            "assafs": 19,
+            "win_rate": 0.516,
+            "hero_avg": 6.706,
+            "villain_avg": 7.547,
+            "assaf_rate": 0.03909465020576132
+          },
+          "matches": {
+            "wins": 236,
+            "losses": 164,
+            "ties": 0,
+            "win_rate": 0.59
+          }
+        }
+      },
+      "rounds": 1000,
+      "matches": 400
+    }
+  ],
   "config": {
     "expert_rounds": 2400,
     "holdout_rounds": 240,
     "epochs": 6,
-    "generations": 10,
+    "generations": 0,
     "games_per_generation": 800,
-    "eval_rounds": 400,
+    "eval_rounds": 1000,
     "eval_matches": 200,
     "bench_rounds": 160,
     "lrs": [
@@ -94,7 +214,8 @@
     "final_rounds": 1000,
     "final_matches": 400,
     "ladder_rounds": 0,
-    "workers": 0,
+    "workers": 4,
+    "effort": 0.0,
     "cache": true,
     "recipe": "search",
     "population": 24,
@@ -105,15 +226,19 @@
     "sigma": 0.2,
     "sigma_decay": 0.96,
     "ga_seed": 17,
-    "search_rounds": 250,
+    "search_rounds": 150,
     "search_samples": 48,
     "search_width": 4,
     "search_confidence": 1.5,
     "search_lr": 0.0003,
     "search_epochs": 3,
     "search_capacity": 60000,
-    "start_from": ""
+    "search_teacher": "latest",
+    "start_from": "",
+    "copy_from": "runs/20261123-091156/best.json (Gen 2 of the owner's search run)"
   },
+  "recipe": "search",
+  "population_history": [],
   "rules": {
     "yaniv_max": 5,
     "assaf_penalty": 30,
@@ -121,7 +246,5 @@
     "deal": 5,
     "max_plies": 48
   },
-  "history": [],
-  "fresh_test": {},
-  "note": "Gen 6 of a 10-pass search run (250 rounds a pass, 48 imagined deals) trained on the owner's machine before the confidence bar and the worker thread fix. The records here are an independent check on 2,000 mirrored rounds and 600 mirrored matches against the card counter that the run never saw. On the same games the previous net (Gen 0, the copy) won 299-301 and averaged -0.36 points a round against the counter."
+  "note": "A suit-free copy of Gen 2 from the owner's 12-pass search run (20261123-091156). On the same 2,000 mirrored rounds and 600 mirrored matches against the card counter, Gen 2 took 0.60 points a round fewer than the counter and won 331-269; this copy took 1.26 fewer and won 362-238."
 }
