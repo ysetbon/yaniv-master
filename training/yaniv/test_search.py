@@ -170,3 +170,54 @@ class EndToEnd(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FastFeatures(unittest.TestCase):
+    """The one-pass feature builders must give exactly the rows the net was trained on."""
+
+    def test_action_matrix_equals_action_features(self):
+        import numpy as np
+
+        from .features import action_features, action_matrix
+
+        for seed in range(30):
+            state = new_round([seed * 3 % 95, seed * 7 % 95], seed % 2, random.Random(seed))
+            while not state.terminal and state.ply < 48:
+                view = make_view(state, state.turn)
+                actions = legal_actions(view)
+                if not actions:
+                    break
+                expected = np.stack([action_features(view, a) for a in actions])
+                np.testing.assert_array_equal(action_matrix(view, actions), expected)
+                apply_action(state, choose_heuristic(view, actions))
+
+    def test_state_features_match_the_parity_fixtures(self):
+        import json
+        from pathlib import Path
+
+        import numpy as np
+
+        from .engine import View
+        from .features import action_matrix, state_features
+
+        path = Path(__file__).resolve().parents[2] / "src" / "lib" / "yaniv" / "fixtures.json"
+        for case in json.loads(path.read_text())["features"]:
+            raw = case["view"]
+            view = View(my_hand=int(raw["my_hand"]), my_known=int(raw["my_known"]), opp_known=int(raw["opp_known"]),
+                        opp_size=raw["opp_size"], stock_size=raw["stock_size"], discard=tuple(raw["discard"]),
+                        my_score=raw["my_score"], opp_score=raw["opp_score"], ply=raw["ply"], seat=raw["seat"])
+            np.testing.assert_allclose(state_features(view), case["state"], atol=1e-6)
+            rows = action_matrix(view, legal_actions(view)[:len(case["actions"])])
+            np.testing.assert_allclose(rows, [a["features"] for a in case["actions"]], atol=1e-6)
+
+
+class Effort(unittest.TestCase):
+    def test_share_of_cores(self):
+        import os
+
+        from .parallel import default_workers
+
+        cores = os.cpu_count() or 2
+        self.assertEqual(default_workers(1.0), cores)
+        self.assertEqual(default_workers(0.7), max(1, round(cores * 0.7)))
+        self.assertEqual(default_workers(0.01), 1)

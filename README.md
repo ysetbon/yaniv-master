@@ -50,8 +50,8 @@ The card counter only looks one move ahead. The search player looks further: for
 2. At every decision with a real choice, the search compares the net's own move, its four next-best plays, and a Yaniv call when legal. It plays each one out with the net in both seats. A move's value is the point margin of the round, plus or minus 100 when the round ends the match.
 3. The opponent's hidden cards are imagined leaning low. The counter throws high cards and keeps low ones, so by mid-round its hidden cards average about 3 points, not the 6 of a random draw.
 4. Another move replaces the net's own only when it wins on the same imagined deals by 1.5 standard errors (`--search-confidence`). Without that bar the search switched on luck between close moves and lost to the counter.
-5. The net learns the searched moves, mixed with a share of the counter's own moves that shrinks from one each to one in four.
-6. The gate ranks each pass by point margin per round, then matches, because matches are decided by total points. The pass it keeps becomes the next teacher, so the playouts get better as the net does.
+5. The net learns the searched moves, mixed with a share of the counter's own moves that shrinks from one each to one in four (`--copied-share`). Starting from a trained net, none are mixed in: they would only pull it back toward the counter.
+6. Each pass's net is the next pass's teacher, so the playouts get better as the net does. Each pass is tested on 1,000 rounds and 200 matches against the counter. The gate ranks passes by point margin per round, then matches, because matches are decided by total points, and keeps the best one to ship.
 
 ```bash
 python main.py --generations 12 --search-rounds 300   # about an hour on 10 game processes
@@ -64,6 +64,8 @@ python main.py --start-from public/model/yaniv-net.json --generations 12 --searc
 ```
 
 Any saved net works, such as a run's `runs/<timestamp>/best.json`.
+
+`--effort 0.7` uses about 70% of the computer: game processes on 70% of the CPU's logical cores, at below-normal priority so the computer stays responsive, and a 70% cap on GPU memory. The GPU only runs the learning step, a few seconds a pass. The search spends its time on game rules and on building the net's inputs in Python, and asks the net about one position at a time, so it stays on the CPU, where it is faster than sending each small batch to the GPU.
 
 ### How the genetic algorithm works (`--recipe genetic`)
 
