@@ -24,6 +24,10 @@ import { chooseAction, describeAction } from "@/lib/ai/agent";
 import { loadNet, type Net } from "@/lib/ai/net";
 import {
   ASSAF_PENALTY,
+  HAND_SIZE,
+  SMALL_GAME,
+  rulesSuffix,
+  setRules,
   MATCH_LIMIT,
   YANIV_LIMIT,
   type Action,
@@ -101,6 +105,14 @@ function mulberry32(seed: number) {
   };
 }
 
+/** Load the page again for the small or the standard game: the rules are set once, when the page boots. */
+function reloadAs(small: boolean): void {
+  const url = new URL(window.location.href);
+  if (small) url.searchParams.set("game", "small");
+  else url.searchParams.delete("game");
+  window.location.assign(url.href);
+}
+
 function freshMatch(): Match {
   return { state: newRound([0, 0], 0, rng), leader: 0, round: 1, startScores: [0, 0] };
 }
@@ -126,14 +138,27 @@ export function Game() {
   const [hintCards, setHintCards] = useState<number[]>([]);
   const [matchOver, setMatchOver] = useState(false);
   const [sudden, setSudden] = useState(0);
+  const [small, setSmall] = useState(false);
 
   useEffect(() => {
     let cancel = false;
     async function boot() {
+      // /?game=small plays the smaller game the trainer can learn, against its own net.
+      const wantSmall = new URLSearchParams(window.location.search).get("game") === "small";
+      if (wantSmall) setRules(SMALL_GAME.hand, SMALL_GAME.yanivAt);
+      else setRules(5, 7);
+      setSmall(wantSmall);
+      const suffix = rulesSuffix();
       try {
         const [model, dossier] = await Promise.all([
-          loadNet(),
-          fetch("/model/training-report.json").then((response) => (response.ok ? response.json() : null)),
+          loadNet(`/model/yaniv-net${suffix}.json`).catch((cause) => {
+            if (!wantSmall) throw cause;
+            throw new Error(
+              `No net for the ${SMALL_GAME.hand}-card game yet. Train one with: python main.py --hand ${SMALL_GAME.hand} ` +
+                `--yaniv-at ${SMALL_GAME.yanivAt} --value-net --export`,
+            );
+          }),
+          fetch(`/model/training-report${suffix}.json`).then((response) => (response.ok ? response.json() : null)),
         ]);
         if (cancel) return;
         setNet(model);
@@ -300,16 +325,27 @@ export function Game() {
           title="The network is not at the table yet"
           body={error ?? "The weight file has not been written."}
           action={
-            <Button
-              className="h-10 bg-[#f2c75c] px-4 text-[#2a2118] hover:bg-[#f6d685]"
-              onClick={() => {
-                setBooting(true);
-                setError(null);
-                setAttempt((value) => value + 1);
-              }}
-            >
-              Try again
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                className="h-10 bg-[#f2c75c] px-4 text-[#2a2118] hover:bg-[#f6d685]"
+                onClick={() => {
+                  setBooting(true);
+                  setError(null);
+                  setAttempt((value) => value + 1);
+                }}
+              >
+                Try again
+              </Button>
+              {small ? (
+                <button
+                  type="button"
+                  onClick={() => reloadAs(false)}
+                  className="inline-flex h-10 items-center rounded-lg border border-[#f2c75c]/40 px-4 text-sm text-[#f6edd9] hover:bg-white/10"
+                >
+                  Standard game
+                </button>
+              ) : null}
+            </div>
           }
         />
       </Shell>
@@ -330,9 +366,19 @@ export function Game() {
           <h1 className="font-display text-3xl leading-none text-[#f6edd9] sm:text-4xl">
             Yaniv <span className="text-[#f2c75c]">יניב</span>
           </h1>
-          <p className="mt-1 text-sm text-[#e7d7b8]/75">You against a neural net that learned the game.</p>
+          <p className="mt-1 text-sm text-[#e7d7b8]/75">
+            You against a neural net that learned the game.{" "}
+            {small ? `Small game: ${HAND_SIZE} cards, Yaniv at ${YANIV_LIMIT}.` : null}
+          </p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => reloadAs(!small)}
+            className="inline-flex h-9 items-center rounded-lg border border-[#f2c75c]/40 px-3 text-sm text-[#f6edd9] hover:bg-white/10"
+          >
+            {small ? "Standard game" : `Small game (${SMALL_GAME.hand} cards)`}
+          </button>
           <RulesButton />
           <Button
             variant="outline"
@@ -867,7 +913,7 @@ function RulesButton() {
           <DialogDescription>Two players, one deck with two jokers. Lowest score wins.</DialogDescription>
         </DialogHeader>
         <ul className="list-disc space-y-2 pl-5 text-sm">
-          <li>Five cards each. Ace is 1, numbers are their pips, 10, jack, queen and king are 10, and the two jokers are 0.</li>
+          <li>{HAND_SIZE === 5 ? "Five" : HAND_SIZE} cards each. Ace is 1, numbers are their pips, 10, jack, queen and king are 10, and the two jokers are 0.</li>
           <li>On your turn throw one combination: a single card, or two or more cards of the same rank. Two jokers together count as a pair. A joker is not wild.</li>
           <li>You choose which thrown card stays face up. Then draw either the previous open card or the top of the deck. You cannot draw a card you just threw.</li>
           <li>If your whole hand is one combination you may throw all of it, but you still draw, so you always hold at least one card.</li>

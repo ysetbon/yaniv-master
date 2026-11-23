@@ -24,7 +24,11 @@ from pathlib import Path
 import numpy as np
 
 from .engine import (
+    HAND_SIZE,
     MAX_PLIES,
+    RULES_NAME,
+    RULES_SUFFIX,
+    YANIV_LIMIT,
     Action,
     View,
     apply_action,
@@ -42,8 +46,9 @@ from .network import MLP, load_net, save_net
 
 ROOT = Path(__file__).resolve().parents[2]
 RESULTS_DIR = ROOT / "results"  # tracked by git: one Markdown summary per finished run
-MODEL_PATH = ROOT / "public" / "model" / "yaniv-net.json"
-REPORT_PATH = ROOT / "public" / "model" / "training-report.json"
+# A smaller game (--hand, --yaniv-at) ships to its own files, e.g. yaniv-net-4cards-yaniv9.json.
+MODEL_PATH = ROOT / "public" / "model" / f"yaniv-net{RULES_SUFFIX}.json"
+REPORT_PATH = ROOT / "public" / "model" / f"training-report{RULES_SUFFIX}.json"
 
 
 class Dataset:
@@ -95,6 +100,7 @@ def _rules_signature() -> str:
     here = Path(__file__).resolve().parent
     for name in ("engine.py", "features.py", "heuristic.py"):
         digest.update((here / name).read_bytes())
+    digest.update(f"{HAND_SIZE}/{YANIV_LIMIT}".encode())  # a smaller game is other rules
     return digest.hexdigest()[:12]
 
 
@@ -632,6 +638,15 @@ class TrainConfig:
     # Stop starting new passes after this many hours (0: no limit). The gate
     # replay and the final check still run, so a long run ends with a result.
     hours: float = 0.0
+    # The value net (value.py), AlphaZero-style: each pass the teacher net
+    # plays itself `value_rounds` rounds, a value net learns how rounds end
+    # from their positions, and the search looks `value_depth` moves ahead
+    # and asks it instead of playing every imagined round to its end.
+    value_net: bool = False
+    value_depth: int = 2
+    value_rounds: int = 1500
+    value_capacity: int = 400_000  # positions kept across passes (two rows each, one per player), oldest dropped
+    value_epochs: int = 3
     # A saved net (e.g. public/model/yaniv-net.json or a run's best.json) to
     # start from instead of copying the counter. It becomes Gen 0, so the
     # final check only ships a later generation that beats it.
@@ -650,6 +665,7 @@ class TrainConfig:
         if quick:
             return dataclasses.replace(cls.quick(), recipe="search", generations=2, gate_metric="margin",
                                        search_rounds=6, search_samples=8, gate_finalists=2, match_table_rounds=40,
+                                       value_rounds=20,
                                        expert_mix_start=1.0, expert_mix_end=0.25)
         # Every generation is tested on the same 1,000 rounds and 400 matches,
         # so generations are compared on the same deals, and the gate ranks by
@@ -796,6 +812,7 @@ def run_training(
     def job(name: str):
         return lambda done, total: obs.progress(name, done, total)
 
+    log(f"Rules: {RULES_NAME}")
     log(f"Training on {device.label()}, playing games on {workers.count} CPU process{'es' if workers.count > 1 else ''}")
     if device.note:
         log(device.note)
@@ -835,6 +852,10 @@ def run_training(
             if start.dims[0] != INPUT_DIM:
                 raise ValueError(f"{cfg.start_from} takes {start.dims[0]} inputs, but these rules give {INPUT_DIM}: "
                                  "it was trained on other rules")
+            trained_on = (json.loads(Path(cfg.start_from).read_text(encoding="utf-8")).get("meta") or {}).get("rules")
+            if trained_on and (trained_on.get("hand"), trained_on.get("yaniv_at")) != (HAND_SIZE, YANIV_LIMIT):
+                log(f"Note: {cfg.start_from} was trained on {trained_on.get('hand')} cards, Yaniv at "
+                    f"{trained_on.get('yaniv_at')}; this run plays {RULES_NAME}")
             net = _restart_from(net, start, device)
             shape = start.describe() if hasattr(start, "experts") else " -> ".join(map(str, start.dims))
             log(f"Starting from {cfg.start_from} ({shape}), so the copying step is skipped")
@@ -982,6 +1003,16 @@ def run_training(
                     f"From {cfg.match_table_rounds:,} rounds of Gen 0: at 0-0 {win_chance(table, 0, 0):.0%}, "
                     f"at 50-30 {win_chance(table, 50, 30):.0%} (50 is cut to 0), "
                     f"at 90-60 {win_chance(table, 90, 60):.0%}")
+            vnet = None
+            value_x: list[np.ndarray] = []
+            value_y: list[np.ndarray] = []
+            if cfg.value_net:
+                from .value import value_net
+
+                vnet = value_net()
+                log(f"The search looks {cfg.value_depth} moves ahead and asks a value net how the round ends, "
+                    "instead of playing every imagined round to its end. Each pass the teacher plays itself "
+                    f"{cfg.value_rounds:,} rounds and the value net learns from them first")
             for iteration in range(1, cfg.generations + 1):
                 if obs.should_stop():
                     log(f"Stopping early after generation {iteration - 1}, as asked")
@@ -992,11 +1023,40 @@ def run_training(
                 t_gen = time.time()
                 latest = cfg.search_teacher == "latest"
                 teacher, teacher_index = (snapshot(net), iteration - 1) if latest else (best, best_index)
+                value_info: dict = {}
+                if vnet is not None:
+                    from .value import explained, train_value
+
+                    obs.phase("value", f"Gen {iteration}: Gen {teacher_index} plays itself {cfg.value_rounds:,} rounds "
+                                       "for the value net")
+                    t0 = time.time()
+                    vx, vy = workers.value_data(teacher, cfg.value_rounds, 5000 + iteration, table, cfg.match_scores,
+                                                job("value"))
+                    # Measured before it learns them: positions the value net has never seen.
+                    fresh_fit = explained(vnet, vx, vy) if iteration > 1 else float("nan")
+                    value_x.append(vx)
+                    value_y.append(vy)
+                    while len(value_x) > 1 and sum(len(y) for y in value_y) - len(value_y[0]) >= cfg.value_capacity:
+                        value_x.pop(0)
+                        value_y.pop(0)
+                    all_x, all_y = np.concatenate(value_x), np.concatenate(value_y)
+                    obs.phase("value", f"Gen {iteration}: the value net learns from {len(all_y) // 2:,} positions")
+                    mse = train_value(vnet, all_x, all_y, cfg.value_epochs, seed=iteration, progress=job("value"))
+                    fit = explained(vnet, all_x, all_y)
+                    if run_dir is not None:
+                        save_net(vnet, run_dir / f"value-{iteration:02d}.json", {"generation": iteration, "kind": "value"})
+                    value_info = {"value_positions": len(all_y) // 2, "value_fit": fit, "value_fresh_fit": fresh_fit,
+                                  "value_seconds": round(time.time() - t0, 1)}
+                    log(f"Value net: {len(vy) // 2:,} new positions, {len(all_y) // 2:,} kept, learned in "
+                        f"{time.time() - t0:.1f}s (error {mse ** 0.5 * 100:.1f} pts); it explains {fit:.0%} of how "
+                        "the rounds it learned ended" + (f", {fresh_fit:.0%} on this pass's new rounds before "
+                        "learning them" if fresh_fit == fresh_fit else "")
+                        + ". Rounds hinge on future draws, so even a perfect judge explains well under 100%")
                 obs.phase("search", f"Gen {iteration}: searching every decision of {cfg.search_rounds} rounds, "
                                     f"{cfg.search_samples} imagined deals each, with Gen {teacher_index} as the teacher")
                 rows = workers.search_label(teacher, cfg.search_rounds, 6000 + iteration, cfg.search_samples,
                                             cfg.search_width, job("search"), cfg.match_scores, cfg.search_confidence,
-                                            table)
+                                            table, vnet, cfg.value_depth)
                 self_play_games += cfg.search_rounds
                 self_play_decisions += len(rows)
                 if rows:
@@ -1037,7 +1097,8 @@ def run_training(
                     log("  new best checkpoint" + ("" if cfg.search_teacher == "latest" else ", and the next teacher"))
                 publish_generation(iteration, f"Search pass {iteration}", rounds, matches, kept,
                                    {"winning_decisions": len(rows), "ce": ce, "copied": take, "replay": taught_count,
-                                    "teacher_agreement": agree, "seconds": round(time.time() - t_gen, 1)})
+                                    "teacher_agreement": agree, "seconds": round(time.time() - t_gen, 1),
+                                    **value_info})
                 passes_run = iteration
         else:
             replay: list[Dataset] = []
@@ -1207,13 +1268,15 @@ def run_training(
         "config": asdict(cfg),
         "recipe": cfg.recipe,
         "population_history": population_history,
-        "rules": {"yaniv_max": 5, "assaf_penalty": 30, "match_limit": 100, "deal": 5, "max_plies": MAX_PLIES},
+        "rules": {"yaniv_max": YANIV_LIMIT, "assaf_penalty": 30, "match_limit": 100, "deal": HAND_SIZE,
+                  "max_plies": MAX_PLIES, "name": RULES_NAME},
     }
     meta = {
         "match_win_rate_vs_benchmark": best_match["win_rate"],
         "self_play_games": self_play_games,
         "expert_decisions": len(expert),
         "generation": best_index,
+        "rules": {"hand": HAND_SIZE, "yaniv_at": YANIV_LIMIT},
     }
     paths: dict[str, str] = {}
     if run_dir is not None:

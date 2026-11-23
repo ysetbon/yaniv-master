@@ -124,6 +124,26 @@ The search values a move by how much it changes the chance of winning the match,
 python main.py --start-from public/model/yaniv-net.json --effort 0.7 --generations 200 --search-rounds 300 --hours 7.5
 ```
 
+### A value net, AlphaZero-style (`--value-net`)
+
+The search teacher used to play every imagined round to its end with the net, 48 times per candidate move. That is slow, and noisy: every future draw is luck, so two close moves rarely separate and the teacher mostly agrees with the net it teaches (93–95% in the long runs).
+
+With `--value-net`, each pass:
+
+1. The teacher net plays itself (`--value-rounds`, 1,500 by default). Every position is stored with how its round ended for each player, in the same units the search uses (the change in the chance of winning the match).
+2. A second net, the value net (`training/yaniv/value.py`, 193 inputs: what each player sees, and whose turn it is), learns to predict that from the position. It sees the whole imagined deal except the stock order, so it learns the average over the future draws. It keeps learning across passes, from the last 400,000 positions.
+3. The search looks `--value-depth` moves ahead (2 by default) on each imagined deal and asks the value net, instead of playing to the end. A round that ends within those moves is scored exactly.
+
+The log and the summary show how much of how rounds ended the value net explains on each pass's new rounds, before it learns them. Rounds hinge on future draws, so even a perfect judge is well under 100%. The value net is only a teacher: the game still plays with the policy net.
+
+### A smaller game that learns faster (`--hand`, `--yaniv-at`)
+
+`--hand 4 --yaniv-at 9` plays 4 cards each with Yaniv at 9 or less. Rounds are about a third shorter (9 throws instead of 12 between two card counters), and each decision has fewer moves to choose from, so every pass is quicker. Its net ships to `public/model/yaniv-net-4cards-yaniv9.json` (with `--export`), never over the standard one, and the game plays it at `/?game=small` (the "Small game" button):
+
+```bash
+python main.py --hand 4 --yaniv-at 9 --value-net --effort 0.7 --generations 40 --search-samples 96 --export
+```
+
 ### Records of each run
 
 Each run writes `runs/<timestamp>/log.txt` (every trainer line, with times) and a short summary to `runs/<timestamp>/summary.md` and `results/<timestamp>.md`. The `results/` folder is tracked by git, so committing and pushing it shares how a run went without its nets.

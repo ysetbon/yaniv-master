@@ -27,7 +27,9 @@ def render_summary(name: str, cfg: dict, report: dict, generations: list[dict], 
     lines = [f"# Training run {name}", ""]
     experts = report.get("experts") or 1
     net_kind = f"a decider and {experts} expert nets" if experts > 1 or (cfg.get("experts") or 0) > 1 else "one net"
+    rules = report.get("rules") or {}
     settings = [
+        ("Game", rules.get("name") or "5 cards each, Yaniv at 7 or less"),
         ("Recipe", cfg.get("recipe")),
         ("Net", net_kind),
         ("Device", device),
@@ -44,6 +46,8 @@ def render_summary(name: str, cfg: dict, report: dict, generations: list[dict], 
             ("Imagined deals a move", cfg.get("search_samples")),
             ("Confidence bar", cfg.get("search_confidence")),
             ("Teacher", cfg.get("search_teacher")),
+            ("Each imagined deal", f"{cfg.get('value_depth', 2)} moves ahead, then the value net judges the position"
+             if cfg.get("value_net") else "played to the end of the round"),
             ("Moves valued by", "the change in the chance of winning the match"
              if cfg.get("search_value", "points") == "match" else "the round's point margin"),
             ("Counter moves mixed in", f"{cfg.get('expert_mix_start')} → {cfg.get('expert_mix_end')} per searched move"),
@@ -54,16 +58,24 @@ def render_summary(name: str, cfg: dict, report: dict, generations: list[dict], 
                                        "rounds": "rounds won, then matches"}.get(cfg.get("gate_metric"), cfg.get("gate_metric"))))
     lines += ["| Setting | Value |", "| --- | --- |"] + [f"| {k} | {v} |" for k, v in settings] + [""]
 
+    with_value = any("value_fit" in g for g in generations)
     lines += ["## Generations", "",
-              "Margin is the counter's points a round minus the net's: above 0, the net takes fewer points.", "",
-              "| Gen | Made by | Margin a round | Rounds won | Matches won | Teacher agreement | Decisions learned | Kept | Took |",
-              "| --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
+              "Margin is the counter's points a round minus the net's: above 0, the net takes fewer points."]
+    if with_value:
+        lines += ["Value net fit is the share of how rounds ended that it explains, on that pass's new rounds "
+                  "before learning them (rounds hinge on future draws, so well under 100% is normal)."]
+    lines += ["",
+              "| Gen | Made by | Margin a round | Rounds won | Matches won | Teacher agreement | Decisions learned | "
+              + ("Value net fit | " if with_value else "") + "Kept | Took |",
+              "| --- " * (10 if with_value else 9) + "|"]
     for g in generations:
         agree = g.get("teacher_agreement")
+        fresh = g.get("value_fresh_fit")
+        value_cell = (f"{fresh:.0%} | " if fresh is not None and fresh == fresh else "– | ") if with_value else ""
         lines.append(
             f"| {g['index']} | {g['label']} | {_margin(g['rounds']):+.2f} | {g['rounds']['win_rate']:.1%} | "
             f"{_matches(g['matches'])} | {f'{agree:.1%}' if agree is not None else '–'} | "
-            f"{g.get('winning_decisions', '–')} | {'yes' if g['kept'] else ''} | {_minutes(g.get('seconds'))} |")
+            f"{g.get('winning_decisions', '–')} | {value_cell}{'yes' if g['kept'] else ''} | {_minutes(g.get('seconds'))} |")
     lines.append("")
 
     replay = report.get("gate_replay")

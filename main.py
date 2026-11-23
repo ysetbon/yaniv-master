@@ -7,6 +7,8 @@
     python main.py --quick          # a two-minute smoke run
     python main.py --device cuda    # fail loudly if the NVIDIA GPU is not usable
     python main.py --legacy         # the first training recipe, for comparison
+    python main.py --value-net      # AlphaZero-style: the search asks a learned value net
+    python main.py --hand 4 --yaniv-at 9 --value-net   # a smaller game that learns faster
 
 Each generation is saved under runs/<timestamp>/. The shipped model in
 public/model/ is only replaced with --export.
@@ -21,6 +23,26 @@ os.environ.setdefault("OPENBLAS_NUM_THREADS", "3")
 os.environ.setdefault("MKL_NUM_THREADS", "3")
 
 import argparse
+import sys
+
+
+def _rules_from_argv(argv: list[str]) -> None:
+    """--hand and --yaniv-at change the rules, which the engine reads once when it is imported.
+
+    So they are read here, before anything imports it, and handed on as
+    environment variables, which the game processes inherit too.
+    """
+    early = argparse.ArgumentParser(add_help=False)
+    early.add_argument("--hand", type=int)
+    early.add_argument("--yaniv-at", type=int)
+    known, _ = early.parse_known_args(argv)
+    if known.hand is not None:
+        os.environ["YANIV_HAND_SIZE"] = str(known.hand)
+    if known.yaniv_at is not None:
+        os.environ["YANIV_CALL_AT"] = str(known.yaniv_at)
+
+
+_rules_from_argv(sys.argv[1:])
 
 from training.yaniv.backend import CHOICES, resolve_device
 from training.yaniv.live.server import run_live
@@ -48,6 +70,20 @@ def main() -> None:
     parser.add_argument("--search-value", choices=("match", "points"),
                         help="search: value moves by the change in the chance of winning the match (default) "
                              "or by the round's point margin")
+    parser.add_argument("--hand", type=int, choices=(3, 4, 5),
+                        help="cards each (default 5); a smaller game learns faster, e.g. --hand 4 --yaniv-at 9. "
+                             "Its net ships to public/model/yaniv-net-4cards-yaniv9.json, not over the standard one")
+    parser.add_argument("--yaniv-at", type=int, metavar="POINTS",
+                        help="Yaniv may be called at this many points or fewer (default 7)")
+    parser.add_argument("--value-net", action="store_true",
+                        help="search: AlphaZero-style. A value net learns how rounds end from positions of the "
+                             "net playing itself, and the search looks a few moves ahead and asks it instead of "
+                             "playing every imagined round to its end")
+    parser.add_argument("--value-depth", type=int, metavar="MOVES",
+                        help="search with --value-net: moves played ahead before the value net judges (default 2)")
+    parser.add_argument("--value-rounds", type=int,
+                        help="search with --value-net: rounds the teacher plays itself each pass for the value net "
+                             "(default 1500)")
     parser.add_argument("--experts", type=int, metavar="N",
                         help="search: after Gen 0, use a learned decider and N expert nets, each starting as a "
                              "copy of Gen 0 (e.g. 3 for opening, middle and endgame)")
@@ -96,6 +132,16 @@ def main() -> None:
         cfg.hours = max(0.0, args.hours)
     if args.search_value is not None:
         cfg.search_value = args.search_value
+    if args.yaniv_at is not None and not 1 <= args.yaniv_at <= 20:
+        parser.error("--yaniv-at: give 1 to 20 points, e.g. 9")
+    if args.value_net or args.value_depth is not None or args.value_rounds is not None:
+        if cfg.recipe != "search":
+            parser.error("--value-net works with the search recipe")
+        cfg.value_net = True
+    if args.value_depth is not None:
+        cfg.value_depth = max(0, args.value_depth)
+    if args.value_rounds is not None:
+        cfg.value_rounds = max(1, args.value_rounds)
     if args.experts is not None:
         if cfg.recipe != "search":
             parser.error("--experts works with the search recipe")

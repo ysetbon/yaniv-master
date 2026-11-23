@@ -12,7 +12,9 @@ export const DECK_SIZE = 54;
 export const JOKER_RANK = 13;
 export const RANKS = 14;
 export const SCORE_CUTS: Readonly<Record<number, number>> = { 50: 0, 100: 50 };
-export const YANIV_LIMIT = 7;
+// `let` so a smaller game (setRules) can change them; imports see the change.
+export let YANIV_LIMIT = 7;
+export let HAND_SIZE = 5;
 export const ASSAF_PENALTY = 30;
 export const MATCH_LIMIT = 100;
 export const MAX_PLIES = 48;
@@ -22,6 +24,20 @@ export const SUIT_CHARS = "♣♦♥♠";
 export const SUIT_NAMES = ["clubs", "diamonds", "hearts", "spades"] as const;
 
 export const POINTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10];
+
+/** The smaller game the trainer can learn (main.py --hand 4 --yaniv-at 9): its net lives in its own file. */
+export const SMALL_GAME = { hand: 4, yanivAt: 9 } as const;
+
+/** Cards each and the Yaniv limit, as main.py's --hand and --yaniv-at. Call before dealing. */
+export function setRules(hand: number, yanivAt: number): void {
+  HAND_SIZE = hand;
+  YANIV_LIMIT = yanivAt;
+}
+
+/** The model file suffix the trainer uses for these rules: "" for the standard game. */
+export function rulesSuffix(hand = HAND_SIZE, yanivAt = YANIV_LIMIT): string {
+  return hand === 5 && yanivAt === 7 ? "" : `-${hand}cards-yaniv${yanivAt}`;
+}
 
 export type Draw = "stock" | "open" | "none";
 export type RoundReason = "yaniv" | "showdown";
@@ -189,12 +205,13 @@ export function newRound(scores: [number, number], leader: number, rng: Rng): St
   const deck = Array.from({ length: DECK_SIZE }, (_, card) => card);
   shuffle(deck, rng);
   const hands: [bigint, bigint] = [0n, 0n];
-  for (let i = 0; i < 10; i += 1) hands[i % 2] |= 1n << BigInt(deck[i]);
+  const dealt = 2 * HAND_SIZE;
+  for (let i = 0; i < dealt; i += 1) hands[i % 2] |= 1n << BigInt(deck[i]);
   return {
     hands,
     known: [0n, 0n],
-    stock: deck.slice(11),
-    discard: [deck[10]],
+    stock: deck.slice(dealt + 1),
+    discard: [deck[dealt]],
     scores: [scores[0], scores[1]],
     turn: leader,
     ply: 0,
