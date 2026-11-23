@@ -47,3 +47,6 @@ __pycache__/
 
 # training runs from main.py
 /runs/
+
+# uploaded run archives
+*.zip

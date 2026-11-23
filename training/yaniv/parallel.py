@@ -96,10 +96,17 @@ def _teacher_label(spec: Spec, n: int, seed: int) -> list:
 
 
 def _search_label(spec: Spec, n: int, seed: int, samples: int, width: int, match_scores: bool,
-                  confidence: float) -> list:
+                  confidence: float, table) -> list:
     from .search import collect_search
 
-    return collect_search(_net(spec), n, seed, samples, width, match_scores=match_scores, confidence=confidence)
+    return collect_search(_net(spec), n, seed, samples, width, match_scores=match_scores, confidence=confidence,
+                          table=table)
+
+
+def _round_outcomes(spec: Spec, n: int, seed: int) -> list:
+    from .match_value import round_outcomes
+
+    return round_outcomes(_net(spec), n, seed)
 
 
 THREAD_VARS = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
@@ -250,17 +257,28 @@ class Workers:
         parts = self._run(_teacher_label, jobs, [size for _, size in chunks], n, progress)
         return [row for part in parts for row in part]
 
+    def round_outcomes(self, net, n: int, seed: int) -> list:
+        """(net's points, counter's points) for `n` rounds of the net against the card counter."""
+        if self.count == 1:
+            from .match_value import round_outcomes
+
+            return round_outcomes(net, n, seed)
+        chunks = self._chunks(n, 2)
+        jobs = [(net_spec(net), size, seed * 7919 + i) for i, (_, size) in enumerate(chunks)]
+        parts = self._run(_round_outcomes, jobs, [size for _, size in chunks], n, None)
+        return [row for part in parts for row in part]
+
     def search_label(self, net: MLP, n: int, seed: int, samples: int, width: int, progress=None,
-                     match_scores: bool = True, confidence: float = 1.5) -> list:
+                     match_scores: bool = True, confidence: float = 1.5, table=None) -> list:
         """(view, label) rows: `n` rounds of the net against the counter, every decision searched."""
         if self.count == 1:
             from .search import collect_search
 
             return collect_search(net, n, seed, samples, width, progress, match_scores=match_scores,
-                                  confidence=confidence)
+                                  confidence=confidence, table=table)
         spec = net_spec(net)
         chunks = self._chunks(n, 1)
-        jobs = [(spec, size, seed * 7919 + i, samples, width, match_scores, confidence)
+        jobs = [(spec, size, seed * 7919 + i, samples, width, match_scores, confidence, table)
                 for i, (_, size) in enumerate(chunks)]
         parts = self._run(_search_label, jobs, [size for _, size in chunks], n, progress)
         return [row for part in parts for row in part]

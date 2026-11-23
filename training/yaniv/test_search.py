@@ -374,3 +374,42 @@ class StartFromMixture(unittest.TestCase):
                 self.assertIn("| Net | a decider and 3 expert nets |", (run_dir / "summary.md").read_text())
                 self.assertIn("| Copied | – |", (run_dir / "summary.md").read_text())
                 self.assertEqual(report["experts"], 3)
+
+
+class MatchValue(unittest.TestCase):
+    def test_win_table_is_fair_and_knows_the_score(self):
+        import numpy as np
+
+        from .match_value import win_chance, win_table
+
+        rng = random.Random(1)
+        outcomes = [(0, rng.randint(5, 40)) if rng.random() < 0.5 else (rng.randint(5, 40), 0) for _ in range(500)]
+        table = win_table(outcomes)
+        self.assertAlmostEqual(win_chance(table, 0, 0), 0.5, places=6)
+        np.testing.assert_allclose(table + table.T, 1.0, atol=1e-6)  # two equal players
+        self.assertGreater(win_chance(table, 10, 80), win_chance(table, 80, 10))
+        self.assertLess(win_chance(table, 95, 0), 0.1)
+        self.assertEqual(win_chance(table, 100, 40), 0.0)
+        self.assertEqual(win_chance(table, 40, 104), 1.0)
+
+    def test_round_value_uses_the_table(self):
+        import numpy as np
+
+        from .engine import resolve_showdown
+        from .search import round_value
+
+        table = np.full((100, 100), 0.5)
+        table[10, 0] = 0.3
+        state = new_round([0, 0], 0, random.Random(1))
+        state.hands = [1 << 9, 1 << 52]  # my ten loses the showdown to a joker: 10 points to me
+        resolve_showdown(state)
+        self.assertAlmostEqual(round_value(state, 0, table), 30.0)
+        self.assertEqual(round_value(state, 0), -10.0)  # without a table: the point margin
+
+    def test_a_time_limit_stops_the_passes_but_still_checks(self):
+        cfg = dataclasses.replace(TrainConfig.search(quick=True), workers=1, cache=False, generations=5, hours=1e-9,
+                                  search_rounds=2, search_samples=4, eval_rounds=4, eval_matches=2, gate_rounds=4,
+                                  gate_matches=2, final_rounds=4, final_matches=2)
+        report = run_training(cfg, Observer(), model_path=None, report_path=None)
+        self.assertEqual(report["self_play_iterations"], 0)
+        self.assertEqual(report["best_generation"], 0)

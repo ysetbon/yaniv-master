@@ -547,6 +547,8 @@ def gate_key(rounds: dict, matches: dict, metric: str = "rounds") -> tuple:
     """
     if metric == "margin":
         return (rounds["villain_avg"] - rounds["hero_avg"], matches["win_rate"], rounds["win_rate"])
+    if metric == "matches":
+        return (matches["win_rate"], rounds["villain_avg"] - rounds["hero_avg"], rounds["win_rate"])
     return (rounds["win_rate"], matches["win_rate"], -rounds["hero_avg"])
 
 
@@ -623,6 +625,13 @@ class TrainConfig:
     # "best": only a pass that passes the gate becomes the teacher. One pass's
     # test is noisy, so "best" tends to keep a lucky pass and stall.
     search_teacher: str = "latest"
+    # "match": the search values a move by how much it changes the chance of
+    # winning the match (match_value.py); "points": by the round's point margin.
+    search_value: str = "match"
+    match_table_rounds: int = 4000  # rounds of Gen 0 against the counter that the match table is built from
+    # Stop starting new passes after this many hours (0: no limit). The gate
+    # replay and the final check still run, so a long run ends with a result.
+    hours: float = 0.0
     # A saved net (e.g. public/model/yaniv-net.json or a run's best.json) to
     # start from instead of copying the counter. It becomes Gen 0, so the
     # final check only ships a later generation that beats it.
@@ -640,12 +649,13 @@ class TrainConfig:
     def search(cls, quick: bool = False) -> "TrainConfig":
         if quick:
             return dataclasses.replace(cls.quick(), recipe="search", generations=2, gate_metric="margin",
-                                       search_rounds=6, search_samples=8, gate_finalists=2,
+                                       search_rounds=6, search_samples=8, gate_finalists=2, match_table_rounds=40,
                                        expert_mix_start=1.0, expert_mix_end=0.25)
-        # 1,000 test rounds a pass instead of 400: nets a fraction of a point
-        # apart are told apart about 1.6 times more sharply.
-        return cls(recipe="search", generations=8, gate_metric="margin", expert_mix_start=1.0, expert_mix_end=0.25,
-                   eval_rounds=1000)
+        # Every generation is tested on the same 1,000 rounds and 400 matches,
+        # so generations are compared on the same deals, and the gate ranks by
+        # matches won: the search plays for matches, and matches are the goal.
+        return cls(recipe="search", generations=8, gate_metric="matches", expert_mix_start=1.0, expert_mix_end=0.25,
+                   eval_rounds=1000, eval_matches=400, gate_matches=800, final_matches=800)
 
     @classmethod
     def genetic(cls, quick: bool = False) -> "TrainConfig":
@@ -870,7 +880,8 @@ def run_training(
 
         t_gen = time.time()
         best = snapshot(net)
-        best_round, best_match = evaluate(0, 500, 600)
+        test_seeds = (700, 800) if cfg.recipe == "search" else (500, 600)  # search: one set of test deals for all
+        best_round, best_match = evaluate(0, *test_seeds)
         best_key = gate_key(best_round, best_match, cfg.gate_metric)
         tested: dict[int, tuple[dict, dict]] = {0: (best_round, best_match)}
         best_index = 0
@@ -961,9 +972,22 @@ def run_training(
                 sigma *= cfg.sigma_decay
         elif cfg.recipe == "search":
             searched: list[Dataset] = []
+            table = None
+            if cfg.search_value == "match":
+                from .match_value import win_chance, win_table
+
+                outcomes = workers.round_outcomes(as_numpy(net), cfg.match_table_rounds, 4242)
+                table = win_table(outcomes)
+                log("The search plays for matches: a move is worth the change in the chance of winning the match. "
+                    f"From {cfg.match_table_rounds:,} rounds of Gen 0: at 0-0 {win_chance(table, 0, 0):.0%}, "
+                    f"at 50-30 {win_chance(table, 50, 30):.0%} (50 is cut to 0), "
+                    f"at 90-60 {win_chance(table, 90, 60):.0%}")
             for iteration in range(1, cfg.generations + 1):
                 if obs.should_stop():
                     log(f"Stopping early after generation {iteration - 1}, as asked")
+                    break
+                if cfg.hours and time.time() - started > cfg.hours * 3600:
+                    log(f"{cfg.hours:g} hours are up after generation {iteration - 1}; on to the gate and the final check")
                     break
                 t_gen = time.time()
                 latest = cfg.search_teacher == "latest"
@@ -971,7 +995,8 @@ def run_training(
                 obs.phase("search", f"Gen {iteration}: searching every decision of {cfg.search_rounds} rounds, "
                                     f"{cfg.search_samples} imagined deals each, with Gen {teacher_index} as the teacher")
                 rows = workers.search_label(teacher, cfg.search_rounds, 6000 + iteration, cfg.search_samples,
-                                            cfg.search_width, job("search"), cfg.match_scores, cfg.search_confidence)
+                                            cfg.search_width, job("search"), cfg.match_scores, cfg.search_confidence,
+                                            table)
                 self_play_games += cfg.search_rounds
                 self_play_decisions += len(rows)
                 if rows:
@@ -994,7 +1019,7 @@ def run_training(
                 for _ in range(cfg.search_epochs):
                     ce, acc = train_dataset(net, mixed, cfg.search_lr, cfg.batch, rng, job("fine_tune"))
                 tune_seconds = time.time() - t0
-                rounds, matches = evaluate(iteration, 700 + iteration, 800 + iteration)
+                rounds, matches = evaluate(iteration, *test_seeds)
                 key = gate_key(rounds, matches, cfg.gate_metric)
                 tested[iteration] = (rounds, matches)
                 margin = rounds["villain_avg"] - rounds["hero_avg"]
