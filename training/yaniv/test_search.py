@@ -334,3 +334,43 @@ class Experts(unittest.TestCase):
         self.assertEqual(report["experts"] in (1, 3), True)  # Gen 0 stays a plain net and may still ship
         x = np.random.default_rng(1).random((5, start.dims[0])).astype(np.float32)
         self.assertEqual(gen1.forward(x).shape, (5, 1))
+
+
+class StartFromMixture(unittest.TestCase):
+    def test_a_saved_mixture_keeps_learning_as_it_is(self):
+        import tempfile
+        from pathlib import Path
+
+        import numpy as np
+
+        from .features import STATE_DIM
+        from .moe import MoE
+        from .network import MLP, load_net, save_net
+        from .train import _restart_from
+
+        mixture = MoE(MLP([STATE_DIM, 8, 3], seed=2), [default_net(k) for k in (3, 4, 5)])
+
+        class GpuNet:  # stands in for a PyTorch net, which a mixture must never be handed to
+            device = "cuda"
+
+        restarted = _restart_from(GpuNet(), mixture, None)
+        self.assertIsInstance(restarted, MoE)
+        x = np.random.default_rng(0).random((4, mixture.dims[0])).astype(np.float32)
+        np.testing.assert_allclose(restarted.forward(x), mixture.forward(x))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "gen7.json"
+            save_net(mixture, path, {})
+            for experts in (0, 3):
+                cfg = dataclasses.replace(TrainConfig.search(quick=True), workers=1, cache=False, generations=1,
+                                          experts=experts, start_from=str(path), search_rounds=2, search_samples=4,
+                                          eval_rounds=4, eval_matches=2, gate_rounds=4, gate_matches=2,
+                                          final_rounds=4, final_matches=2, expert_rounds=10, holdout_rounds=4)
+                run_dir = Path(tmp) / f"run{experts}"
+                report = run_training(cfg, Observer(), model_path=None, report_path=None, run_dir=run_dir,
+                                      results_dir=None)
+                gen1 = load_net(run_dir / "gen-01.json")
+                self.assertIsInstance(gen1, MoE)
+                self.assertEqual(len(gen1.experts), 3)  # not wrapped again
+                self.assertIn("| Net | a decider and 3 expert nets |", (run_dir / "summary.md").read_text())
+                self.assertIn("| Copied | – |", (run_dir / "summary.md").read_text())
+                self.assertEqual(report["experts"], 3)

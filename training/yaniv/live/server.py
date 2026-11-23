@@ -168,6 +168,20 @@ def make_handler(hub: Hub, showcase: Showcase, run_dir: Path):
     return Handler
 
 
+class DashboardServer(ThreadingHTTPServer):
+    """The dashboard's server. A browser tab that closes, reloads or sleeps drops its
+    connection mid-request; that is normal, so it is not printed as an error."""
+
+    daemon_threads = True
+
+    def handle_error(self, request, client_address) -> None:
+        import sys
+
+        if isinstance(sys.exc_info()[1], (ConnectionAbortedError, ConnectionResetError, BrokenPipeError)):
+            return
+        super().handle_error(request, client_address)
+
+
 def run_live(cfg: TrainConfig, device: Device, port: int, open_browser: bool, export: bool, tables: int = 6) -> None:
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     run_dir = RUNS / stamp
@@ -176,7 +190,7 @@ def run_live(cfg: TrainConfig, device: Device, port: int, open_browser: bool, ex
     showcase = Showcase(hub, tables, ("pop", "counter") if cfg.recipe == "genetic" else ("auto", "auto"))
 
     try:
-        server = ThreadingHTTPServer(("127.0.0.1", port), make_handler(hub, showcase, run_dir))
+        server = DashboardServer(("127.0.0.1", port), make_handler(hub, showcase, run_dir))
     except OSError:
         raise SystemExit(f"Port {port} is in use. Close the other dashboard or pass --port {port + 1}.")
     server.daemon_threads = True

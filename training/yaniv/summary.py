@@ -25,13 +25,16 @@ def _minutes(seconds: float | None) -> str:
 
 def render_summary(name: str, cfg: dict, report: dict, generations: list[dict], device: str, workers: int) -> str:
     lines = [f"# Training run {name}", ""]
+    experts = report.get("experts") or 1
+    net_kind = f"a decider and {experts} expert nets" if experts > 1 or (cfg.get("experts") or 0) > 1 else "one net"
     settings = [
         ("Recipe", cfg.get("recipe")),
+        ("Net", net_kind),
         ("Device", device),
         ("Game processes", workers),
         ("Effort", cfg.get("effort") or "all cores but two"),
         ("Started from", cfg.get("start_from") or "–"),
-        ("Copied", cfg.get("copy_from") or "the card counter"),
+        ("Copied", cfg.get("copy_from") or ("–" if cfg.get("start_from") else "the card counter")),
         ("Passes", cfg.get("generations")),
         ("Took", _minutes(report.get("seconds"))),
     ]

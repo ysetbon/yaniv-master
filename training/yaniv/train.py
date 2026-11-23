@@ -736,8 +736,12 @@ class Observer:
 
 
 def _restart_from(net, best: MLP, device: Device):
-    """A training net carrying the best weights. Adam's moments start fresh."""
-    if isinstance(net, MLP):
+    """A training net carrying the best weights. Adam's moments start fresh.
+
+    A decider with expert nets (moe.MoE) always trains with NumPy, whatever
+    the device, so it comes back as a NumPy copy.
+    """
+    if isinstance(net, MLP) or hasattr(best, "experts"):
         return best.clone()
     from .torch_network import TorchMLP
 
@@ -822,7 +826,8 @@ def run_training(
                 raise ValueError(f"{cfg.start_from} takes {start.dims[0]} inputs, but these rules give {INPUT_DIM}: "
                                  "it was trained on other rules")
             net = _restart_from(net, start, device)
-            log(f"Starting from {cfg.start_from} ({' -> '.join(map(str, start.dims))}), so the copying step is skipped")
+            shape = start.describe() if hasattr(start, "experts") else " -> ".join(map(str, start.dims))
+            log(f"Starting from {cfg.start_from} ({shape}), so the copying step is skipped")
         for epoch in range(1, (0 if cfg.start_from else cfg.epochs) + 1):
             lr = cfg.lr_for(epoch)
             obs.phase("imitation", f"Copying {copy_name or 'the counter'}, epoch {epoch} of {cfg.epochs}")
@@ -880,7 +885,10 @@ def run_training(
         publish_generation(0, gen0_label, best_round, best_match, True,
                            {"seconds": round(time.time() - t_gen, 1)})
 
-        if cfg.experts > 1:
+        if hasattr(net, "experts"):
+            log(f"Gen 0 is already {net.describe()}; it keeps learning as it is"
+                + (f" (--experts {cfg.experts} is not needed)" if cfg.experts > 1 else ""))
+        elif cfg.experts > 1:
             from .moe import warm_moe
 
             net, decider_agree = warm_moe(as_numpy(net).clone(), expert.states, cfg.experts)
