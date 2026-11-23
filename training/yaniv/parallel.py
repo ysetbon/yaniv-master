@@ -96,11 +96,18 @@ def _teacher_label(spec: Spec, n: int, seed: int) -> list:
 
 
 def _search_label(spec: Spec, n: int, seed: int, samples: int, width: int, match_scores: bool,
-                  confidence: float, table) -> list:
+                  confidence: float, table, value_parts=None, depth: int = 2) -> list:
     from .search import collect_search
 
+    value = _mlp(*value_parts) if value_parts is not None else None
     return collect_search(_net(spec), n, seed, samples, width, match_scores=match_scores, confidence=confidence,
-                          table=table)
+                          table=table, value=value, depth=depth)
+
+
+def _value_data(spec: Spec, n: int, seed: int, table, match_scores: bool) -> tuple:
+    from .value import collect_value
+
+    return collect_value(_net(spec), n, seed, table, match_scores)
 
 
 def _round_outcomes(spec: Spec, n: int, seed: int) -> list:
@@ -269,19 +276,36 @@ class Workers:
         return [row for part in parts for row in part]
 
     def search_label(self, net: MLP, n: int, seed: int, samples: int, width: int, progress=None,
-                     match_scores: bool = True, confidence: float = 1.5, table=None) -> list:
-        """(view, label) rows: `n` rounds of the net against the counter, every decision searched."""
+                     match_scores: bool = True, confidence: float = 1.5, table=None, value: MLP | None = None,
+                     depth: int = 2) -> list:
+        """(view, label) rows: `n` rounds of the net against the counter, every decision searched.
+
+        With a `value` net the search looks `depth` moves ahead and asks it, instead of playing to the end.
+        """
         if self.count == 1:
             from .search import collect_search
 
             return collect_search(net, n, seed, samples, width, progress, match_scores=match_scores,
-                                  confidence=confidence, table=table)
+                                  confidence=confidence, table=table, value=value, depth=depth)
         spec = net_spec(net)
+        value_parts = _parts(value) if value is not None else None
         chunks = self._chunks(n, 1)
-        jobs = [(spec, size, seed * 7919 + i, samples, width, match_scores, confidence, table)
+        jobs = [(spec, size, seed * 7919 + i, samples, width, match_scores, confidence, table, value_parts, depth)
                 for i, (_, size) in enumerate(chunks)]
         parts = self._run(_search_label, jobs, [size for _, size in chunks], n, progress)
         return [row for part in parts for row in part]
+
+    def value_data(self, net, n: int, seed: int, table=None, match_scores: bool = True, progress=None) -> tuple:
+        """(features, targets) from `n` rounds of the net playing itself, for the value net (value.py)."""
+        if self.count == 1:
+            from .value import collect_value
+
+            return collect_value(net, n, seed, table, match_scores, progress=progress)
+        spec = net_spec(net)
+        chunks = self._chunks(n, 1)
+        jobs = [(spec, size, seed * 7919 + i, table, match_scores) for i, (_, size) in enumerate(chunks)]
+        parts = self._run(_value_data, jobs, [size for _, size in chunks], n, progress)
+        return np.concatenate([p[0] for p in parts]), np.concatenate([p[1] for p in parts])
 
     def self_play(self, net: MLP, n: int, seed: int, temperature: float, weighted: bool, progress=None,
                   match_scores: bool = False) -> list:

@@ -14,6 +14,11 @@ the same sampled deals, so their difference is not luck of the draw.
 The playout policy is the card counter at first. Once a net has learned from
 the search, the net can play the playouts instead, which makes the search a
 better teacher: the loop the search recipe in train.py runs.
+
+With a value net (value.py), a playout stops after `depth` moves and the
+value net says how the round would end from there: AlphaZero's idea of
+looking a few moves ahead and asking a learned judge, instead of playing
+every imagined round to its end.
 """
 
 from __future__ import annotations
@@ -80,9 +85,11 @@ def _copy(state: State) -> State:
                  discard=list(state.discard), scores=list(state.scores), turn=state.turn, ply=state.ply)
 
 
-def playout(state: State, policy: Chooser, rng: random.Random) -> State:
-    """Play the round to its end with `policy` in both seats."""
-    while not state.terminal:
+def playout(state: State, policy: Chooser, rng: random.Random, limit: int | None = None) -> State:
+    """Play the round to its end with `policy` in both seats, or only `limit` more moves."""
+    moves = 0
+    while not state.terminal and (limit is None or moves < limit):
+        moves += 1
         if state.ply >= MAX_PLIES:
             resolve_showdown(state)
             break
@@ -115,23 +122,39 @@ def round_value(state: State, me: int, table=None) -> float:
 
 
 def sample_values(view: View, candidates: list[Action], policy: Chooser, samples: int,
-                  rng: random.Random, table=None) -> np.ndarray:
-    """Value of each candidate (columns) on each of `samples` shared sampled deals (rows)."""
+                  rng: random.Random, table=None, value=None, depth: int = 2) -> np.ndarray:
+    """Value of each candidate (columns) on each of `samples` shared sampled deals (rows).
+
+    With a `value` net, each candidate is followed by `depth` moves of the
+    policy and the value net judges the position reached, all positions in
+    one batch; a round that ends sooner is scored exactly.
+    """
     values = np.zeros((max(1, samples), len(candidates)))
+    pending: list[State] = []
+    where: list[tuple[int, int]] = []
     for row in range(samples):
         deal = deal_from_view(view, rng)
         for i, action in enumerate(candidates):
             state = _copy(deal)
             apply_action(state, action)
-            playout(state, policy, rng)
-            values[row, i] = round_value(state, view.seat, table)
+            playout(state, policy, rng, None if value is None else depth)
+            if state.terminal:
+                values[row, i] = round_value(state, view.seat, table)
+            else:
+                pending.append(state)
+                where.append((row, i))
+    if pending:
+        from .value import predict
+
+        rows, cols = zip(*where)
+        values[list(rows), list(cols)] = predict(value, pending, view.seat)
     return values
 
 
 def evaluate_moves(view: View, candidates: list[Action], policy: Chooser, samples: int,
-                   rng: random.Random, table=None) -> np.ndarray:
+                   rng: random.Random, table=None, value=None, depth: int = 2) -> np.ndarray:
     """Average value of each candidate over `samples` shared sampled deals."""
-    return sample_values(view, candidates, policy, samples, rng, table).mean(axis=0)
+    return sample_values(view, candidates, policy, samples, rng, table, value, depth).mean(axis=0)
 
 
 def pick_move(values: np.ndarray, default: int, confidence: float) -> int:
@@ -186,7 +209,8 @@ def candidate_moves(view: View, actions: list[Action], default: Action,
 
 
 def search_chooser(policy: Chooser, prior: Callable[[View, list[Action]], list[Action]], samples: int = 48,
-                   width: int = 4, seed: int = 0, confidence: float = 1.5, table=None) -> Chooser:
+                   width: int = 4, seed: int = 0, confidence: float = 1.5, table=None, value=None,
+                   depth: int = 2) -> Chooser:
     """A chooser that plays the policy's move unless the search finds a clearly better one."""
     own = random.Random(seed)
 
@@ -195,14 +219,15 @@ def search_chooser(policy: Chooser, prior: Callable[[View, list[Action]], list[A
         candidates = candidate_moves(view, actions, default, prior, width)
         if len(candidates) <= 1:
             return default
-        values = sample_values(view, candidates, policy, samples, own, table)
+        values = sample_values(view, candidates, policy, samples, own, table, value, depth)
         return candidates[pick_move(values, 0, confidence)]
 
     return choose
 
 
 def collect_search(net, n_rounds: int, seed: int, samples: int, width: int, progress=None,
-                   match_scores: bool = True, confidence: float = 1.5, table=None) -> list[tuple[View, int]]:
+                   match_scores: bool = True, confidence: float = 1.5, table=None, value=None,
+                   depth: int = 2) -> list[tuple[View, int]]:
     """Label positions for the net to copy: (view, index of the searched move in legal_actions).
 
     The net plays the card counter, seats alternating; 40% of rounds start
@@ -237,7 +262,7 @@ def collect_search(net, n_rounds: int, seed: int, samples: int, width: int, prog
             default = play_net(view, actions, searcher)
             candidates = candidate_moves(view, actions, default, prior, width)
             if len(candidates) > 1:
-                values = sample_values(view, candidates, play_net, samples, searcher, table)
+                values = sample_values(view, candidates, play_net, samples, searcher, table, value, depth)
                 rows.append((view, actions.index(candidates[pick_move(values, 0, confidence)])))
             mover = play_net if state.turn == net_seat else choose_heuristic
             apply_action(state, mover(view, actions, rng))

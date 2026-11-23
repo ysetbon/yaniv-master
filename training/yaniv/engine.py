@@ -5,7 +5,7 @@ match the TypeScript port card for card.
 
 - 54-card deck: 52 cards and two jokers. Ace is 1, numbers are face value,
   10/J/Q/K are 10, a joker is 0.
-- Five cards each. One card starts the discard pile. The rest is the stock.
+- Five cards each (HAND_SIZE). One card starts the discard pile. The rest is the stock.
 - On your turn, throw one legal combination, then draw one card.
   A combination is a single card or two or more of the same rank. There are
   no runs. The two jokers are a rank of their own, so they pair only with
@@ -16,7 +16,7 @@ match the TypeScript port card for card.
 - Every throw is followed by a draw: the previous open card or the top of
   the stock. That holds when you throw your whole hand too, so a hand
   never empties and a round only ends by Yaniv or showdown.
-- At the start of your turn, with 7 points or fewer, you may call Yaniv
+- At the start of your turn, with 7 points or fewer (YANIV_LIMIT), you may call Yaniv
   instead of throwing. If your hand is strictly lower than the opponent's,
   you score 0 and they score their hand. If they have the same or less,
   you are Assaf: you score your hand plus 30, and they score 0.
@@ -26,14 +26,38 @@ match the TypeScript port card for card.
 - After a round's points are added, a score that lands exactly on 50 or
   100 is cut by 50 (50 becomes 0, 100 becomes 50).
 - A match ends when someone reaches 100. The lower score wins.
+
+A smaller game, quicker to learn, comes from two environment variables read
+when this module is first imported (main.py sets them from --hand and
+--yaniv-at, and worker processes inherit them): YANIV_HAND_SIZE cards each
+(3 to 5, default 5) and Yaniv at YANIV_CALL_AT points or fewer (default 7).
 """
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from functools import lru_cache
 
-YANIV_LIMIT = 7
+
+def _rule(name: str, default: int, low: int, high: int) -> int:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
+    value = int(raw)
+    if not low <= value <= high:
+        raise ValueError(f"{name}={value}: give {low} to {high}")
+    return value
+
+
+HAND_SIZE = _rule("YANIV_HAND_SIZE", 5, 3, 5)
+YANIV_LIMIT = _rule("YANIV_CALL_AT", 7, 1, 20)
+STANDARD_RULES = HAND_SIZE == 5 and YANIV_LIMIT == 7
+# Appended to the shipped model's file name, so a smaller game's net never
+# replaces the standard one: "" or e.g. "-4cards-yaniv9".
+RULES_SUFFIX = "" if STANDARD_RULES else f"-{HAND_SIZE}cards-yaniv{YANIV_LIMIT}"
+RULES_NAME = (f"{HAND_SIZE} cards each, Yaniv at {YANIV_LIMIT} or less"
+              + ("" if STANDARD_RULES else " (a smaller game than the standard 5 cards, Yaniv at 7)"))
 ASSAF_PENALTY = 30
 MATCH_LIMIT = 100
 MAX_PLIES = 48
@@ -239,13 +263,14 @@ def new_round(scores: list[int], leader: int, rng) -> State:
     deck = list(range(DECK_SIZE))
     rng.shuffle(deck)
     hands = [0, 0]
-    for i in range(10):
+    dealt = 2 * HAND_SIZE
+    for i in range(dealt):
         hands[i % 2] |= 1 << deck[i]
     return State(
         hands=hands,
         known=[0, 0],
-        stock=deck[11:],
-        discard=[deck[10]],
+        stock=deck[dealt + 1:],
+        discard=[deck[dealt]],
         scores=[scores[0], scores[1]],
         turn=leader,
         ply=0,

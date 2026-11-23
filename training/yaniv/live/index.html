@@ -441,7 +441,7 @@ function cardEl(c, cls){
 }
 
 /* ---------- header, stepper, clock ---------- */
-const COUNT_UNITS = {search:'rounds', bench:'rounds', expert:'rounds', imitation:'batches', self_play:'games', fine_tune:'batches', eval_rounds:'rounds', eval_matches:'matches', ladder:'rounds', final:'rounds'};
+const COUNT_UNITS = {value:'steps', search:'rounds', bench:'rounds', expert:'rounds', imitation:'batches', self_play:'games', fine_tune:'batches', eval_rounds:'rounds', eval_matches:'matches', ladder:'rounds', final:'rounds'};
 function bestGen(){
   if (S.report && S.generations[S.report.best_generation]) return S.generations[S.report.best_generation];
   let b = null; S.generations.forEach(g => { if (g.kept) b = g; }); return b;
@@ -476,7 +476,7 @@ function renderHeader(){
 function stepFraction(){
   // where the run is inside the current step, from the phase and its counter
   const p = S.progress, f = p.total ? p.done/p.total : 0, name = S.phase.name;
-  const spans = {search:[0,.55], bench:[0,.04], expert:[.04,.3], imitation:null, eval:[.82,1], self_play:[0,.35], fine_tune:[.35,.6], evolve:[0,.6], ladder:[.9,1], final:[0,1]};
+  const spans = {value:[0,.1], search:[.1,.55], bench:[0,.04], expert:[.04,.3], imitation:null, eval:[.82,1], self_play:[0,.35], fine_tune:[.35,.6], evolve:[0,.6], ladder:[.9,1], final:[0,1]};
   if (name === 'imitation'){ const ep = (S.history.filter(h => h.phase==='imitation').length); return .3 + .52*((ep + f)/Math.max(1, S.config.epochs)); }
   if (name === 'eval'){ const sub = p.name === 'eval_matches' ? .3 + .7*f : .3*f; return S.generations.length === 0 ? .82 + .18*sub : .6 + .3*sub; }
   const sp = spans[name]; return sp ? sp[0] + (sp[1]-sp[0])*f : 0;
