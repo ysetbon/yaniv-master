@@ -59,12 +59,16 @@ kbd{font-family:var(--mono);font-size:.72rem;border:1px solid var(--line-strong)
 .stepper{display:flex;gap:4px;align-items:stretch}
 .step{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
 .step.copy{flex:2.2}
+.step.final{flex:1.8}
 .step .seg{height:7px;border-radius:4px;background:var(--raised);overflow:hidden}
 .step .seg>div{height:100%;width:0;background:var(--gold);transition:width .4s}
 .step.done .seg>div{width:100%;background:var(--s1)}
 .step.kept .seg>div{background:var(--gold)}
 .step .lbl{font-size:.7rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--mono)}
 .step.active .lbl{color:var(--ink)}
+.step.kept .lbl{color:var(--gold)}
+.step .lbl.hide{visibility:hidden}
+.step.skipped .lbl{text-decoration:line-through}
 .phase{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;font-size:.9rem;color:var(--ink-2)}
 .phase .count{font-family:var(--mono);font-size:.8rem;color:var(--muted)}
 @media (max-width:720px){.step:not(.active):not(.copy) .lbl{visibility:hidden}header{position:static}}
@@ -491,16 +495,23 @@ function currentStep(){
 }
 function renderProgress(){
   const G = S.config.generations, cur = currentStep(), gens = S.generations, frac = stepFraction();
-  const steps = [{k:'copy', l:'Copy the counter'}].concat(Array.from({length:G}, (_,i) => ({k:'gen', l:'Gen '+(i+1)}))).concat([{k:'final', l:'Final test'}]);
+  // Generations are labelled by number alone ("Gen 12" does not fit once there are dozens), and only as
+  // many numbers as fit the bar's width are shown: every k-th one, kept ones in gold; hover a step for its name.
+  const steps = [{k:'copy', l:'Copy the counter', short: S.config.start_from ? 'Gen 0' : G > 16 ? 'Copy' : 'Copy the counter'}]
+    .concat(Array.from({length:G}, (_,i) => ({k:'gen', l:'Gen '+(i+1), short: String(i+1)})))
+    .concat([{k:'final', l:'Final test', short:'Final'}]);
   const stopped = S.status === 'done' ? gens.length - 1 : null;
   const host = $('stepper');
-  if (host.children.length !== steps.length) host.innerHTML = steps.map((s,i) => '<div class="step'+(i===0?' copy':'')+'"><div class="seg"><div></div></div><span class="lbl">'+s.l+'</span></div>').join('');
+  if (host.children.length !== steps.length) host.innerHTML = steps.map((s,i) => '<div class="step'+(i===0?' copy':'')+(s.k==='final'?' final':'')+'"><div class="seg"><div></div></div><span class="lbl">'+s.short+'</span></div>').join('');
+  const fit = Math.max(1, Math.floor((host.clientWidth || 800) / 30)), every = Math.max(1, Math.ceil(G / fit));
   [...host.children].forEach((el,i) => {
     const done = i < cur, active = i === cur, skipped = stopped != null && i > stopped && i <= G;
-    el.className = 'step'+(i===0?' copy':'')+(done?' done':'')+(active?' active':'')+(gens[i] && gens[i].kept ? ' kept' : '');
+    const kept = Boolean(gens[i] && gens[i].kept);
+    el.className = 'step'+(i===0?' copy':'')+(steps[i].k==='final'?' final':'')+(done?' done':'')+(active?' active':'')+(kept ? ' kept' : '')+(skipped ? ' skipped' : '');
     el.querySelector('.seg>div').style.width = (done ? (skipped ? 0 : 100) : active ? Math.min(100, frac*100) : 0)+'%';
-    el.title = steps[i].l + (gens[i] ? ': '+pct(gens[i].matches.win_rate)+' of matches vs counter'+(gens[i].kept?' (kept)':'') : '');
-    if (skipped) el.querySelector('.lbl').textContent = steps[i].l+' (skipped)';
+    el.title = steps[i].l + (skipped ? ' (skipped)' : '') + (gens[i] ? ': '+pct(gens[i].matches.win_rate)+' of matches vs counter'+(kept?' (kept)':'') : '');
+    const shown = steps[i].k !== 'gen' || i === G || i % every === 0;
+    el.querySelector('.lbl').classList.toggle('hide', !shown);
   });
   const p = S.progress;
   $('bar-count').textContent = S.status === 'training' && p.total ? p.done.toLocaleString()+' / '+p.total.toLocaleString()+' '+(COUNT_UNITS[p.name]||'') : '';
@@ -910,13 +921,16 @@ async function sync(){
   const r = await fetch('/api/state'); S = await r.json(); clockOffset = Date.now()/1000 - S.now;
   $('log').innerHTML = ''; S.logs.forEach(addLog); renderAll();
 }
+let resyncing = null;
+function resync(){ if (!resyncing) resyncing = sync().catch(() => {}).finally(() => { resyncing = null; }); }
 function handle({type, data}){
   switch(type){
     case 'log': addLog(data); break;
     case 'phase': S.phase = data; renderHeader(); break;
     case 'progress': S.progress = data; renderProgress(); break;
     case 'history': S.history.push(data); renderCharts(); if (data.phase === 'gate_replay') renderFinal(); break;
-    case 'generation': S.generations.push(data); renderKpis(); renderCharts(); renderRatings(); renderGens(); renderControls(); renderLadder(); renderProgress(); break;
+    // Stored under its own number, so a repeated update cannot shift the rest; a missed one reloads the state.
+    case 'generation': if (data.index > S.generations.length){ resync(); break; } S.generations[data.index] = data; renderKpis(); renderCharts(); renderRatings(); renderGens(); renderControls(); renderLadder(); renderProgress(); break;
     case 'ladder': S.ladder.push(data); renderLadder(); renderRatings(); break;
     case 'population': S.population = S.population || []; S.population.push(data); renderPopulation(); renderKpis(); renderProgress(); break;
     case 'board': S.boards = S.boards || {}; S.boards[String(data.table)] = data; renderTile(data); if (String(data.table) === featured || !S.boards[featured]) renderBoard(); break;
@@ -932,6 +946,7 @@ function handle({type, data}){
   }
 }
 let connected = false;
+window.addEventListener('resize', () => { if (S) renderProgress(); });  // how many step numbers fit depends on the width
 function connect(){
   const es = new EventSource('/api/events');
   es.onopen = () => { if (connected) toast('info','Reconnected to the trainer.'); connected = true; sync().catch(() => {}); };
