@@ -157,6 +157,16 @@ python -m training.yaniv.hybrid --endgame public/model/yaniv-net-4cards-yaniv7.j
 
 It prints both players' results against the counter (4,000 rounds, 1,000 matches) and the switch player against the main net alone. The game plays the 4-card net itself at `/?game=4x7`.
 
+### Is the teacher stronger than the net? (`training/yaniv/teacher_test.py`)
+
+A net only learns what its teacher does better than it. Once training stalls, test that directly: the net and several search teachers built on it play the card counter on the same deals and match scores, and each teacher is compared with the plain net round by round:
+
+```bash
+python -m training.yaniv.teacher_test --net public/model/yaniv-net.json --effort 0.8
+```
+
+The teachers are playouts to the end with 96 deals, the value net after 2 moves with 96 deals, and the value net after 4 moves with 192 deals (`--teachers` picks others, `--value runs/<timestamp>/value-NN.json` uses a run's value net). It reports the point margin and the match chance after the round, each with a ± from the paired rounds. A teacher worth a long run beats the net by more than twice its ± on match chance.
+
 ### Records of each run
 
 Each run writes `runs/<timestamp>/log.txt` (every trainer line, with times) and a short summary to `runs/<timestamp>/summary.md` and `results/<timestamp>.md`. The `results/` folder is tracked by git, so committing and pushing it shares how a run went without its nets.
