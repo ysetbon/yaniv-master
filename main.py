@@ -80,7 +80,7 @@ def main() -> None:
                              "net playing itself, and the search looks a few moves ahead and asks it instead of "
                              "playing every imagined round to its end")
     parser.add_argument("--value-depth", type=int, metavar="MOVES",
-                        help="search with --value-net: moves played ahead before the value net judges (default 2)")
+                        help="search with --value-net: moves played ahead before the value net judges (default 4)")
     parser.add_argument("--value-rounds", type=int,
                         help="search with --value-net: rounds the teacher plays itself each pass for the value net "
                              "(default 1500)")
