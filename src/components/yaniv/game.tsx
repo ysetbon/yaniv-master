@@ -25,7 +25,8 @@ import { loadNet, type Net } from "@/lib/ai/net";
 import {
   ASSAF_PENALTY,
   HAND_SIZE,
-  SMALL_GAME,
+  GAMES,
+  gameById,
   rulesSuffix,
   setRules,
   MATCH_LIMIT,
@@ -105,11 +106,11 @@ function mulberry32(seed: number) {
   };
 }
 
-/** Load the page again for the small or the standard game: the rules are set once, when the page boots. */
-function reloadAs(small: boolean): void {
+/** Load the page again for another game: the rules are set once, when the page boots. */
+function reloadAs(id: string): void {
   const url = new URL(window.location.href);
-  if (small) url.searchParams.set("game", "small");
-  else url.searchParams.delete("game");
+  if (id === "standard") url.searchParams.delete("game");
+  else url.searchParams.set("game", id);
   window.location.assign(url.href);
 }
 
@@ -138,24 +139,24 @@ export function Game() {
   const [hintCards, setHintCards] = useState<number[]>([]);
   const [matchOver, setMatchOver] = useState(false);
   const [sudden, setSudden] = useState(0);
-  const [small, setSmall] = useState(false);
+  const [game, setGame] = useState<string>("standard");
+  const small = game !== "standard";
 
   useEffect(() => {
     let cancel = false;
     async function boot() {
-      // /?game=small plays the smaller game the trainer can learn, against its own net.
-      const wantSmall = new URLSearchParams(window.location.search).get("game") === "small";
-      if (wantSmall) setRules(SMALL_GAME.hand, SMALL_GAME.yanivAt);
-      else setRules(5, 7);
-      setSmall(wantSmall);
+      // /?game=4x7 or /?game=small plays a smaller game the trainer can learn, against its own net.
+      const wanted = gameById(new URLSearchParams(window.location.search).get("game"));
+      setRules(wanted.hand, wanted.yanivAt);
+      setGame(wanted.id);
       const suffix = rulesSuffix();
       try {
         const [model, dossier] = await Promise.all([
           loadNet(`/model/yaniv-net${suffix}.json`).catch((cause) => {
-            if (!wantSmall) throw cause;
+            if (wanted.id === "standard") throw cause;
             throw new Error(
-              `No net for the ${SMALL_GAME.hand}-card game yet. Train one with: python main.py --hand ${SMALL_GAME.hand} ` +
-                `--yaniv-at ${SMALL_GAME.yanivAt} --value-net --export`,
+              `No net for ${wanted.hand} cards with Yaniv at ${wanted.yanivAt} yet. Train one with: python main.py ` +
+                `--hand ${wanted.hand} --yaniv-at ${wanted.yanivAt} --value-net --export`,
             );
           }),
           fetch(`/model/training-report${suffix}.json`).then((response) => (response.ok ? response.json() : null)),
@@ -339,7 +340,7 @@ export function Game() {
               {small ? (
                 <button
                   type="button"
-                  onClick={() => reloadAs(false)}
+                  onClick={() => reloadAs("standard")}
                   className="inline-flex h-10 items-center rounded-lg border border-[#f2c75c]/40 px-4 text-sm text-[#f6edd9] hover:bg-white/10"
                 >
                   Standard game
@@ -372,13 +373,18 @@ export function Game() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => reloadAs(!small)}
-            className="inline-flex h-9 items-center rounded-lg border border-[#f2c75c]/40 px-3 text-sm text-[#f6edd9] hover:bg-white/10"
+          <select
+            aria-label="Game"
+            value={game}
+            onChange={(event) => reloadAs(event.target.value)}
+            className="h-9 rounded-lg border border-[#f2c75c]/40 bg-[#1b140e] px-2 text-sm text-[#f6edd9] hover:bg-white/10"
           >
-            {small ? "Standard game" : `Small game (${SMALL_GAME.hand} cards)`}
-          </button>
+            {GAMES.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
           <RulesButton />
           <Button
             variant="outline"
