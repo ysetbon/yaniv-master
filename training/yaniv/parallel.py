@@ -54,7 +54,25 @@ def chooser(spec: Spec):
         from .hybrid import switch_chooser
 
         return switch_chooser(chooser(spec[1]), chooser(spec[2]), spec[3])
+    if kind == "search":
+        from .search import net_prior, search_chooser
+
+        _, base, value_parts, samples, depth, width, confidence, table, seed = spec
+        net = _net(base)
+        value = _mlp(*value_parts) if value_parts is not None else None
+        return search_chooser(net_chooser(net, 0.0), net_prior(net), samples, width, seed, confidence, table, value,
+                              depth)
     raise ValueError(f"unknown player {kind}")
+
+
+def search_spec(net, value=None, samples: int = 96, depth: int = 2, width: int = 4, confidence: float = 1.5,
+                table=None, seed: int = 0) -> Spec:
+    """The search teacher as a player: the net's move unless a search clearly finds a better one (search.py).
+
+    With a `value` net it looks `depth` moves ahead and asks it; without one it plays every imagined round out.
+    """
+    return ("search", net_spec(net), _parts(value) if value is not None else None, samples, depth, width, confidence,
+            table, seed)
 
 
 def switch_spec(main: Spec, endgame: Spec, at: int = 4) -> Spec:

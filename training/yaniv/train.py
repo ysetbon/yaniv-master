@@ -643,7 +643,10 @@ class TrainConfig:
     # from their positions, and the search looks `value_depth` moves ahead
     # and asks it instead of playing every imagined round to its end.
     value_net: bool = False
-    value_depth: int = 2
+    # 4, not 2: on the real net, the teacher judging after 2 moves played 1.6 points a round worse than the
+    # net itself (its errors repeat on every imagined deal), after 4 moves with 192 deals it was the best
+    # teacher measured (teacher_test.py).
+    value_depth: int = 4
     value_rounds: int = 1500
     value_capacity: int = 400_000  # positions kept across passes (two rows each, one per player), oldest dropped
     value_epochs: int = 3

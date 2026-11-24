@@ -132,7 +132,17 @@ With `--value-net`, each pass:
 
 1. The teacher net plays itself (`--value-rounds`, 1,500 by default). Every position is stored with how its round ended for each player, in the same units the search uses (the change in the chance of winning the match).
 2. A second net, the value net (`training/yaniv/value.py`, 193 inputs: what each player sees, and whose turn it is), learns to predict that from the position. It sees the whole imagined deal except the stock order, so it learns the average over the future draws. It keeps learning across passes, from the last 400,000 positions.
-3. The search looks `--value-depth` moves ahead (2 by default) on each imagined deal and asks the value net, instead of playing to the end. A round that ends within those moves is scored exactly.
+3. The search looks `--value-depth` moves ahead (4 by default) on each imagined deal and asks the value net, instead of playing to the end. A round that ends within those moves is scored exactly.
+
+The depth matters. On the real game's net, over the same 600 rounds against the counter (`teacher_test.py`), the search teacher compared with the plain net:
+
+| Teacher | Points a round | Match chance after the round |
+| --- | --- | --- |
+| Playouts to the end, 96 deals | +0.01 ± 0.47 | +0.58 ± 0.38 |
+| Value net after 2 moves, 96 deals | −1.56 ± 0.78 | −0.13 ± 0.59 |
+| Value net after 4 moves, 192 deals | +0.28 ± 0.54 | +0.79 ± 0.40 |
+
+After only 2 moves the value net's errors repeat on every imagined deal, so averaging more deals does not remove them, and the teacher played worse than the net it taught. Use `--search-samples 192` with the default depth.
 
 The log and the summary show how much of how rounds ended the value net explains on each pass's new rounds, before it learns them. Rounds hinge on future draws, so even a perfect judge is well under 100%. The value net is only a teacher: the game still plays with the policy net.
 
@@ -141,7 +151,7 @@ The log and the summary show how much of how rounds ended the value net explains
 `--hand 4 --yaniv-at 9` plays 4 cards each with Yaniv at 9 or less. Rounds are about a third shorter (9 throws instead of 12 between two card counters), and each decision has fewer moves to choose from, so every pass is quicker. Its net ships to `public/model/yaniv-net-4cards-yaniv9.json` (with `--export`), never over the standard one, and the game plays it at `/?game=small` (pick the game in the header):
 
 ```bash
-python main.py --hand 4 --yaniv-at 9 --value-net --effort 0.7 --generations 40 --search-samples 96 --export
+python main.py --hand 4 --yaniv-at 9 --value-net --effort 0.7 --generations 40 --search-samples 192 --export
 ```
 
 ### Handing the end of a round to a 4-card net (`training/yaniv/hybrid.py`)
@@ -151,11 +161,21 @@ A hand never grows: every throw is followed by exactly one draw. So once both pl
 Train a 4-card net with the real Yaniv limit, then test the switch player (the main net until both hands are small, then the 4-card net) against the main net alone, on the same deals:
 
 ```bash
-python main.py --hand 4 --yaniv-at 7 --value-net --value-rounds 4000 --effort 0.7 --generations 40 --search-samples 96 --export
+python main.py --hand 4 --yaniv-at 7 --value-net --value-rounds 4000 --effort 0.7 --generations 40 --search-samples 192 --export
 python -m training.yaniv.hybrid --endgame public/model/yaniv-net-4cards-yaniv7.json
 ```
 
 It prints both players' results against the counter (4,000 rounds, 1,000 matches) and the switch player against the main net alone. The game plays the 4-card net itself at `/?game=4x7`.
+
+### Is the teacher stronger than the net? (`training/yaniv/teacher_test.py`)
+
+A net only learns what its teacher does better than it. Once training stalls, test that directly: the net and several search teachers built on it play the card counter on the same deals and match scores, and each teacher is compared with the plain net round by round:
+
+```bash
+python -m training.yaniv.teacher_test --net public/model/yaniv-net.json --effort 0.8
+```
+
+The teachers are playouts to the end with 96 deals, the value net after 2 moves with 96 deals, and the value net after 4 moves with 192 deals (`--teachers` picks others, `--value runs/<timestamp>/value-NN.json` uses a run's value net). It reports the point margin and the match chance after the round, each with a ± from the paired rounds. A teacher worth a long run beats the net by more than twice its ± on match chance.
 
 ### Records of each run
 
