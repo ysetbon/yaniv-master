@@ -132,12 +132,20 @@ def add_score_units(kit: Kit, open_cut=None, assaf_cut: bool = True, desperate: 
     1. open_cut: taking the open card leaves exactly 50 or 100 on (my score + held points),
        so if the opponent calls next turn my score is cut by 50. Exact for open-card
        draws: s = 120*my_score + 40*pts_kept + 10*incoming; a tent of width 1 at 50 and 100.
-    2. assaf_cut: Yaniv is legal and my score + my points + 30 is exactly 50 or 100: even a
+       Worth ~50 points x P(opponent calls next) at 50 (half that at 100, where points are
+       dearer anyway); that chance was measured at ~40% / 14% / 3% for opp_est <= 9 / 10-14 / 15+,
+       hence (flat, x threat) = (1.5, 18) at 50 and (1, 9) at 100, threat = clip((15 - opp_est)/6, 0, 1).
+    2. deck_cut: the same for a deck draw: lands on the cut if the card drawn is worth exactly
+       target - score - kept; bonus = weight x P(that value) x threat.
+    3. assaf_cut: Yaniv is legal and my score + my points + 30 is exactly 50 or 100: even a
        caught call lowers my score (cut), so call. +400 on the Yaniv row.
-    3. desperate: my score >= 80 and I am >= 15 behind: losing more points barely matters,
-       a round won matters a lot, so call Yaniv at a higher Assaf chance (thr + `desperate`).
-    4. bust: (optional) taking/drawing a hand that puts my score + held points at 100+ means
-       being called ends the match; penalty in points.
+    4. desperate (off by default: no measurable effect): my score >= 80 and I am >= 15 behind:
+       call Yaniv at a higher Assaf chance (thr + `desperate`).
+    5. bust (off by default: no measurable effect): penalty when my score + held points passes 100.
+
+    Measured (SCRATCH/logs/scorer.md): on the official test the rounds are identical (they start
+    at 0-0) and matches go 380-420 -> 463-337 for this design's base; planner's base 451-349 ->
+    506-294. Nearly all of it comes from 1 and 2.
     """
     if open_cut is None:  # (flat, x threat) points: ~50 * P(opponent calls next) at 50, half that at 100
         open_cut = {50: (1.5, 18.0), 100: (1.0, 9.0)}

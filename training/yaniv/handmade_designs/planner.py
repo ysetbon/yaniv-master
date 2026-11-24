@@ -39,7 +39,7 @@ W_H, W_P = 0.25, 0.75  # no danger: the plan matters most, the present a quarter
 DANGER = [(13.0, 0.15), (11.0, 0.15), (9.0, 0.15), (7.0, 0.15)]  # opp_est (points) at or under t: move delta of weight P -> H
 CALL_BONUS = {7: 3.0, 6: 0.8, 5: 0.8, 4: 0.8, 3: 0.8, 2: 0.8, 1: 0.8, 0: 0.8}  # B(h) = sum_{t >= h} CALL_BONUS[t]
 GIFT_LOW = 0.3         # per point the face-up card is under the unseen average
-GIFT_MATCH = 3.0       # leaving a rank the opponent is known to hold
+GIFT_MATCH = (0.5, 0.25)  # leaving a rank the opponent is known to hold: 0.5 + 0.25 * points (its pair sheds that much more)
 CARD_COST = 2.0        # per card kept
 DUP_VALUE = 1.5        # per card kept beyond the first of its rank: the hand shrinks when the set is thrown
 
@@ -160,8 +160,8 @@ def add_throw_units(kit: Kit) -> None:
         out[f"callD_{j}"] = 1.0
     for t in range(8):
         out[f"callT_{t}"] = CALL_BONUS[t]
-    for r in RANK_NAMES:
-        out[f"gift_{r}"] = -GIFT_MATCH
+    for r, p in zip(RANK_NAMES, RANK_POINTS):
+        out[f"gift_{r}"] = -(GIFT_MATCH[0] + GIFT_MATCH[1] * p)
     kit.out(out)
 
 

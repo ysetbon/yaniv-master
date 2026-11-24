@@ -35,12 +35,16 @@ CARD_SOON = 2.0     # charge taken back when the opponent has 1-2 cards (points 
 PAIR_OPEN = 9.0     # taking an open card that pairs a kept card: a set to throw next turn
 TRIPLE_OPEN = 5.0   # extra when it makes a triple (one more card goes with the set)
 CALLABLE_VS4 = 3.0  # bonus for a move that makes Yaniv legal next turn while the opponent holds 4 cards
+LOW_TOP = 1.0       # leaving a card worth <= 4 face up feeds the counter (it takes those 95% of the time)
 TWO_LIGHT = 0.5     # a 2 counts as half a heavy card (A and joker as none)
 RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "JOKER"]
 OPEN_TELL = 1.5     # per point above 3 of an unpaired open card taken
-T_EARLY = 0.04      # Yaniv threshold on assaf: T_FLOOR + relu(T_EARLY - T_SLOPE*ply) + gap and 6-7 point terms
-T_SLOPE = 0.002
-T_FLOOR = 0.0
+T_EARLY = 0.025      # Yaniv threshold on assaf: T_FLOOR + relu(T_EARLY - T_SLOPE*ply) + gap and 6-7 point terms
+T_SLOPE = 0.00125
+T_FLOOR = 0.015
+GAP_SLOPE = 0.002    # threshold change per point of (opponent estimate - my points) ...
+GAP_CENTER = 5.0     # ... around a gap of 5 ...
+GAP_CAP = 15.0       # ... with the gap capped here
 DECK_HEAVY = 1.07   # chance a deck card is heavy ~ 1 - share of unseen worth <= 3, plus the 3s
 
 
@@ -63,7 +67,7 @@ def build():
     k.unit(1, "early", {"ply": -T_SLOPE * 48}, bias=T_EARLY,
            note="Yaniv threshold part that falls with the ply: T_EARLY at ply 0, 0 from ply T_EARLY/T_SLOPE")
     k.unit(1, "gap", {"opp_est": 40.0, "my_pts": -40.0}, note="opponent's estimated total minus mine, >= 0")
-    k.unit(1, "gap_cap", {"opp_est": 40.0, "my_pts": -40.0}, bias=-15.0, note="the gap above 15 (capped)")
+    k.unit(1, "gap_cap", {"opp_est": 40.0, "my_pts": -40.0}, bias=-GAP_CAP, note="the gap above GAP_CAP (capped)")
     k.unit(1, "high_call", {"my_pts": 40.0}, bias=-5.0, note="my points above 5 (6-7 call a little more readily)")
     k.unit(1, "callable_vs4", {"callable_next": 1.0, "opp_has_4": 1.0}, bias=-1.0,
            note="the move makes Yaniv sure to be legal next turn while the opponent still has 4 cards (a near-safe call)")
@@ -77,18 +81,18 @@ def build():
     # ---- layer 2 ----
     k.unit(2, "heavy_soon", {**heavy, "opp_has_1": 6.0, "opp_has_2": 6.0}, bias=-6.0,
            note="heavy cards after the move, only when the opponent has 1-2 cards (else 0)")
-    t_terms = {"early": 1.0, "gap": 0.002, "gap_cap": -0.002, "high_call": 0.005}
+    t_terms = {"early": 1.0, "gap": GAP_SLOPE, "gap_cap": -GAP_SLOPE, "high_call": 0.005}
     margin = {s: 500.0 * w for s, w in t_terms.items()}
     margin.update({"assaf": -500.0, "yaniv": 100.0})
-    k.unit(2, "call", margin, bias=-100.0 + 500.0 * (T_FLOOR - 0.01),
-           note="Yaniv move with assaf below T = 0.04 - 0.002*ply (>=0) + 0.002*(gap-5, capped -5..15) "
+    k.unit(2, "call", margin, bias=-100.0 + 500.0 * (T_FLOOR - GAP_SLOPE * GAP_CENTER),
+           note="Yaniv move with assaf below T = T_FLOOR + relu(T_EARLY - T_SLOPE*ply) + GAP_SLOPE*(gap - GAP_CENTER, gap capped) "
                 "+ 0.005*(pts-5)+; 500*(T - assaf), gated by the Yaniv flag")
-    k.unit(2, "call_sat", {**margin}, bias=-100.0 + 500.0 * (T_FLOOR - 0.01) - 1.0, note="call - 1 (to saturate the step)")
+    k.unit(2, "call_sat", {**margin}, bias=-100.0 + 500.0 * (T_FLOOR - GAP_SLOPE * GAP_CENTER) - 1.0, note="call - 1 (to saturate the step)")
 
     # ---- output ----
     out = {"pts_kept": -40.0, "incoming": -10.0, "pairs_open": PAIR_OPEN, "open_tell": -OPEN_TELL,
            "heavy_soon": CARD_SOON, "yaniv": -500.0, "call": 1000.0, "call_sat": -1000.0, "sure_call": 1000.0,
-           "callable_vs4": CALLABLE_VS4}
+           "callable_vs4": CALLABLE_VS4, "low_top": -LOW_TOP}
     for r in RANKS:
         out[f"triple_{r}"] = 2.0 * TRIPLE_OPEN
     for s, w in heavy.items():
