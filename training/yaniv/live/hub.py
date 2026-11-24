@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import queue
 import threading
 import time
@@ -10,6 +11,22 @@ from collections import deque
 
 from ..network import MLP
 from ..train import Observer
+
+
+def _clean(value):
+    """The value with every NaN or infinity replaced by None.
+
+    Python writes NaN into JSON, but browsers refuse to parse it, so one NaN
+    (a value net's fit before it has been tested) made the dashboard drop that
+    generation and fail every resync after it.
+    """
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, dict):
+        return {k: _clean(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_clean(v) for v in value]
+    return value
 
 
 class Hub:
@@ -57,7 +74,7 @@ class Hub:
                 self._subscribers.remove(q)
 
     def publish(self, kind: str, payload) -> None:
-        message = json.dumps({"type": kind, "data": payload})
+        message = json.dumps({"type": kind, "data": _clean(payload)}, allow_nan=False)
         with self._lock:
             subscribers = list(self._subscribers)
         for q in subscribers:
@@ -71,7 +88,7 @@ class Hub:
             state = dict(self.state)
             state["logs"] = list(self._logs)
             state["now"] = time.time()
-            return json.loads(json.dumps(state))
+            return _clean(json.loads(json.dumps(state)))
 
     # ---- state updates -------------------------------------------------
     def update(self, kind: str, key: str, value) -> None:
