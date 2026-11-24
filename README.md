@@ -138,11 +138,24 @@ The log and the summary show how much of how rounds ended the value net explains
 
 ### A smaller game that learns faster (`--hand`, `--yaniv-at`)
 
-`--hand 4 --yaniv-at 9` plays 4 cards each with Yaniv at 9 or less. Rounds are about a third shorter (9 throws instead of 12 between two card counters), and each decision has fewer moves to choose from, so every pass is quicker. Its net ships to `public/model/yaniv-net-4cards-yaniv9.json` (with `--export`), never over the standard one, and the game plays it at `/?game=small` (the "Small game" button):
+`--hand 4 --yaniv-at 9` plays 4 cards each with Yaniv at 9 or less. Rounds are about a third shorter (9 throws instead of 12 between two card counters), and each decision has fewer moves to choose from, so every pass is quicker. Its net ships to `public/model/yaniv-net-4cards-yaniv9.json` (with `--export`), never over the standard one, and the game plays it at `/?game=small` (pick the game in the header):
 
 ```bash
 python main.py --hand 4 --yaniv-at 9 --value-net --effort 0.7 --generations 40 --search-samples 96 --export
 ```
+
+### Handing the end of a round to a 4-card net (`training/yaniv/hybrid.py`)
+
+A hand never grows: every throw is followed by exactly one draw. So once both players hold 4 cards or fewer, the rest of the round is a 4-card game, and with `--yaniv-at 7` its rules are the real game's. With the current net against the counter, 83% of rounds reach that point and 48% of all decisions come after it.
+
+Train a 4-card net with the real Yaniv limit, then test the switch player (the main net until both hands are small, then the 4-card net) against the main net alone, on the same deals:
+
+```bash
+python main.py --hand 4 --yaniv-at 7 --value-net --value-rounds 4000 --effort 0.7 --generations 40 --search-samples 96 --export
+python -m training.yaniv.hybrid --endgame public/model/yaniv-net-4cards-yaniv7.json
+```
+
+It prints both players' results against the counter (4,000 rounds, 1,000 matches) and the switch player against the main net alone. The game plays the 4-card net itself at `/?game=4x7`.
 
 ### Records of each run
 

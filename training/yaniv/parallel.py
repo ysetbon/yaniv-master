@@ -19,7 +19,7 @@ import numpy as np
 
 from .network import MLP
 
-Spec = tuple  # ("counter",) | ("greedy",) | ("random",) | ("net", dims, weights, biases, temperature)
+Spec = tuple  # ("counter",) | ("greedy",) | ("random",) | ("net", dims, weights, biases, temperature) | ("switch", ...)
 
 
 def _parts(net: MLP) -> tuple:
@@ -50,7 +50,16 @@ def chooser(spec: Spec):
         return choose_random
     if kind in ("net", "moe"):
         return net_chooser(_net(spec), spec[-1])
+    if kind == "switch":
+        from .hybrid import switch_chooser
+
+        return switch_chooser(chooser(spec[1]), chooser(spec[2]), spec[3])
     raise ValueError(f"unknown player {kind}")
+
+
+def switch_spec(main: Spec, endgame: Spec, at: int = 4) -> Spec:
+    """`main` plays until both hands hold `at` cards or fewer, then `endgame` plays (hybrid.py)."""
+    return ("switch", main, endgame, at)
 
 
 def _mlp(dims, weights, biases) -> MLP:

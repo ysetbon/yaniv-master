@@ -25,8 +25,21 @@ export const SUIT_NAMES = ["clubs", "diamonds", "hearts", "spades"] as const;
 
 export const POINTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10];
 
-/** The smaller game the trainer can learn (main.py --hand 4 --yaniv-at 9): its net lives in its own file. */
-export const SMALL_GAME = { hand: 4, yanivAt: 9 } as const;
+/**
+ * The games the page offers, picked with /?game=<id>. The smaller ones are
+ * trained with main.py --hand H --yaniv-at Y, and each net lives in its own file.
+ */
+export const GAMES = [
+  { id: "standard", hand: 5, yanivAt: 7, label: "Standard" },
+  { id: "4x7", hand: 4, yanivAt: 7, label: "4 cards, Yaniv 7" },
+  { id: "small", hand: 4, yanivAt: 9, label: "4 cards, Yaniv 9" },
+] as const;
+export type GameRules = (typeof GAMES)[number];
+
+/** The game a /?game= value names; the standard game for anything else. */
+export function gameById(id: string | null): GameRules {
+  return GAMES.find((game) => game.id === id) ?? GAMES[0];
+}
 
 /** Cards each and the Yaniv limit, as main.py's --hand and --yaniv-at. Call before dealing. */
 export function setRules(hand: number, yanivAt: number): void {
