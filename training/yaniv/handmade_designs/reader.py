@@ -12,8 +12,11 @@ and a small charge for taking an unpaired open card worth 4+ (it tells the oppon
 draw may pair). Net effect: unpaired open cards are taken only at <= 3 points (the counter takes <= 5).
 Yaniv: call when the call cannot be caught, or when `assaf` is below a threshold T that falls with the
 ply (opponents keep low cards, so the uniform `assaf` understates the risk more and more), rises with the
-gap between the opponent's estimated hand and mine, and is a little higher at 6-7 points. T is about
-0.02-0.04, nearly flat in my points (the counter allows up to 0.40 at 1 point, 0.18 at 3 points).
+gap between the opponent's estimated hand and mine, and is a little higher at 6-7 points:
+T = 0.015 + relu(0.025 - 0.00125*ply) + 0.002*(gap - 5, gap capped at 15) + 0.005*relu(pts - 5),
+i.e. 0.015-0.04, nearly flat in my points (the counter allows up to 0.40 at 1 point, 0.18 at 3 points).
+Also: +3 for a move that makes Yaniv sure next turn while the opponent holds 4 cards; -1 for leaving a
+card worth <= 4 face up (the counter takes those).
 """
 
 from __future__ import annotations

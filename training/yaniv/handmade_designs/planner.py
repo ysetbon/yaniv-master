@@ -38,6 +38,7 @@ UNSEEN_N = 43.0        # typical count of unseen cards mid-round (stands in for 
 W_H, W_P = 0.25, 0.75  # no danger: the plan matters most, the present a quarter
 DANGER = [(13.0, 0.15), (11.0, 0.15), (9.0, 0.15), (7.0, 0.15)]  # opp_est (points) at or under t: move delta of weight P -> H
 CALL_BONUS = {7: 3.0, 6: 0.8, 5: 0.8, 4: 0.8, 3: 0.8, 2: 0.8, 1: 0.8, 0: 0.8}  # B(h) = sum_{t >= h} CALL_BONUS[t]
+CATCH = 1.0            # when the opponent's estimate is <= 7: the call bonus counts again (low hands catch its call)
 GIFT_LOW = 0.3         # per point the face-up card is under the unseen average
 GIFT_MATCH = (0.5, 0.25)  # leaving a rank the opponent is known to hold: 0.5 + 0.25 * points (its pair sheds that much more)
 CARD_COST = 2.0        # per card kept
@@ -160,6 +161,11 @@ def add_throw_units(kit: Kit) -> None:
         out[f"callD_{j}"] = 1.0
     for t in range(8):
         out[f"callT_{t}"] = CALL_BONUS[t]
+    for j in range(8):  # the opponent likely calls next: a low hand also catches its call (Assaf, ~40 point swing)
+        kit.unit(3, f"catchD_{j}", {f"callD_{j}": 1.0, "dz7_a": 20.0, "dz7_b": -20.0}, -20.0)
+        kit.unit(3, f"catchT_{j}", {f"callT_{j}": 1.0, "dz7_a": 1.0, "dz7_b": -1.0}, -1.0)
+        out[f"catchD_{j}"] = CATCH
+        out[f"catchT_{j}"] = CATCH * CALL_BONUS[j]
     for r, p in zip(RANK_NAMES, RANK_POINTS):
         out[f"gift_{r}"] = -(GIFT_MATCH[0] + GIFT_MATCH[1] * p)
     kit.out(out)
@@ -170,14 +176,14 @@ def add_yaniv_units(kit: Kit) -> None:
 
     Calling with m points wins the opponent's hand (~10) or loses m + 30; the lower m, the more of the
     opponent's hands lose to me and the cheaper a catch is, so the tolerated risk grows faster as m falls:
-    thr(m) = 0.04 at 7, .06, .09, .13, .18, .25, .33, 0.45 at 0.
+    thr(m) = 0.025 at 7, .06, .09, .13, .18, .25, .33, 0.45 at 0.
     """
-    kinks = {6: 0.01, 5: 0.01, 4: 0.01, 3: 0.02, 2: 0.01, 1: 0.04}  # extra slope below each kink
+    kinks = {7: 0.015, 6: 0.01, 5: 0.01, 4: 0.01, 3: 0.02, 2: 0.01, 1: 0.04}  # extra slope below each kink
     for k in kinks:
         kit.unit(1, f"m_under{k}", {"my_pts": -40.0}, float(k), note=f"how far my points are under {k}")
     thr = _add({"my_pts": -0.02 * 40.0}, {f"m_under{k}": w for k, w in kinks.items()})
     x = _add(thr, {"assaf": -1.0}, scale=[100.0, 100.0])
-    base = 100.0 * (0.04 + 0.02 * 7)
+    base = 100.0 * (0.025 + 0.02 * 7)
     kit.unit(2, "call_a", x | {"yaniv": 40.0}, base - 40.0)
     kit.unit(2, "call_b", x | {"yaniv": 40.0}, base - 40.0 - 1.0)
     kit.out({"call_a": 200.0, "call_b": -200.0, "yaniv": -100.0})
