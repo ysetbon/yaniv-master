@@ -1,0 +1,4 @@
+counter: 527 microseconds a move (2710 moves)
+counter2: 244 microseconds a move (2695 moves)
+public/model/yaniv-net.json: 223 microseconds a move (2703 moves)
+public/model/yaniv-net-5cards-handmade.json: 166 microseconds a move (2685 moves)

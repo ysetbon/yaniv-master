@@ -1,0 +1,3 @@
+counter2 vs counter my cuts a match 0.534, its cuts 0.164, rounds a match 13.0, won 0.748 {'its call': 801, 'my caught call': 267}
+public/model/yaniv-net-5cards-handmade.json vs counter my cuts a match 0.619, its cuts 0.142, rounds a match 13.2, won 0.714 {'its call': 1011, 'my caught call': 225, 'showdown': 1}
+counter2 vs public/model/yaniv-net-5cards-handmade.json my cuts a match 0.917, its cuts 1.073, rounds a match 16.6, won 0.506 {'my caught call': 486, 'its call': 1348}

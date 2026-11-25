@@ -71,7 +71,9 @@ def _calib_piece(job):
         me = i % 2
         state = new_round([0, 0], (i // 2) % 2, rng)
         pending = None
+        before = None
         values = []
+        waiting = []                                  # [cdf, its turns seen since] for my earlier throws
         while not state.terminal:
             view = make_view(state, state.turn)
             actions = legal_actions(view)
@@ -81,6 +83,13 @@ def _calib_piece(job):
                 belief = h2.beliefs(view)
                 mine = mask_points(view.my_hand)
                 theirs = mask_points(state.hands[1 - me])
+                if before is not None:
+                    for m in (3, 5, 7):
+                        cell = out[(f"its total <= {m} at my NEXT turn, by the belief now", _band(before[m], (0.03, 0.1, 0.2, 0.35, 0.5)))]
+                        cell[0] += 1
+                        cell[1] += before[m]
+                        cell[2] += theirs <= m
+                before = belief["cdf"]
                 values.append((("value by cards (mine, its)", view.my_hand.bit_count(), view.opp_size), belief["value"]))
                 values.append((("value by ply", _band(view.ply, (2, 4, 6, 8, 10, 14, 20))), belief["value"]))
                 values.append((("value by belief", _band(belief["value"], (-15, -10, -5, 0, 5, 10, 15))), belief["value"]))
@@ -99,9 +108,19 @@ def _calib_piece(job):
                         cell[2] += theirs <= mine
                 action = h2.choose_counter2(view, actions)
                 pending = None if action.kind == "yaniv" else (belief["hazard"], view.opp_size, belief["cdf"])
+                waiting.append([belief["cdf"], 0])
             else:
                 action = opp(view, actions, None)
                 its = mask_points(view.my_hand)
+                for item in waiting:
+                    item[1] += 1
+                    if item[1] in (2, 3):
+                        for reach in ((9, 10, 11) if item[1] == 2 else (11, 12)):
+                            cell = out[(f"it calls on its turn {item[1]} from now (if the round lasts), by P(its total <= {reach})",
+                                        _band(item[0][reach], (0.02, 0.05, 0.1, 0.2, 0.3, 0.45, 0.6, 0.8)))]
+                            cell[0] += 1
+                            cell[1] += item[0][reach]
+                            cell[2] += action.kind == "yaniv"
                 if its <= h2.YANIV_LIMIT:
                     for key in (("it calls, given its total", its),
                                 ("it calls, given its total and my cards", its, view.opp_size),
