@@ -1,1 +1,3 @@
 py:contest_fable.build vs hm5 (seed 51): margin +0.184 +-0.032 a round (40000 rounds), rounds won 51.9%, calls caught 6.8%; matches 5003-4997 (50.0%, 95% 49.1%-51.0%)
+py:contest_fable_reads.best@{"yaniv":"new","triple":true} vs py:contest_fable.build (seed 61): margin +0.029 +-0.020 a round (40000 rounds), rounds won 50.3%, calls caught 6.5%;
+py:contest_fable_reads.best@{"yaniv":"new","triple":true} vs hm5 (seed 61): margin +0.226 +-0.035 a round (40000 rounds), rounds won 52.1%, calls caught 6.8%;
