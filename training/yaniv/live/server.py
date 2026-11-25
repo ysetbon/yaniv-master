@@ -15,7 +15,7 @@ from pathlib import Path
 
 from ..backend import Device
 from ..train import MODEL_PATH, REPORT_PATH, ROOT, TrainConfig, export_best, run_training
-from .hub import Hub, HubObserver
+from .hub import Hub, HubObserver, _clean
 from .showcase import Showcase
 
 PAGE = Path(__file__).with_name("index.html")
@@ -69,7 +69,7 @@ def make_handler(hub: Hub, showcase: Showcase, run_dir: Path):
             self.wfile.write(body)
 
         def _json(self, code: int, payload) -> None:
-            self._send(code, json.dumps(payload).encode(), "application/json")
+            self._send(code, json.dumps(_clean(payload), allow_nan=False).encode(), "application/json")
 
         def do_GET(self):
             if self.path in ("/", "/index.html"):
