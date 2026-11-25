@@ -44,15 +44,14 @@ and such an open-card take is exempt from the OPEN_TELL charge.
 
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 
-os.environ.setdefault("YANIV_HAND_SIZE", "4")
-os.environ.setdefault("YANIV_CALL_AT", "7")
+# Building the net needs no rules: it only reads the 125-number input layout, which is the same in every game.
+# (Nothing here sets YANIV_HAND_SIZE / YANIV_CALL_AT; handmade_eval.py does, to play the 4-card game.)
 
-from training.yaniv.handmade_kit import RANK_NAMES, RANK_POINTS, Kit  # noqa: E402
-from training.yaniv.network import save_net  # noqa: E402
+from training.yaniv.handmade_kit import RANK_NAMES, RANK_POINTS, Kit
+from training.yaniv.network import save_net
 
 MODEL_PATH = Path(__file__).resolve().parents[2] / "public" / "model" / "yaniv-net-4cards-yaniv7-handmade.json"
 RANKS = RANK_NAMES
