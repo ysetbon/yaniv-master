@@ -164,3 +164,34 @@ Checks:
 - Kit.trace on 19,540 move rows (1,500 rounds, seed 4): the triple unit is on in 75 rows, 0 mismatches with the
   stated condition; e.g. hand 4-8-Q-Q-joker, open Q, opp 5: design throws the 8 and takes the Q (OUT 19.7), hm5's
   move Q-Q + deck scores -17.0.
+
+## 6. Duels (40,000 mirrored rounds from 0-0 each, seed 303, rounds only)
+
+`python -m training.yaniv.contest_fable_lab duel py:contest_fable_survey_design.build hm5 trained counter --rounds 40000 --matches 0 --seed 303 --workers 2`
+and the same with hero `hm5` for the baseline on the same seed:
+
+| hero | vs hm5 | vs trained | vs counter |
+|---|---|---|---|
+| design (hm5 + triple take, 567 units) | **+0.064+-0.015**, 50.2% rounds | +0.125+-0.057, 51.6% | +1.733+-0.067, 56.3% |
+| hm5 (same seed) | 0 by definition | +0.025+-0.057, 51.2% | +1.626+-0.067, 55.8% |
+| difference | +0.064 (4 se) | +0.100 | +0.107 |
+
+The paired forecast (+0.08 / +0.15 / +0.16 a round on seed 202) shows up in the duel with the right sign and
+about two thirds of the size against all three. Against trained and counter the difference of two runs on the
+same deals is not given a paired error here; each run's own +-0.06 overstates it (the two heroes play the same
+move in ~99.6% of decisions). Matches were not run (the effect, ~0.06-0.1 points a round, is below what 6,000
+matches can resolve); the rule does not look at the score.
+
+## 7. Summary
+
+- Built and kept: the triple take (9 units). Small, real, same sign against all three opponents, in paired play
+  on two seeds and in the duel.
+- Measured and dropped: refuse an open 3 at 5 v 4 and refuse an open 4 with 2 cards (not confirmed on the fresh
+  seed); every throw-side alternative (highest single for a set, set for a single, greedy, second single, break a
+  pair, low pairs by card counts, same-value single by unseen copies); keeping a pair for a third from the deck;
+  two-turn ordering; ace/joker timing; top-card choice; taking the open card onto one twin where hm5 throws the
+  twin; taking more unpaired low cards (3s/4s); stock-out/showdown play (0.2% of rounds).
+- Not run (cut for usage): the probe of the trained net's differing moves (`probe_trained` is written and
+  smoke-tested on 100 rounds only: trained differs at ~15% of hm5's decisions, mean gain -1.1+-1.6, no classes).
+- The .pkl play-outs are in the session scratchpad only (not kept); every number above can be regenerated with
+  the commands given.

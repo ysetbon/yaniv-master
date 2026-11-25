@@ -1,0 +1,2 @@
+py:contest_fable_match.build@{"OPEN":{"100":[1.5,24]},"DECK":{"50":30,"100":40},"THI":{"100":18},"DENY":[3,2],"BUSTCALL":0.15} vs hm5 (seed 31): margin +0.000 +-0.000 a round (20000 rounds), rounds won 50.0%, calls caught 6.1%; matches 5647-4353 (56.5%, 95% 55.5%-57.4%)
+py:contest_fable_match.build@{"OPEN":{"100":[1.5,24]},"DECK":{"50":30,"100":40},"THI":{"100":18}} vs hm5 (seed 31): matches 5155-4845 (51.5%, 95% 50.6%-52.5%)
