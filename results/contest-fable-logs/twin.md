@@ -149,3 +149,37 @@ Value check of the whole idea from these two numbers: a twin taken is worth ~4.5
 of single Y changes the chance the twin comes by at most ~8 points of a percent per unseen copy (and by ~1-4
 points of a percent between point classes), i.e. ~0.35 points a copy and 0.05-0.2 points between point classes.
 That is what the played-out numbers show: nothing to gain from points, and the copies are already charged.
+
+## 4. Whole-net check of the term that already carries the idea (duels, no new units)
+
+No class of sections 2-3 pays against hm5 and a second opponent, so by the brief's rule no new units were written
+(nothing to trace). The only whole-net test is of the existing LIVE charge (the net's 'keep the more live single'),
+two hand-picked settings, 20,000 mirrored rounds each, seed 31 (results also in twin_duels.txt):
+
+`python -m training.yaniv.contest_fable_lab duel 'py:contest_fable.build@{"LIVE":{"5":X,"4":X}}' hm5 trained counter --rounds 20000 --matches 0 --seed 31 --workers 2`
+
+| net | vs hm5 (head to head) | vs trained | vs counter |
+|---|---|---|---|
+| current (LIVE 1 against 5 / 4 cards) = hm5 | 0 (identical: +0.000 on 2,000 rounds) | +0.201 +-0.081 | +1.670 +-0.097 |
+| LIVE 0 against 5 / 4 cards (idea switched off) | -0.081 +-0.037 | +0.048 +-0.080 | +1.569 +-0.096 |
+| LIVE 2 against 5 / 4 cards (idea doubled) | -0.048 +-0.034 | +0.145 +-0.083 | +1.536 +-0.097 |
+
+Same seed, so the same deals: switching the term off costs 0.08-0.15 a round against every opponent, doubling it
+costs 0.05-0.13 (each difference is 1-2 standard errors; all six point the same way). LIVE = 1 stays.
+
+## 5. Verdict
+
+- The idea as stated (keep the high single whose twin the opponent will probably throw, instead of throwing the
+  highest) does NOT pay beyond what the net already does. Not kept; no units added (0 hidden units used).
+- Why: the twin of a given high single arrives on the opponent's next throw only 9-13% of the time (15-17%
+  within two throws), and that chance barely depends on which high card it is; it depends on unseen copies
+  (12% with 3 unseen, 3.5% with 2, 2% with 1). A taken twin is worth 4-5 points. So the choice between two
+  high singles is worth ~0.35 points per unseen copy of difference and 0.05-0.2 points otherwise, against 1-5
+  points of extra exposure for keeping the heavier card from the second turn on.
+- What is true in it is already in the net: LIVE (1 point per unseen copy of the thrown rank), FEED (do not throw
+  a rank the opponent is known to hold: it then throws that rank next turn ~100% and I take the twin), PAIR_OPEN
+  (always take an open twin: +4 to +5 each time) and the pair then leaves next turn 97-99.5% of the time.
+- One free fact: on the very first turn against 5 cards the order of two high singles is worth 0.00 +-0.15
+  either way, so any tie-break there is harmless.
+- Stopped runs: the first batch (9 jobs in one background command) hit a 30-minute limit after `which hm5`;
+  the rest was re-run with the sizes stated above. Record files (*.pkl) deleted; the .txt tables remain.

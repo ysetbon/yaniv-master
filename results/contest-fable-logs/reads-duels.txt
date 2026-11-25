@@ -1,0 +1,1 @@
+py:contest_fable_reads.build@{"KSLOPE":0,"OPEN_LOW":0,"CATCH_MODE":"k3"} vs hm5 (seed 31): margin +0.043 +-0.029 a round (20000 rounds), rounds won 50.5%, calls caught 6.0%; matches 3020-2980 (50.3%, 95% 49.1%-51.6%)

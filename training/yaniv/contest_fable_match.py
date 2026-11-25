@@ -13,6 +13,7 @@ Pieces
             would not) and assaf > FATAL.
   BUST      throw: my score + held points after the move > 100 (kept + open card; kept + unseen average for a deck
             draw): -(flat + x threat [+ per opponent-score point above BUST_T0]).
+  DENY      Yaniv veto when the call would hand the opponent its own cut (add_deny_units).
   OPEN, DECK, THI   contest_fable's cut-landing units (add_score_units) with their constants as arguments, per cut
             (50 / 100): OPEN = (flat, x threat) for an open take that lands exactly, DECK = weight on
             ~P(the deck card lands exactly) x threat, THI = the opponent estimate where the threat reaches 0.
@@ -70,6 +71,36 @@ def add_match_units(kit: Kit, BUSTCALL, FATAL, BUST, BUST_T) -> list[dict]:
                      note=f"opponent's score above {t0} when over 100 after the move, under threat")
             kit.out({"over_opp": -per})
     return reasons
+
+
+def add_deny_units(kit: Kit, DENY) -> list[dict]:
+    """Yaniv veto when my call would hand the opponent ITS cut: its score + its hand lands exactly on 50 / 100.
+    DENY = (wide, hid): veto when at most `hid` of its cards are hidden from me and
+      A. |its score + opp_est - cut| < 0.5 (with no hidden card opp_est is its exact total), or
+      B. |its score + opp_est - cut| < wide and at least one card is hidden (wide None: A only).
+    Measured against hm5, which sits on its cut on purpose (match.md 2.5)."""
+    wide, hid = DENY
+    d = {"opp_score": 240.0, "opp_est": 80.0}                     # 2 x (its score + its estimated total)
+    hidden = {"opp_cards": 10.0, "known_n": -10.0}                # 2 x hidden cards
+    few = cf._step(kit, "hid_le", {k: -v for k, v in hidden.items()}, 2.0 * hid, f"at most {hid} opponent cards hidden")
+    some = cf._step(kit, "hid_ge1", hidden, -2.0, "at least one opponent card hidden")
+    a_in, b_in = {}, {}
+    for cut in (50, 100):
+        for name, off, sign, acc in (("lo", 0.5, 1.0, a_in), ("hi", -0.5, -1.0, a_in)) + (
+                (("wlo", wide, 1.0, b_in), ("whi", -wide, -1.0, b_in)) if wide else ()):
+            st = cf._step(kit, f"deny{cut}_{name}", d, -2.0 * cut + 2.0 * off,
+                          f"opponent's score + estimate >= {cut} - {off:g}")
+            for u, x in st.items():
+                acc[u] = acc.get(u, 0.0) + sign * x
+    veto = {}
+    kit.unit(2, "deny_exact", {**a_in, **few, "yaniv": 1.0}, bias=-2.0,
+             note="Yaniv row: the opponent's total sits on its cut (within 0.5), few hidden cards")
+    veto["deny_exact"] = -5.0
+    if wide:
+        kit.unit(2, "deny_near", {**b_in, **few, **some, "yaniv": 1.0}, bias=-3.0,
+                 note=f"Yaniv row: the opponent's total within {wide:g} of its cut, 1..{hid} hidden cards")
+        veto["deny_near"] = -5.0
+    return [veto]
 
 
 def _threat_to(kit: Kit, hi: float) -> dict:
@@ -132,7 +163,7 @@ def add_score_units(kit: Kit, OPEN, DECK, THI) -> list[dict]:
     return [reason]
 
 
-DEFAULTS = {"BUSTCALL": None, "FATAL": None, "BUST": None, "BUST_T": None,
+DEFAULTS = {"BUSTCALL": None, "FATAL": None, "BUST": None, "BUST_T": None, "DENY": None,
             "OPEN": {50: cf.OPEN_CUT[50], 100: cf.OPEN_CUT[100]}, "DECK": {50: cf.DECK_CUT[0], 100: cf.DECK_CUT[1]},
             "THI": {50: 15.0, 100: 15.0}}
 
@@ -152,6 +183,8 @@ def build(**kw):
     reasons = cf.add_yaniv_units(kit)
     reasons += add_score_units(kit, opt["OPEN"], opt["DECK"], opt["THI"])
     reasons += add_match_units(kit, opt["BUSTCALL"], opt["FATAL"], opt["BUST"], opt["BUST_T"])
+    if opt["DENY"] is not None:
+        reasons += add_deny_units(kit, opt["DENY"])
     cf.finish_yaniv(kit, reasons)
     cf.fold_output(kit)
     net = kit.build()

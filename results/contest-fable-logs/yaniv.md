@@ -228,3 +228,13 @@ Inside 0.6-1.6 T, split by the inputs not in the rule, the design's calls stay >
 every row but two within one error: by open card (called: 0-2: +2.1 / -0.5; 3-4: +0.1 / +0.2; 5-6: +0.8 / +1.0;
 7+: +2.1 / +1.9; not called: -1.2 to -2.9), by ply, by my points, by known cards (called with 1 known card:
 +0.59 +-0.56 / -0.73 +-0.55). No further class reaches 2 errors and 0.03 a round: nothing more to take here.
+
+## 7. Second seed and matches
+
+`duel py:contest_fable_yaniv.build hm5 --rounds 40000 --matches 6000 --seed 32 --workers 2`:
+margin **+0.091 +-0.029** a round, rounds won 51.4%, calls caught 6.7%; **matches 3004-2996 (50.1%, 95% 48.8-51.3%)**.
+
+Head to head against hm5 over both seeds (80,000 rounds): **+0.112 +-0.020 a round**. In 6,000 matches the
+gain does not show (50.1% +-1.3): +0.11 points a round is about a tenth of hm5's edge over the counter per
+round, which is worth ~20 points of matches there, so the expected match effect is ~+0.5 to +1 point, under
+this test's resolution. Honest reading: a real but small round gain; no measurable match gain; no sign of harm.

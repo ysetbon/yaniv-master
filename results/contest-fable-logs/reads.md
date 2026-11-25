@@ -426,3 +426,25 @@ By my cards after (k4, hm5 / trained): 1 card -1.67 +-0.80 / -1.88 +-0.66; 2 car
 +-0.40 (0.07-0.09 a round); same throw, I take the open card +1.86 +-1.05 / +1.13 +-0.84 (0.02 a round).
 So removing the bonus at 1-2 cards is right and removing it at 3 cards is not (table E: at 3 cards after a deck
 draw the catch happens 0.08-0.30 of the time). Next variant: "k3" = bonus only if I keep >= 2 cards.
+
+### 2d. CATCH_MODE=k3: catch bonus only when I keep >= 2 cards (3-5 after the draw). FRESH seed 73, 20,000 rounds
+
+`python -m training.yaniv.contest_fable_reads_run 'py:contest_fable_reads.build@{"KSLOPE":0,"OPEN_LOW":0,"CATCH_MODE":"k3"}' OPP 20000 73`
+(562 units: hm5's 558 + the [cards kept >= 2] step and its carries; the 24 catch units get one more gate input.)
+
+| opp | changed a round | each (hm5's move minus mine) | a round |
+|---|---|---|---|
+| hm5 | 0.089 | **-1.18 +-0.38** | -0.105 (better) |
+| trained | 0.107 | **-1.02 +-0.35** | -0.109 (better) |
+| counter | 0.083 | -0.43 +-0.40 | -0.036 |
+
+By my cards after (hm5 / trained / counter): 1 card -1.02 +-0.63 / -1.38 +-0.63 / +0.15 +-0.59; 2 cards -1.58
++-0.50 / -1.34 +-0.48 / -0.64 +-0.54; 3 cards (few: 136 / 234 / 63) +1.39 +-1.18 / +1.54 +-0.82 / -1.78 +-2.18.
+By kind: same throw, I draw from the deck where hm5 takes the open card (1,286 / 1,536 / 1,262) -1.29 +-0.46 /
+-1.26 +-0.42 / -0.29 +-0.46; same throw, I take the open card (106 / 127 / 185) -5.02 +-2.00 / -3.77 +-1.98 /
+-2.29 +-1.57; I throw one card where hm5 throws a pair (122 / 202 / 57) +1.95 +-1.12 / +1.30 +-0.90 / -2.09
++-2.40 (the one class that goes the wrong way, 0.006-0.010 a round).
+
+Kit.trace check of k3 (scratch chk2.py, 300 rounds, 4,200 decisions, 32,826 throw rows, 2,268 with kept <= 1):
+every catch unit is 0 on kept <= 1 rows and equal to hm5's on kept >= 2 rows (0 violations; output difference
+on kept >= 2 rows and net-against-trace < 3e-4); the best move differs from hm5's at 45 decisions.

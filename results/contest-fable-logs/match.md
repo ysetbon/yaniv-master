@@ -165,3 +165,51 @@ hm5 sits on its cut on purpose (its own cut units), the trained net does not. Wi
   +2..+6 each) and the 100 cut at est 12-15 (open +3.3 / +1.0 / +4.6, deck +3.5 / +2.6 / +0.9). At est 15-20 only
   against hm5 (+1.3..+1.5); against trained / counter 0 or negative. Staying near a cut (cutkeep) loses.
 - The opponent's cut: big against hm5 only (section 2.3, 2.5).
+
+### 2.5 Denial probe: hm5 calls Yaniv, alternative = its best throw (probe_deny)
+`python -m training.yaniv.contest_fable_match_probe hm5 hm5 8000 21 probe_deny` (64,864 calls) and
+`... hm5 trained 4000 22 probe_deny` (28,855 calls); reports match_deny_hm5_8000_21.txt, match_deny_trained_4000_22.txt
+(`contest_fable_match_deny.py`). hidden = opponent cards I do not know; d = opp score + opp_est - nearest cut.
+Equity of NOT calling, each +-se (occurrences a match):
+
+                                     v hm5                              v trained
+    hindsight: opp on its cut     +18.7 +-0.25 (0.73)                 +31.3 +-0.8 (0.12)
+    hindsight: not on it           -5.10 +-0.06                        -3.96 +-0.09
+    hidden 0, |d| < 1             +20.9 +-1.1  (0.042; 94% on cut)    +17.9 +-4.2 (0.006)
+    hidden 1, |d| < 1 / 1..3      +11.4 +-1.3 / +9.5 +-1.3, +15.7 +-1.2 (0.118 in all)   -2.8 +-2.8 / -1.0 +-2.0, +2.3 +-2.9 (0.042)
+    hidden 2, |d| < 1 / 1..3      +3.3 +-1.1 / +3.6 +-1.1, +7.9 +-1.0 (0.215 in all)    -2.7 +-1.9 / -1.6 +-1.5, -4.9 +-1.8 (0.146)
+    hidden 3+, |d| < 3            -4.4 .. -5.9 (0.53)                 -2.1 .. -4.2
+    anything with |d| >= 3        -1.3 .. -4.7                        -2.1 .. -4.8
+
+Rule "do not call when at most 2 opponent cards are hidden and its score + estimate is within 3 of a cut (within 0.5
+when none is hidden)": per match +0.88 + 1.48 + 1.10 = +3.5 against hm5, and +0.10 - 0.02 - 0.47 = -0.4 against the
+trained net (which does not sit on cuts). The exact part alone (no hidden card): +0.88 / +0.10, never wrong.
+
+## 3. Design: `training/yaniv/contest_fable_match.py` (`build(**kw)`; with no arguments it is contest_fable's net, weights
+identical, checked array by array)
+
+Constants picked by hand, once, from the bands of section 2 (no sweep):
+- CUT weights (re-uses contest_fable's cut units, +2 hidden units): the 100 cut's threat reaches 0 at est 18 instead of
+  15 (THI 100: 18; positive at est 12-15 against all three, at 15-20 only against hm5); open take landing on 100:
+  x threat 18 -> 24 (near 100 a point is worth 1-2 of match-win % instead of 0.6, and the hand I give up to land is
+  often over 100 anyway); deck weight 20 -> 40 at 100 and 20 -> 30 at 50 (the forced ten-draw gained +3..+6 at est < 12
+  against all three, with the old weight already in the hero). The 50 cut's open take and threat range unchanged
+  (est 12-15: +1.3 / +0.3 / -1.1).
+- DENY = (3, 2) (+22 units): Yaniv veto when at most 2 opponent cards are hidden and its score + opp_est is within 0.5
+  of 50 / 100, or within 3 with 1-2 hidden cards (section 2.5). A -5 term in the sum of call reasons, so it also
+  overrides a "sure" call (a sure call still hands over the cut).
+- BUSTCALL = 0.15 (+4 units): Yaniv reason when my score + my points > 100 (a lost round ends the match anyway) and
+  assaf < 0.15 (+3.7 / +2.3 v hm5, +4.6 / +3.6 v trained at assaf 0.05-0.2; ~0.05 a match: small, kept because it is
+  the one score-band call rule with the same sign against hm5 and trained).
+- Built and measured-as-useless, left off (code kept as options): FATAL (veto when a caught call ends the match),
+  BUST / BUST_T (penalty for holding over 100 - score).
+
+FULL = `py:contest_fable_match.build@{"OPEN":{"100":[1.5,24]},"DECK":{"50":30,"100":40},"THI":{"100":18},"DENY":[3,2],"BUSTCALL":0.15}`
+       586 hidden units (contest_fable: 558; +28).
+CUT  = the same without DENY and BUSTCALL: 560 hidden units.
+
+Move check: `python -m training.yaniv.contest_fable_match_check '<FULL kwargs>' 300` (300 hm5 v hm5 matches, 33,132
+decisions of seat 0, FULL's move compared with hm5's, Kit.trace on the unexplained): 270 differ. 105 call -> throw, 100
+of them with the deny predicate true (the other 5 on the 0.5-point ramp at the edge), 2 predicate-true calls kept
+(edge). 158 throw -> other throw: 78 open takes landing on a cut, 80 deck draws that can land on a cut, 0 other.
+7 throw -> call, all 7 "out if I lose, assaf < 0.15". 4 of 5,988 decisions at low scores differ (deny).
