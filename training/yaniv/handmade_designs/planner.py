@@ -2,7 +2,7 @@
 
 Every weight is chosen by reasoning, none is trained. A throw is valued in points (higher is better):
 
-    score = - wH * H - wP * P + B - gifts - 2 * cards kept
+    score = - wH * H - wP * P + B - gifts - 3 * cards kept + 0.15 * pts per extra card of a rank - info
 
   H  points I hold after the move: kept + the card coming in (the open card's, or the unseen average).
      This is what I pay if the opponent calls before my next turn.
@@ -15,7 +15,12 @@ Every weight is chosen by reasoning, none is trained. A throw is valued in point
      open card is taken, from the unseen counts when drawing from the deck.
   gifts  a low card left face up (the opponent takes it instead of a ~5.5 deck card), and a card
      of a rank the opponent is known to hold (it takes it and has a pair to shed).
-  cards kept  a smaller hand stays smaller for the rest of the round.
+  cards kept  a smaller hand stays smaller for the rest of the round; a second card of a rank is worth
+     0.15 * its points (a high set sheds a lot in one throw; a low pair just clogs two of four slots).
+  info  taking the open card shows it; when the opponent's estimate is <= 9, 0.3 per point taken.
+  catch  when the opponent's estimate is <= 7, B counts twice (a low hand also catches its call).
+
+Variants and their results: SCRATCH/logs/planner.md.
 
 The Yaniv call is a separate, simple rule (add_yaniv_units).
 """
@@ -36,13 +41,17 @@ SCRATCH = "/tmp/claude-0/-home-user-yaniv-master/ecf1221d-8c18-559f-9f3b-91b1597
 # --- reasoning constants -----------------------------------------------------------------------
 UNSEEN_N = 43.0        # typical count of unseen cards mid-round (stands in for unseen_n in P(X = rank))
 W_H, W_P = 0.25, 0.75  # no danger: the plan matters most, the present a quarter
-DANGER = [(13.0, 0.15), (11.0, 0.15), (9.0, 0.15), (7.0, 0.15)]  # opp_est (points) at or under t: move delta of weight P -> H
+DANGER = [(11.0, 0.15), (9.0, 0.15), (7.0, 0.15), (5.0, 0.15)]  # opp_est (points) at or under t: move delta of weight P -> H
 CALL_BONUS = {7: 3.0, 6: 0.8, 5: 0.8, 4: 0.8, 3: 0.8, 2: 0.8, 1: 0.8, 0: 0.8}  # B(h) = sum_{t >= h} CALL_BONUS[t]
 CATCH = 1.0            # when the opponent's estimate is <= 7: the call bonus counts again (low hands catch its call)
 GIFT_LOW = 0.3         # per point the face-up card is under the unseen average
 GIFT_MATCH = (0.5, 0.25)  # leaving a rank the opponent is known to hold: 0.5 + 0.25 * points (its pair sheds that much more)
-CARD_COST = 2.0        # per card kept
-DUP_VALUE = 1.5        # per card kept beyond the first of its rank: the hand shrinks when the set is thrown
+CARD_COST = 3.0        # per card kept (no danger)
+CARD_RELIEF = 0.0      # card cost removed per danger step (tried 1.0 with CARD_COST 4.5: worse, v13)
+INFO_PER_PT = 0.3      # per point of a taken open card when the opponent is near a call (it sees the card)
+TAKE_INFO = 0.0        # a flat cost on taking the open card (tried 1.5: worse, v11)
+DUP_VALUE = 0.15       # * rank points, per card kept beyond the first of its rank: a high set sheds a lot later;
+                       # a low pair only clogs two of four slots
 
 
 def _cdf(v: int) -> dict[str, float]:
@@ -149,12 +158,20 @@ def add_throw_units(kit: Kit) -> None:
                  note=f"P when the opponent's estimate is <= {t}")
     kit.unit(layer + 2, "plan", P, note="points after my next best throw")
 
-    out = {"plan": -W_P, "n_kept": -CARD_COST * 5.0, "gift_low": -GIFT_LOW}
+    out = {"plan": -W_P, "n_kept": -CARD_COST * 5.0, "gift_low": -GIFT_LOW, "take_open": -TAKE_INFO}
     for r, p in zip(RANK_NAMES, RANK_POINTS):
-        out[f"dup_{r}"] = DUP_VALUE
-        out[f"pairX_{r}"] = DUP_VALUE + 0.5 * p  # a drawn pair also sheds more next turn
+        out[f"dup_{r}"] = DUP_VALUE * p
+        out[f"pairX_{r}"] = DUP_VALUE * p + 0.5 * p  # a drawn pair also sheds more next turn
 
     out = _add(out, H, scale=[1.0, -W_H])
+    for t, _ in DANGER:  # a smaller hand pays off over future turns; when the round is about to end it does not
+        kit.unit(2, f"dN{int(t)}", {"n_kept": 5.0, f"dz{int(t)}_a": 5.0, f"dz{int(t)}_b": -5.0}, -5.0,
+                 note=f"cards kept when the opponent's estimate is <= {t}")
+        out[f"dN{int(t)}"] = CARD_RELIEF
+    # Taking the open card shows it: an opponent near a call learns my minimum rises by its points and calls safely.
+    kit.unit(2, "shown_pts", {"incoming": 10.0, "take_open": 10.0, "dz9_a": 10.0, "dz9_b": -10.0}, -20.0,
+             note="points of the open card I take, when the opponent's estimate is <= 9")
+    out["shown_pts"] = -INFO_PER_PT
     for t, delta in DANGER:
         out = _add(out, {f"dH{int(t)}": -delta, f"dP{int(t)}": delta})
     for j in range(8):
@@ -176,14 +193,14 @@ def add_yaniv_units(kit: Kit) -> None:
 
     Calling with m points wins the opponent's hand (~10) or loses m + 30; the lower m, the more of the
     opponent's hands lose to me and the cheaper a catch is, so the tolerated risk grows faster as m falls:
-    thr(m) = 0.025 at 7, .06, .09, .13, .18, .25, .33, 0.45 at 0.
+    thr(m) = 0.04 at 7, .06, .09, .13, .18, .25, .33, 0.45 at 0.
     """
-    kinks = {7: 0.015, 6: 0.01, 5: 0.01, 4: 0.01, 3: 0.02, 2: 0.01, 1: 0.04}  # extra slope below each kink
+    kinks = {6: 0.01, 5: 0.01, 4: 0.01, 3: 0.02, 2: 0.01, 1: 0.04}  # extra slope below each kink
     for k in kinks:
         kit.unit(1, f"m_under{k}", {"my_pts": -40.0}, float(k), note=f"how far my points are under {k}")
     thr = _add({"my_pts": -0.02 * 40.0}, {f"m_under{k}": w for k, w in kinks.items()})
     x = _add(thr, {"assaf": -1.0}, scale=[100.0, 100.0])
-    base = 100.0 * (0.025 + 0.02 * 7)
+    base = 100.0 * (0.04 + 0.02 * 7)
     kit.unit(2, "call_a", x | {"yaniv": 40.0}, base - 40.0)
     kit.unit(2, "call_b", x | {"yaniv": 40.0}, base - 40.0 - 1.0)
     kit.out({"call_a": 200.0, "call_b": -200.0, "yaniv": -100.0})

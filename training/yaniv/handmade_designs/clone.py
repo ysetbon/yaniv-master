@@ -21,7 +21,16 @@ How each piece is written with ReLUs (every quantity in whole points / whole car
   Yaniv: thr(my_pts) is piecewise linear in my_pts; call = step(thr - assaf) OR sure_yaniv,
      the Yaniv row gets -200 + 400*call so it beats every throw exactly when the counter would call.
 
-Variants (VARIANT dict) add reasoned changes on top of the clone; see the log.
+build({}) is the pure clone (parity with the counter: official margin +0.27, 100% same throws up to exact
+ties, Yaniv differences only from the counter's sampled Assaf risk). build() is BEST, the clone plus:
+  - w (weight of current points) by the opponent's lean-low estimated total opp_est instead of its card
+    count: w = P(opponent calls before my next turn) + 0.05, measured 0.55/0.30/0.18/0.08/0.04/0.01 for
+    opp_est < 5, 5-8, 8-11, 11-14, 14-17, 17+ points;
+  - catch bonus 30 * pi_b * P(my hand after the draw <= m_b): when the opponent calls and I am at or
+    under its total it is Assaf for them (one-hot of kept points x one-hot of n gives P exactly);
+  - feeding penalty (1 + 0.5 * points) for leaving face up a rank the opponent is known to hold;
+  - Yaniv: call if sure, or assaf <= 0.5 thr(pts), or (assaf <= 1.75 thr(pts) and opp_est - pts >= 3),
+    since the true risk is ~3x the uniform assaf, but only ~1.5-2x when the opponent looks 3+ points higher.
 """
 
 from __future__ import annotations
@@ -56,8 +65,17 @@ DEFAULT = dict(
     callB=0.0,          # bonus for the chance of holding 7 or less after the draw (may call next turn)
 )
 
+BEST = dict(
+    est={"cuts": [5, 8, 11, 14, 17], "w": [0.60, 0.35, 0.23, 0.13, 0.09, 0.06],
+         "pi": [0.55, 0.30, 0.18, 0.08, 0.04, 0.01], "m": [3, 5, 5, 6, 6, 6], "catch": 30},
+    feed=[1.0, 0.5],
+    call2={"A": 1.75, "B": 0.5, "d": 3},
+)
+
 
 def build(variant: dict | None = None):
+    if variant is None:
+        variant = BEST
     v = dict(DEFAULT)
     if variant:
         v.update(variant)
@@ -175,11 +193,38 @@ def build(variant: dict | None = None):
 
     # ---------------- layer 10: (1 - w) * E[maxgroup]
     Ew = {"M": 1.0, "op": 1.0, **{f"v{k}": 1.0 for k in range(1, 51)}}
-    for N in range(1, 6):
-        kit.unit(L + 3, f"z{N}", {**Ew, f"opp_has_{N}": 100.0}, -100.0, "E[maxgroup] if opp has N cards")
-
-    wmix = {int(n): x for n, x in v["w"].items()}
-    out = {f"z{N}": 1.0 - wmix[N] for N in range(1, 6)}
+    out = {}
+    if not v.get("est"):
+        wmix = {int(n): x for n, x in v["w"].items()}
+        for N in range(1, 6):
+            kit.unit(L + 3, f"z{N}", {**Ew, f"opp_has_{N}": 100.0}, -100.0, "E[maxgroup] if opp has N cards")
+            out[f"z{N}"] = 1.0 - wmix[N]
+    else:
+        # w from the opponent's lean-low estimated total (opp_est): the chance it calls before my next turn
+        est = dict(v["est"])
+        inds = est_buckets(kit, est["cuts"])
+        if est.get("pi2"):
+            # buckets of (opp_est, opponent's card count): pi2[b][N-1] = chance it calls before my next turn
+            cells, ws, pis, ms = [], [], [], []
+            for b, ind in enumerate(inds):
+                for N in range(1, 6):
+                    kit.unit(4, f"ebc{b}_{N}", {ind: 1.0, f"opp_has_{N}": 1.0}, -1.0, "opp_est bucket b and N cards")
+                    cells.append(f"ebc{b}_{N}")
+                    pis.append(est["pi2"][b][N - 1])
+                    ws.append(est["pi2"][b][N - 1] + est.get("wplus", 0.05))
+                    ms.append(est["m"][b])
+            inds, est["w"], est["pi"], est["m"] = cells, ws, pis, ms
+        for b, ind in enumerate(inds):
+            kit.unit(L + 3, f"zb{b}", {**Ew, ind: 100.0}, -100.0, "E[maxgroup] if opp_est in bucket b")
+            out[f"zb{b}"] = 1.0 - est["w"][b]
+        if est.get("catch"):
+            # bonus * pi_b * P(my hand after the draw <= m_b): catching the opponent's call (Assaf for them)
+            for b, ind in enumerate(inds):
+                if est["pi"][b] <= 0:
+                    continue
+                pm = p_le_units(kit, est["m"][b])
+                kit.unit(5, f"cat{b}", {**pm, ind: 1.0}, -1.0, "P(hand <= m_b) if opp_est in bucket b")
+                out[f"cat{b}"] = est["catch"] * est["pi"][b]
     eps = 1e-3
     out["pts_kept"] = -40.0 * (1 + eps)
     out["incoming"] = -10.0 * (1 + eps)
@@ -192,34 +237,75 @@ def build(variant: dict | None = None):
     if v["extra"]:
         kit.out(v["extra"])
     if v.get("callB"):
-        callable_units(kit, v["callB"])
+        kit.out({name: v["callB"] * w for name, w in p_le_units(kit, 7).items()})
+    if v.get("feed"):
+        # leaving face up a rank the opponent is known to hold hands it a set
+        known = [f"known_{RANK_NAMES[r]}" for r in range(14)]
+        for r in range(14):
+            kit.unit(1, f"feed{r}", {throw[r]: 1.0, known[r]: 4.0}, -1.0, "top rank the opponent holds")
+            kit.out({f"feed{r}": -(v["feed"][0] + v["feed"][1] * P[r])})
+    if v.get("stocklean"):
+        # The stock is the unseen pool minus the opponent's hidden cards, which lean low, so a deck card is worth
+        # about X / (n - h) more than the unseen average: X = h * avg - (opp_est - known_pts), h hidden cards.
+        for j in range(-1, 6):
+            kit.unit(1, f"hr{j}", {"opp_cards": 5.0, "known_n": -5.0}, -float(j), "relu(h - j)")
+        for j in range(1, 5):
+            kit.unit(2, f"hh{j}", {f"hr{j-1}": 1.0, f"hr{j}": -2.0, f"hr{j+1}": 1.0}, 0.0, "1 if h == j")
+            kit.unit(3, f"hav{j}", {"unseen_avg": 10.0 * j, f"hh{j}": 100.0}, -100.0, "h * unseen average")
+        kit.unit(4, "slX", {**{f"hav{j}": 1.0 for j in range(1, 5)}, "opp_est": -40.0, "known_pts": 40.0}, 0.0,
+                 "points the hidden cards fall short of the unseen average")
+        for k in range(5, 51):
+            kit.unit(5, f"sl{k}", {"slX": 1.0 / (k - 3), f"ni{k}": 100.0, "draw_deck": 100.0}, -200.0,
+                     "extra points of a deck card, if n == k (h taken as 3)")
+            kit.out({f"sl{k}": -v["stocklean"]})
     return kit.build(), kit
 
 
-def callable_units(kit: Kit, bonus: float) -> None:
-    """bonus * P(the hand after the draw is 7 or less, so I may call Yaniv next turn).
+def est_buckets(kit: Kit, cuts: list[float]) -> list[str]:
+    """One-hot (layer 3) of the bucket of opp_est (in points) between the cuts."""
+    Kst = 1000.0
+    for i, t in enumerate(cuts):
+        kit.unit(2, f"es{i}_p", {"opp_est": 40.0 * Kst}, -Kst * t + 1.0, "ramp est - t")
+        kit.unit(2, f"es{i}_n", {"opp_est": 40.0 * Kst}, -Kst * t, "ramp shifted")
+    names = []
+    for b in range(len(cuts) + 1):
+        w = {}
+        if b > 0:
+            w.update({f"es{b-1}_p": 1.0, f"es{b-1}_n": -1.0})
+        if b < len(cuts):
+            w.update({f"es{b}_p": -1.0, f"es{b}_n": 1.0})
+        kit.unit(3, f"eb{b}", w, 0.0 if b > 0 else 1.0, "1 if opp_est in bucket b")
+        names.append(f"eb{b}")
+    return names
 
-    K = points kept (integer). Deck: P = #(unseen worth <= 7 - K) / n, one-hot on K and on n.
-    Open card: 1 if K + open points <= 7.
+
+def p_le_units(kit: Kit, m: int) -> dict[str, float]:
+    """P(points after the draw <= m), as weights on layer <= 4 units (exact: one-hot on kept points and n).
+
+    K = points kept. Deck: #(unseen worth <= m - K) / n. Open card: 1 if K + open points <= m.
     """
     unseen = [f"unseen_{RANK_NAMES[r]}" for r in range(14)]
-    for j in range(-1, 9):
-        kit.unit(1, f"kr{j}", {"pts_kept": 40.0}, -float(j), "relu(K - j)")
-    kit.unit(1, "osum8", {"pts_kept": -40.0, "open_pts": -10.0}, 8.0, "relu(8 - K - open)")
-    kit.unit(1, "osum7", {"pts_kept": -40.0, "open_pts": -10.0}, 7.0, "relu(7 - K - open)")
-    for k in range(0, 8):
-        kit.unit(2, f"kh{k}", {f"kr{k-1}": 1.0, f"kr{k}": -2.0, f"kr{k+1}": 1.0}, 0.0, "1 if K == k")
-    kit.unit(2, "ocall", {"osum8": 1.0, "osum7": -1.0, "take_open": 1.0}, -1.0,
-             "takes the open card and lands on 7 or less")
-    for k in range(0, 8):
-        low = {unseen[r]: 4.0 for r in range(14) if RANK_POINTS[r] <= 7 - k}
-        kit.unit(3, f"lowc{k}", {**low, f"kh{k}": 60.0}, -60.0, "unseen cards that keep me at 7 or less")
+    if "kr0" not in kit.level:
+        for j in range(-1, 9):
+            kit.unit(1, f"kr{j}", {"pts_kept": 40.0}, -float(j), "relu(K - j)")
+        for k in range(0, 8):
+            kit.unit(2, f"kh{k}", {f"kr{k-1}": 1.0, f"kr{k}": -2.0, f"kr{k+1}": 1.0}, 0.0, "1 if K == k")
+    tag = f"m{m}"
+    if f"{tag}pc1" in kit.level:
+        return {**{f"{tag}pc{n}": 1.0 for n in range(1, 51)}, f"{tag}oc": 1.0}
+    kit.unit(1, f"{tag}o1", {"pts_kept": -40.0, "open_pts": -10.0}, m + 1.0, "relu(m + 1 - K - open)")
+    kit.unit(1, f"{tag}o0", {"pts_kept": -40.0, "open_pts": -10.0}, float(m), "relu(m - K - open)")
+    kit.unit(2, f"{tag}oc", {f"{tag}o1": 1.0, f"{tag}o0": -1.0, "take_open": 1.0}, -1.0,
+             "takes the open card and lands on m or less")
+    for k in range(0, m + 1):
+        low = {unseen[r]: 4.0 for r in range(14) if RANK_POINTS[r] <= m - k}
+        kit.unit(3, f"{tag}lc{k}", {**low, f"kh{k}": 60.0}, -60.0, "unseen cards that keep me at m or less")
     for n in range(1, 51):
-        w = {f"lowc{k}": 1.0 / n for k in range(8)}
+        w = {f"{tag}lc{k}": 1.0 / n for k in range(m + 1)}
         w[f"ni{n}"] = 100.0
         w["draw_deck"] = 100.0
-        kit.unit(4, f"pc{n}", w, -200.0, "P(callable) for a deck draw, if n == unseen count")
-    kit.out({**{f"pc{n}": bonus for n in range(1, 51)}, "ocall": bonus})
+        kit.unit(4, f"{tag}pc{n}", w, -200.0, "P(hand <= m) for a deck draw, if n == unseen count")
+    return {**{f"{tag}pc{n}": 1.0 for n in range(1, 51)}, f"{tag}oc": 1.0}
 
 
 if __name__ == "__main__":
