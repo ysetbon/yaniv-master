@@ -1,6 +1,6 @@
 # Real-game measurements (5 cards, Yaniv at 7)
 
-**Status: parts a-d final (20,000 rounds). Parts e, f, g are being appended below as they finish.**
+**Status: all parts (a-g) final.** One script: `training/yaniv/handmade5_measure.py` (`part1`, `e`, `f`, `g`); own seeds 900000-905999.
 
 ## Summary for designers (details and sample sizes in the sections)
 
@@ -14,6 +14,11 @@
 | P(hm4's hand <= counter's total when the counter calls) | 10.1% (counter in the same seat: 7.0%) | - |
 | rounds reaching both <= 4 / my decisions after it | 81% / 48% | - |
 | calls made while a hand still holds 5 cards | 15.8% of all calls | - |
+| low pair thrown with a much higher single in hand (counter / hm4 / trained) | 2s: 3% / 9% / 68%; 3s: 5% / 85% / 96%; 4s: 9% / 98% / 98% | - |
+| unpaired open card taken (counter / hm4 / trained) | a 3: 99 / 85 / 93%; a 4: 79 / 1 / 23%; a 5: 41 / 0 / 7% | - |
+| one card fewer for me, in result points at equal held points | 3.7 at ply 4, 2.7 at ply 8, 2.0 at ply 12 (rollout: +2.6) | - |
+| the same in held points, against 5 / 4 / 3 / 2 opponent cards (ply 8) | about 7.5 / 5.5 / 4 / 2.5 | card charge 5, 3 against 1-2 cards |
+| match-score units | 70.0% of matches with, 62.0% without (3,000 matches each); 0.48 cuts a match against 0.10 | carried the 4-card net's matches |
 
 
 Script: `python -m training.yaniv.handmade5_measure part1 --rounds 20000` (seeds 900000+). Rounds start from 0-0, seats and the lead alternate. hm4 = the 4-card hand-written net playing the whole real game unchanged. `opp_est` and `assaf` are the net's inputs 94 and 95 (x40 for opp_est) at my decision, before my throw. Games: hm4 vs counter 20,000 rounds, counter vs counter 20,000 (both seats counted as 'me'), trained vs counter 10,000.
@@ -415,3 +420,234 @@ Share of all calls by (caller's cards, other's cards), both callers together:
 | 3 | 5.2% | 15.8% | 13.4% | 2.8% | 0.1% |
 | 2 | 4.3% | 12.9% | 11.5% | 4.0% | 0.5% |
 | 1 | 1.2% | 2.5% | 3.1% | 1.8% | 0.4% |
+## e. Behaviour while someone holds 5 cards
+
+**Reading (e).** While someone holds 5 cards the three players throw sets of 6+ points alike (93-98%) and never break a pair. They differ on LOW pairs when a much higher single is in hand (H >= 2X): **pair of 2s: counter 3%, hm4 9%, trained 68%; pair of 3s: 5% / 85% / 96%; pair of 4s: 9% / 98% / 98%; pair of 5s: 56% / 99% / 99%**; aces and jokers are never thrown as a pair by anyone. The trained net throws a pair of 2s more when the opponent still has 5 cards (35% against 20%).
+Open card, unpaired: everyone takes 0-2; a 3: counter 99%, hm4 85%, trained 93%; **a 4: 79% / 1% / 23%; a 5: 41% / 0% / 7%**; 6+ never. A card whose rank I hold is taken 96-100% of the time by all three, whatever its value (and the matching card is kept).
+hm4 and the trained net differ on 12.3% of these positions (16.7% at 5-5, 7-11% elsewhere with enough samples; the (5,1) and (1,5) cells have ~100 positions). **42% of those differences are only which ten-point rank (T/J/Q/K) is thrown** - same points, so the real disagreement rate is about 7%. The real kinds, in order: (1) the trained net throws a low pair (mostly 2s) where hm4 throws its highest single, 23%; (2) the trained net takes an unpaired open 4-6 that hm4 leaves, 8%; (3) the trained net throws a lower single and keeps a high one (sometimes to take an open card that pairs it), 7%; (4) both hold two sets and throw a different one / three of a kind against two, 6%; (5) with a hand of low cards hm4 throws a lower single than its highest, 5%. Nothing here says which of the two is right: f and the designers' tests must.
+
+`python -m training.yaniv.handmade5_measure e --rounds 6000`: 41,752 positions (my decisions with 5 cards in my hand or the opponent's), from 6,000 rounds of hm4 vs counter and 6,000 of trained vs counter (seeds 903000+). The three players choose on the same positions. Cells: counter / hm4 / trained (samples).
+
+### e1. A set is available (exactly one rank held twice or more; Yaniv not legal)
+
+P(throws the set), by the rank's points X and the highest other card H:
+
+| pair of X points each | H >= 2X | X < H < 2X | H <= X | any H |
+|---|---|---|---|---|
+| 0 (jokers) | 0.00 / 0.00 / 0.00 (453) | - | - | 0.00 / 0.00 / 0.00 (453) |
+| 1 | 0.00 / 0.00 / 0.01 (2470) | - | - | 0.00 / 0.00 / 0.01 (2470) |
+| 2 | 0.03 / 0.09 / 0.68 (1790) | 0.97 / 0.97 / 0.97 (75)* | 1.00 / 1.00 / 1.00 (1)** | 0.07 / 0.12 / 0.69 (1867) |
+| 3 | 0.05 / 0.85 / 0.96 (794) | 0.95 / 0.99 / 0.99 (188) | 0.97 / 1.00 / 0.97 (73)* | 0.28 / 0.89 / 0.97 (1057) |
+| 4 | 0.09 / 0.98 / 0.98 (562) | 0.94 / 0.97 / 0.97 (316) | 0.97 / 0.97 / 0.99 (231) | 0.52 / 0.98 / 0.98 (1124) |
+| 5 | 0.56 / 0.99 / 0.99 (410) | 0.91 / 0.98 / 0.96 (451) | 0.96 / 0.98 / 0.98 (355) | 0.81 / 0.98 / 0.98 (1238) |
+| 6 | - | 0.97 / 0.97 / 0.95 (789) | 0.97 / 0.98 / 0.98 (424) | 0.97 / 0.97 / 0.96 (1226) |
+| 7 | - | 0.97 / 0.97 / 0.95 (662) | 0.96 / 0.98 / 0.96 (593) | 0.97 / 0.98 / 0.96 (1268) |
+| 8 | - | 0.96 / 0.96 / 0.96 (510) | 0.96 / 0.97 / 0.96 (644) | 0.96 / 0.97 / 0.96 (1166) |
+| 9 | - | 0.95 / 0.95 / 0.92 (480) | 0.96 / 0.96 / 0.94 (736) | 0.96 / 0.96 / 0.93 (1227) |
+| 10 | - | - | 0.94 / 0.94 / 0.93 (4531) | 0.94 / 0.94 / 0.93 (4558) |
+| any | 0.06 / 0.28 / 0.46 (6479) | 0.96 / 0.97 / 0.95 (3471) | 0.95 / 0.96 / 0.94 (7588) | 0.62 / 0.71 / 0.77 (17654) |
+
+What is done instead: P(keeps the pair and throws another card) and P(breaks the pair):
+
+| pair | throws the set | keeps the pair, throws another card | breaks the pair | throws the set when the opp has 5 | throws the set when the opp has <= 4 |
+|---|---|---|---|---|---|
+| X 0-2 | 0.03 / 0.05 / 0.27 (4790) | 0.97 / 0.95 / 0.73 (4790) | 0.00 / 0.00 / 0.00 (4790) | 0.03 / 0.05 / 0.35 (2315) | 0.03 / 0.05 / 0.20 (2475) |
+| X 3-5 | 0.55 / 0.95 / 0.97 (3419) | 0.45 / 0.05 / 0.03 (3419) | 0.00 / 0.00 / 0.00 (3419) | 0.50 / 0.95 / 0.98 (2225) | 0.64 / 0.97 / 0.96 (1194) |
+| X 6-9 | 0.96 / 0.97 / 0.95 (4887) | 0.04 / 0.03 / 0.05 (4887) | 0.00 / 0.00 / 0.00 (4887) | 0.96 / 0.96 / 0.94 (3363) | 0.98 / 0.98 / 0.97 (1524) |
+| X 10 | 0.94 / 0.94 / 0.93 (4558) | 0.06 / 0.06 / 0.07 (4558) | 0.00 / 0.00 / 0.00 (4558) | 0.93 / 0.93 / 0.91 (3385) | 0.99 / 0.98 / 0.98 (1173) |
+
+Three of a kind held (or four): P(throws the whole set): 0.67 / 0.73 / 0.77 (991)
+
+### e2. Taking the open card (Yaniv not legal)
+
+| open card's points | unpaired: takes it | unpaired, opp has 5 | unpaired, opp has <= 4 | its rank is in my hand: takes it | ... takes it and keeps the matching card (builds a set) |
+|---|---|---|---|---|---|
+| 0 | 1.00 / 1.00 / 1.00 (207) | 1.00 / 1.00 / 1.00 (207) | - | 1.00 / 1.00 / 1.00 (22)** | 1.00 / 1.00 / 1.00 (22)** |
+| 1 | 1.00 / 1.00 / 1.00 (331) | 1.00 / 1.00 / 1.00 (331) | - | 1.00 / 1.00 / 1.00 (104) | 1.00 / 1.00 / 1.00 (104) |
+| 2 | 1.00 / 1.00 / 1.00 (432) | 1.00 / 1.00 / 1.00 (357) | 1.00 / 1.00 / 0.99 (75)* | 1.00 / 1.00 / 1.00 (159) | 1.00 / 1.00 / 1.00 (159) |
+| 3 | 0.99 / 0.85 / 0.93 (584) | 0.99 / 0.87 / 0.94 (391) | 1.00 / 0.80 / 0.92 (193) | 1.00 / 0.99 / 1.00 (306) | 1.00 / 0.99 / 1.00 (306) |
+| 4 | 0.79 / 0.01 / 0.23 (1234) | 0.69 / 0.00 / 0.21 (768) | 0.96 / 0.02 / 0.27 (466) | 1.00 / 0.99 / 0.99 (568) | 0.98 / 0.98 / 0.98 (568) |
+| 5 | 0.41 / 0.00 / 0.07 (1782) | 0.32 / 0.00 / 0.10 (1067) | 0.55 / 0.00 / 0.02 (715) | 0.97 / 0.97 / 0.98 (731) | 0.96 / 0.97 / 0.97 (731) |
+| 6 | 0.02 / 0.00 / 0.02 (2166) | 0.01 / 0.00 / 0.03 (1282) | 0.03 / 0.00 / 0.00 (884) | 0.98 / 0.98 / 0.97 (780) | 0.98 / 0.98 / 0.97 (780) |
+| 7 | 0.00 / 0.00 / 0.01 (2668) | 0.00 / 0.00 / 0.01 (1639) | 0.00 / 0.00 / 0.00 (1029) | 0.96 / 0.97 / 0.97 (873) | 0.96 / 0.97 / 0.97 (873) |
+| 8 | 0.00 / 0.00 / 0.00 (3119) | 0.00 / 0.00 / 0.00 (2029) | 0.00 / 0.00 / 0.00 (1090) | 0.94 / 0.97 / 0.97 (865) | 0.94 / 0.97 / 0.97 (865) |
+| 9 | 0.00 / 0.00 / 0.00 (3345) | 0.00 / 0.00 / 0.00 (2223) | 0.00 / 0.00 / 0.00 (1122) | 0.96 / 0.98 / 0.98 (831) | 0.96 / 0.98 / 0.98 (831) |
+| 10 | 0.00 / 0.00 / 0.00 (16063) | 0.00 / 0.00 / 0.00 (11221) | 0.00 / 0.00 / 0.00 (4842) | 0.96 / 0.98 / 0.99 (3393) | 0.96 / 0.98 / 0.99 (3393) |
+
+### e3. How often the players differ, by (my cards, opponent's cards)
+
+| my cards, opp cards | positions | hm4 differs from trained | hm4 differs from counter | trained differs from counter |
+|---|---|---|---|---|
+| 5, 5 | 16898 | 16.7% | 22.3% | 21.9% |
+| 5, 4 | 9008 | 10.9% | 15.7% | 16.8% |
+| 5, 3 | 3143 | 8.1% | 18.4% | 15.8% |
+| 5, 2 | 757 | 12.0% | 21.4% | 14.9% |
+| 5, 1 | 97* | 20.6% | 29.9% | 15.5% |
+| 4, 5 | 7496 | 7.3% | 9.0% | 9.7% |
+| 3, 5 | 3271 | 8.4% | 7.1% | 8.2% |
+| 2, 5 | 978 | 13.3% | 6.9% | 10.4% |
+| 1, 5 | 104 | 13.5% | 13.5% | 5.8% |
+| all | 41752 | 12.3% | 16.6% | 16.6% |
+
+### e4. The most common kinds of hm4-vs-trained disagreement (5,146 disagreements)
+
+- **both throw a ten-point single but a different rank of the same points (which of T/J/Q/K goes)**: 2147 (41.7%)
+  - hand 2♠ 3♥ 6♦ T♥ Q♣ (31 pts), open K♠, opponent 5 cards, ply 1: hm4 throws Q, draws from the deck; trained throws T, draws from the deck; counter throws T, draws from the deck
+  - hand 2♣ 6♦ T♣ J♠ K♥ (38 pts), open Q♥, opponent 5 cards, ply 1: hm4 throws T, draws from the deck; trained throws K, draws from the deck; counter throws T, draws from the deck
+  - hand 4♠ 5♣ 8♦ Q♣ K♠ (37 pts), open 7♥, opponent 5 cards, ply 0: hm4 throws Q, draws from the deck; trained throws K, draws from the deck; counter throws K, draws from the deck
+- **hm4 throws its highest single, the trained net throws a set**: 1166 (22.7%)
+  - hand ★ A♦ 2♦ 2♠ 4♠ (9 pts), open 8♥, opponent 5 cards, ply 0: hm4 throws 4, draws from the deck; trained throws 2 x 2, draws from the deck; counter throws 4, draws from the deck
+  - hand 2♦ 2♥ 5♦ T♦ (19 pts), open K♥, opponent 5 cards, ply 3: hm4 throws T, draws from the deck; trained throws 2 x 2, draws from the deck; counter throws T, draws from the deck
+  - hand A♣ 2♦ 2♠ 4♥ 6♠ (15 pts), open K♥, opponent 5 cards, ply 1: hm4 throws 6, draws from the deck; trained throws 2 x 2, draws from the deck; counter throws 6, draws from the deck
+- **same throw; only the trained net takes the open card (worth 4-6, unpaired)**: 434 (8.4%)
+  - hand 2♦ 5♣ 6♠ 7♥ T♠ (30 pts), open 4♠, opponent 2 cards, ply 6: hm4 throws T, draws from the deck; trained throws T, takes the open card; counter throws T, takes the open card
+  - hand ★ A♦ A♠ 2♠ 7♥ (11 pts), open 5♦, opponent 1 cards, ply 9: hm4 throws 7, draws from the deck; trained throws 7, takes the open card; counter throws 7, takes the open card
+  - hand A♣ 2♥ 9♠ (12 pts), open 4♦, opponent 5 cards, ply 19: hm4 throws 9, draws from the deck; trained throws 9, takes the open card; counter throws 9, draws from the deck
+- **hm4 throws its highest single, the trained net throws a lower single**: 349 (6.8%)
+  - hand 2♦ 5♣ 6♠ 7♥ 9♠ (29 pts), open 6♣, opponent 2 cards, ply 8: hm4 throws 9, takes the open card; trained throws 7, takes the open card; counter throws 9, takes the open card
+  - hand ★ 2♣ 8♠ T♥ K♦ (30 pts), open T♣, opponent 5 cards, ply 0: hm4 throws K, takes the open card; trained throws 8, takes the open card; counter throws K, takes the open card
+  - hand 2♦ 4♥ T♥ J♠ Q♣ (36 pts), open 8♥, opponent 5 cards, ply 1: hm4 throws Q, draws from the deck; trained throws 2, draws from the deck; counter throws J, draws from the deck
+- **both throw a set but of a different rank and value**: 291 (5.7%)
+  - hand 3♥ 4♣ 8♣ 8♥ 8♠ (31 pts), open 8♦, opponent 5 cards, ply 5: hm4 throws 3 x 8, draws from the deck; trained throws 2 x 8, takes the open card; counter throws 4, takes the open card
+  - hand 3♥ 3♠ 4♣ J♦ J♥ (30 pts), open 8♥, opponent 4 cards, ply 1: hm4 throws 2 x J, draws from the deck; trained throws 2 x 3, draws from the deck; counter throws 2 x J, draws from the deck
+  - hand 2♦ 2♥ 5♦ T♣ T♠ (29 pts), open J♠, opponent 5 cards, ply 1: hm4 throws 2 x T, draws from the deck; trained throws 2 x 2, draws from the deck; counter throws 2 x T, draws from the deck
+- **hm4 throws a lower single, the trained net throws the highest single**: 236 (4.6%)
+  - hand A♥ 2♣ 3♥ 4♦ (10 pts), open 5♥, opponent 5 cards, ply 10: hm4 throws 3, draws from the deck; trained throws 4, draws from the deck; counter throws 4, draws from the deck
+  - hand ★ A♥ A♠ 3♣ 5♦ (10 pts), open J♠, opponent 5 cards, ply 1: hm4 throws 3, draws from the deck; trained throws 5, draws from the deck; counter throws 5, draws from the deck
+  - hand 3♥ 5♣ 6♦ 8♦ (22 pts), open K♣, opponent 5 cards, ply 4: hm4 throws 6, draws from the deck; trained throws 8, draws from the deck; counter throws 8, draws from the deck
+- **hm4 throws a lower single, the trained net throws a set**: 95 (1.8%)
+  - hand 2♣ 2♠ 6♣ 7♣ 8♠ (25 pts), open 8♥, opponent 3 cards, ply 5: hm4 throws 7, takes the open card; trained throws 2 x 2, takes the open card; counter throws 7, takes the open card
+  - hand 2♦ 2♠ 3♦ 6♦ K♠ (23 pts), open K♥, opponent 3 cards, ply 6: hm4 throws 6, takes the open card; trained throws 2 x 2, takes the open card; counter throws K, draws from the deck
+  - hand 2♦ 2♥ 6♥ Q♥ (20 pts), open Q♠, opponent 5 cards, ply 2: hm4 throws 6, takes the open card; trained throws 2 x 2, takes the open card; counter throws 6, takes the open card
+- **hm4 throws a set, the trained net throws a lower single**: 93 (1.8%)
+  - hand A♣ 2♦ 3♦ 8♣ 8♠ (22 pts), open 8♥, opponent 4 cards, ply 6: hm4 throws 2 x 8, draws from the deck; trained throws 3, takes the open card; counter throws 2 x 8, draws from the deck
+  - hand ★ 3♠ 7♣ 7♠ (17 pts), open 7♦, opponent 5 cards, ply 7: hm4 throws 2 x 7, draws from the deck; trained throws 3, takes the open card; counter throws 3, takes the open card
+  - hand 6♠ T♠ J♥ Q♥ Q♠ (46 pts), open ★, opponent 5 cards, ply 0: hm4 throws 2 x Q, takes the open card; trained throws 6, takes the open card; counter throws 2 x Q, takes the open card
+- **hm4 throws a set, the trained net throws the highest single**: 92 (1.8%)
+  - hand 3♣ 3♠ 7♣ 8♦ 9♠ (30 pts), open T♥, opponent 3 cards, ply 5: hm4 throws 2 x 3, draws from the deck; trained throws 9, draws from the deck; counter throws 9, draws from the deck
+  - hand 3♥ 6♣ 6♦ 7♥ 8♦ (30 pts), open K♦, opponent 5 cards, ply 5: hm4 throws 2 x 6, draws from the deck; trained throws 8, draws from the deck; counter throws 2 x 6, draws from the deck
+  - hand ★ A♦ 2♥ 2♠ 5♦ (10 pts), open 6♦, opponent 5 cards, ply 6: hm4 throws 2 x 2, draws from the deck; trained throws 5, draws from the deck; counter throws 5, draws from the deck
+## f. What a card is worth
+
+**Reading (f).** In result points (counter's added minus mine; a round is worth +-16): by the cell means, one card fewer for me is worth about **+4 at plies 4-8 and +3 at ply 12**, one card fewer for the counter costs the same; equal card counts give about +1 (hm4's edge). Holding points equal (f2), a card costs **3.7 at ply 4, 2.7 at ply 8, 2.0 at ply 12**, and a held point costs 0.28 / 0.53 / 0.73. The card's cost falls slowly as the opponent's hand shrinks (ply 8: 2.9 / 2.9 / 2.6 / 2.0 for 5 / 4 / 3 / 2 opp cards) while a point's cost doubles (0.38 / 0.51 / 0.62 / 0.77). **So in units of held points one card is worth about 7.5 / 5.5 / 4 / 2.5 points against 5 / 4 / 3 / 2 opponent cards at ply 8** (at ply 4: ~20 / 11 / 6; at ply 12: 3.5 / 3.3 / 2.5 / 1.8). The 4-card net's charge of 5 (3 against 1-2 cards) is right for 3-4 opponent cards and too low while the opponent holds 5, early.
+The rollouts agree in size: deleting a 0-2 point card of mine is worth +2.6 +-0.2 whatever the opponent's card count (2.3 at 2 cards), and the same to the counter (-2.7). Deleting a 3+ card is worth about +5.5 nearly whatever its value: a high card costs one turn, not its points - except late: a ten is worth +4.0 against 5 opponent cards and +7 to +9 against 3-2. Being the one to move is worth +3.
+Not reliable: any cell with the opponent or me on 1 card, ply-4 cells with 2 cards, and the "opp has 2" row at ply 4.
+
+`python -m training.yaniv.handmade5_measure f --rounds 30000`: 30,000 rounds of hm4 vs counter from 0-0 (seeds 904000+). Result = points the counter adds minus points I add, at the end of the round (overall mean +1.48). Cells: mean ±95% range (samples); `*` n<100, `**` n<30. A round's result has a standard deviation of about 16 points, so cells with under ~1,000 samples are only good to +-1.
+
+### f1. Mean final result by (my cards, opp cards) at ply 4 (29,769 rounds still going)
+
+| my cards \ opp cards | 5 | 4 | 3 | 2 | 1 |
+|---|---|---|---|---|---|
+| 5 | +0.9 ±0.5 (4937) | -2.7 ±0.4 (5186) | -7.6 ±0.8 (1361) | -11.7 ±2.8 (103) | -15.0 ±2.8 (2)** |
+| 4 | +5.2 ±0.4 (6369) | +1.2 ±0.4 (5923) | -3.7 ±0.9 (1427) | -9.1 ±2.9 (97)* | -13.3 ±2.3 (3)** |
+| 3 | +9.3 ±0.6 (2001) | +5.5 ±0.7 (1703) | +0.5 ±1.5 (423) | -10.1 ±4.6 (21)** | - |
+| 2 | +14.0 ±1.8 (105) | +12.6 ±1.9 (92)* | -0.7 ±8.6 (14)** | - | - |
+| 1 | +26.0 ±0.0 (1)** | - | +12.0 ±0.0 (1)** | - | - |
+
+### f1. Mean final result by (my cards, opp cards) at ply 8 (25,989 rounds still going)
+
+| my cards \ opp cards | 5 | 4 | 3 | 2 | 1 |
+|---|---|---|---|---|---|
+| 5 | +1.8 ±1.2 (752) | -2.5 ±0.7 (1807) | -5.6 ±0.8 (1422) | -10.1 ±1.4 (381) | -16.5 ±2.5 (23)** |
+| 4 | +4.3 ±0.6 (2242) | +1.2 ±0.5 (4718) | -3.1 ±0.6 (3153) | -6.9 ±1.1 (681) | -11.6 ±3.3 (54)* |
+| 3 | +8.4 ±0.6 (1996) | +5.2 ±0.5 (3771) | +1.0 ±0.6 (2107) | -3.3 ±1.5 (445) | -10.0 ±3.3 (28)** |
+| 2 | +12.1 ±0.8 (622) | +8.3 ±0.8 (997) | +4.9 ±1.0 (552) | -0.4 ±2.5 (90)* | -8.2 ±4.2 (4)** |
+| 1 | +14.3 ±2.5 (49)* | +11.6 ±2.7 (65)* | +8.5 ±3.8 (24)** | -6.2 ±12.9 (5)** | -4.0 ±0.0 (1)** |
+
+### f1. Mean final result by (my cards, opp cards) at ply 12 (16,663 rounds still going)
+
+| my cards \ opp cards | 5 | 4 | 3 | 2 | 1 |
+|---|---|---|---|---|---|
+| 5 | +1.2 ±2.5 (134) | -2.3 ±1.4 (509) | -4.4 ±1.3 (605) | -8.6 ±1.7 (255) | -9.2 ±4.8 (34)* |
+| 4 | +5.2 ±1.2 (577) | +1.3 ±0.7 (1795) | -2.1 ±0.7 (1960) | -4.3 ±1.1 (783) | -10.4 ±2.0 (74)* |
+| 3 | +6.8 ±0.9 (893) | +4.3 ±0.6 (2446) | +2.1 ±0.6 (2180) | -1.3 ±1.1 (829) | -4.0 ±3.2 (88)* |
+| 2 | +9.7 ±1.0 (464) | +7.6 ±0.7 (1140) | +4.1 ±0.7 (1055) | +1.5 ±1.2 (389) | -2.4 ±3.8 (36)* |
+| 1 | +11.1 ±1.8 (79)* | +8.5 ±1.5 (163) | +7.2 ±1.7 (116) | +4.1 ±1.4 (55)* | +0.8 ±6.1 (4)** |
+
+### f2. Matched comparison: least-squares fit of the final result on cards and points held
+
+result ~ const + a x my cards + b x my points + c x opp cards + d x opp points (+ I am to move). Coefficients ± 95% range. `a` is what one card MORE in my hand costs at equal points.
+
+| ply | rounds | n | per card of mine | per point of mine | per opp card | per opp point | I am to move |
+|---|---|---|---|---|---|---|---|
+| 4 | all | 29769 | -3.72 ±0.26 | -0.28 ±0.03 | +3.41 ±0.27 | +0.36 ±0.03 | +3.03 ±0.35 |
+| 4 | opp has 5 | 13413 | -4.01 ±0.38 | -0.19 ±0.04 | - | +0.32 ±0.04 | +2.62 ±0.51 |
+| 4 | opp has 4 | 12904 | -3.62 ±0.40 | -0.32 ±0.04 | - | +0.36 ±0.04 | +3.19 ±0.54 |
+| 4 | opp has 3 | 3226 | -3.12 ±0.78 | -0.50 ±0.08 | - | +0.50 ±0.09 | +3.83 ±1.06 |
+| 4 | opp has 2 | 221 | -0.91 ±2.81 | -0.55 ±0.26 | - | +0.54 ±0.37 | +3.17 ±3.56 |
+| 8 | all | 25989 | -2.74 ±0.22 | -0.53 ±0.03 | +2.50 ±0.22 | +0.62 ±0.04 | +2.93 ±0.35 |
+| 8 | opp has 5 | 5661 | -2.90 ±0.44 | -0.38 ±0.07 | - | +0.58 ±0.07 | +2.62 ±0.71 |
+| 8 | opp has 4 | 11358 | -2.90 ±0.34 | -0.51 ±0.05 | - | +0.62 ±0.05 | +2.87 ±0.54 |
+| 8 | opp has 3 | 7258 | -2.59 ±0.42 | -0.62 ±0.06 | - | +0.66 ±0.07 | +3.20 ±0.67 |
+| 8 | opp has 2 | 1602 | -2.04 ±0.85 | -0.77 ±0.13 | - | +0.67 ±0.16 | +3.29 ±1.38 |
+| 12 | all | 16663 | -1.98 ±0.25 | -0.73 ±0.05 | +1.62 ±0.26 | +0.81 ±0.05 | +2.64 ±0.43 |
+| 12 | opp has 5 | 2147 | -1.76 ±0.64 | -0.50 ±0.12 | - | +0.73 ±0.13 | +3.51 ±1.08 |
+| 12 | opp has 4 | 6053 | -2.29 ±0.42 | -0.69 ±0.08 | - | +0.96 ±0.08 | +2.52 ±0.70 |
+| 12 | opp has 3 | 5916 | -1.93 ±0.43 | -0.77 ±0.09 | - | +0.75 ±0.09 | +2.69 ±0.73 |
+| 12 | opp has 2 | 2311 | -1.61 ±0.68 | -0.89 ±0.14 | - | +0.58 ±0.17 | +2.32 ±1.18 |
+
+### f3. Rollouts: delete one card and play the round out again (same deck order, same players)
+
+At plies 4, 8 and 12 one random card is deleted from my hand (or from the counter's), and the rest of the round is replayed; the cell is the mean change of my final result. A deleted 0-2 point card is close to the pure value of holding one card fewer.
+
+**One of MY cards deleted: my gain, by the deleted card's points and the opponent's card count** (plies pooled; 71,858 rollouts)
+
+| deleted card | opp cards 5 | opp cards 4 | opp cards 3 | opp cards 2 | opp cards 1 | any |
+|---|---|---|---|---|---|---|
+| 0-2 | +2.6 ±0.3 (6521) | +2.7 ±0.3 (10640) | +2.6 ±0.4 (6791) | +2.3 ±0.7 (1933) | +1.6 ±1.6 (188) | +2.6 ±0.2 (26073) |
+| 3-5 | +5.8 ±0.4 (5962) | +5.5 ±0.3 (8852) | +5.7 ±0.5 (4860) | +6.4 ±0.9 (1198) | +4.7 ±2.0 (91)* | +5.7 ±0.2 (20963) |
+| 6-9 | +5.1 ±0.4 (5464) | +5.0 ±0.4 (6991) | +5.9 ±0.6 (3104) | +6.3 ±1.3 (617) | +7.6 ±3.3 (41)* | +5.3 ±0.2 (16217) |
+| 10 | +4.0 ±0.5 (3145) | +5.0 ±0.5 (3604) | +7.0 ±0.8 (1504) | +8.7 ±1.9 (326) | +7.9 ±7.1 (26)** | +5.2 ±0.3 (8605) |
+| any | +4.4 ±0.2 (21092) | +4.3 ±0.2 (30087) | +4.6 ±0.2 (16259) | +4.6 ±0.5 (4074) | +3.6 ±1.2 (346) | +4.4 ±0.1 (71858) |
+
+By ply and by the hand's own card count before the deletion (deleted card worth 0-2):
+
+| ply | hand had 5 | hand had 4 | hand had 3 | hand had 2 | any |
+|---|---|---|---|---|---|
+| 4 | +3.2 ±0.5 (3791) | +2.5 ±0.4 (3977) | +2.3 ±0.8 (928) | +1.9 ±1.5 (45)* | +2.8 ±0.3 (8741) |
+| 8 | +2.9 ±0.7 (2011) | +3.0 ±0.4 (4412) | +2.1 ±0.5 (2884) | +1.3 ±0.8 (636) | +2.6 ±0.3 (9943) |
+| 12 | +3.3 ±1.0 (880) | +3.0 ±0.6 (2628) | +2.0 ±0.6 (2826) | +1.0 ±0.6 (1055) | +2.3 ±0.3 (7389) |
+
+Straight-line fit over all deleted cards: change = +2.87 +0.35 x the card's points.
+
+**One of the COUNTER's cards deleted: my change (negative = my loss), by the deleted card's points and MY card count** (plies pooled; 72,070 rollouts)
+
+| deleted card | my cards 5 | my cards 4 | my cards 3 | my cards 2 | my cards 1 | any |
+|---|---|---|---|---|---|---|
+| 0-2 | -2.9 ±0.4 (5292) | -2.8 ±0.3 (10180) | -2.5 ±0.3 (7264) | -2.4 ±0.5 (2537) | -2.7 ±1.2 (291) | -2.7 ±0.2 (25564) |
+| 3-5 | -6.3 ±0.5 (5605) | -6.1 ±0.3 (10607) | -6.2 ±0.4 (7192) | -5.2 ±0.6 (2072) | -4.3 ±1.0 (186) | -6.1 ±0.2 (25662) |
+| 6-9 | -5.9 ±0.5 (4315) | -6.3 ±0.4 (5960) | -6.6 ±0.6 (2948) | -6.9 ±1.0 (613) | -6.8 ±3.1 (54)* | -6.3 ±0.3 (13890) |
+| 10 | -5.1 ±0.7 (2240) | -6.5 ±0.6 (2978) | -8.3 ±0.9 (1411) | -8.8 ±1.6 (298) | -8.1 ±1.8 (27)** | -6.5 ±0.4 (6954) |
+| any | -5.0 ±0.2 (17452) | -5.0 ±0.2 (29725) | -5.0 ±0.2 (18815) | -4.3 ±0.4 (5520) | -3.9 ±0.8 (558) | -5.0 ±0.1 (72070) |
+
+By ply and by the hand's own card count before the deletion (deleted card worth 0-2):
+
+| ply | hand had 5 | hand had 4 | hand had 3 | hand had 2 | any |
+|---|---|---|---|---|---|
+| 4 | -2.7 ±0.4 (4072) | -3.2 ±0.5 (3505) | -2.3 ±0.9 (757) | +0.1 ±1.7 (48)* | -2.9 ±0.3 (8382) |
+| 8 | -2.3 ±0.6 (2427) | -3.1 ±0.4 (4456) | -2.8 ±0.6 (2514) | -0.9 ±1.0 (471) | -2.7 ±0.3 (9868) |
+| 12 | -3.2 ±0.9 (1052) | -2.3 ±0.6 (2985) | -2.3 ±0.6 (2510) | -2.4 ±0.9 (767) | -2.4 ±0.3 (7314) |
+
+Straight-line fit over all deleted cards: change = -2.91 -0.49 x the card's points.
+
+## g. Do the match-score units pay in the real game?
+
+**Reading (g).** Yes, clearly. On the same 3,000 match deals hm4 wins **70.0%** with the score units and **62.0%** without (+-1.7 each; difference 8 points, about 6 times the noise). With them hm4 lands on exactly 50 or 100 **0.48 times a match** (in 38% of matches; 0.33 at 50 and 0.15 at 100), against 0.10 without them, which is also the counter's rate (0.10-0.12). 94% of hm4's cuts come from being called on while holding the right total, 6% from its own caught call (score + hand + 30). The units cost nothing visible in rounds (see the working test below).
+
+`python -m training.yaniv.handmade5_measure g --matches 3000 --scratch DIR` builds hm4 without `add_score_units` and plays 3,000 matches to 100 of each player against the counter on the same deals (seeds 905000+). A cut = a round after which a score lands exactly on 50 or 100 (and drops by 50).
+
+| player | matches won-lost | rounds a match | my cuts at 50 a match | my cuts at 100 a match | my cuts a match | the counter's cuts a match | matches with a cut of mine | my cuts: called on / my own caught call / showdown |
+|---|---|---|---|---|---|---|---|---|
+| hm4 (with score units) | 2100-900 (70.0% ±1.6%) | 13.1 | 0.328 | 0.148 | 0.476 | 0.119 | 38.3% | 1342 / 85 / 1 |
+| hm4 without score units | 1861-1139 (62.0% ±1.7%) | 12.3 | 0.066 | 0.029 | 0.095 | 0.116 | 9.2% | 253 / 31 / 0 |
+| counter (vs counter) | 1490-1510 (49.7% ±1.8%) | 12.4 | 0.067 | 0.039 | 0.106 | 0.103 | 10.0% | 286 / 32 / 0 |
+
+### g2. The working test (`handmade_eval --game 5x7 --workers 2 --work`, 6,000 rounds seed 61000, 1,500 matches seed 61001)
+
+| player | margin | rounds won | calls caught | matches |
+|---|---|---|---|---|
+| hm4 (with score units) | +1.49 | 55.2% | 4.5% | 1029-471 (68.6%, 95% range 66.2-70.9%) |
+| hm4 without score units (scratch net `hm4-no-score-units.json`) | +1.50 | 55.3% | 4.5% | 920-580 (61.3%, 95% range 58.8-63.8%) |
+
+Rounds are the same within noise (the test's rounds start from 0-0, where the units are silent); matches fall by 7.3 points without the units (noise about +-2.5). Both tests agree: the score units are worth 7-8 points of matches in the real game, and hm4 on the working test is the bar: **+1.49 margin, 68.6% of matches**.
