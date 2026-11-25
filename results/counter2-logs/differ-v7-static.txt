@@ -1,0 +1,59 @@
+counter2 against counter, 20000 rounds, 138584 decisions; the other player: counter2 with {'LEAF': 'static', 'CALL_EDGE': -0.5}
+gain = result with the other's move minus result with counter2's move, both played out by counter2
+| kind of difference | n | a round | mean gain | ±95% | gain a round |
+|---|---|---|---|---|---|
+| ALL | 14383 | 0.719 | +0.79 | 0.32 | +0.570 |
+| counter2 throws the higher single | opp 5 cards | 9121 | 0.456 | +0.95 | 0.42 | +0.432 |
+| counter2 throws the higher single | 9305 | 0.465 | +0.91 | 0.42 | +0.424 |
+| the other throws the higher single, other draw too | 429 | 0.021 | +2.62 | 1.77 | +0.056 |
+| counter2 throws the higher single | mine 10x1 open, other 4x1 open | 485 | 0.024 | +2.20 | 1.81 | +0.053 |
+| counter2 throws the higher single | mine 10x1 open, other 3x1 open | 583 | 0.029 | +1.66 | 1.72 | +0.048 |
+| counter2 throws the higher single | mine 8x1 stock, other 4x1 stock | 240 | 0.012 | +3.05 | 2.59 | +0.037 |
+| counter2 throws the higher single | mine 8x1 stock, other 3x1 stock | 402 | 0.020 | +1.80 | 2.09 | +0.036 |
+| same throw, the other takes the open card (3-5) | 332 | 0.017 | +2.07 | 1.60 | +0.034 |
+| counter2 throws the higher single | mine 9x1 stock, other 5x1 stock | 181 | 0.009 | +3.43 | 3.20 | +0.031 |
+| same throw, the other takes the open card (3-5) | opp 3 cards | 181 | 0.009 | +3.39 | 2.42 | +0.031 |
+| counter2 throws the higher single | mine 10x1 open, other 7x1 open | 180 | 0.009 | +3.26 | 2.56 | +0.029 |
+| counter2 throws the higher single | mine 10x1 stock, other 4x1 stock | 556 | 0.028 | +0.97 | 1.89 | +0.027 |
+| the other throws the higher single, other draw too | opp 3 cards | 185 | 0.009 | +2.68 | 3.01 | +0.025 |
+| the other calls, counter2 throws | 327 | 0.016 | -1.47 | 2.22 | -0.024 |
+| counter2 calls, the other throws | 467 | 0.023 | -1.01 | 1.70 | -0.024 |
+| counter2 throws a set, not a single | set of 1s, single 3-6 | 303 | 0.015 | +1.54 | 2.18 | +0.023 |
+| same throw, counter2 takes the open card (3-5) | opp 4 cards | 290 | 0.015 | +1.53 | 2.16 | +0.022 |
+| counter2 throws the higher single, other draw too | opp 5 cards | 178 | 0.009 | +2.15 | 3.34 | +0.019 |
+| counter2 throws the higher single | mine 10x1 stock, other 7x1 stock | 192 | 0.010 | -1.97 | 2.22 | -0.019 |
+| counter2 throws the higher single | mine 7x1 stock, other 3x1 stock | 341 | 0.017 | +1.09 | 2.14 | +0.019 |
+| counter2 throws a set, not a single | opp 4 cards | 178 | 0.009 | +2.07 | 2.49 | +0.018 |
+| counter2 throws the higher single | mine 10x1 open, other 8x1 open | 143 | 0.007 | +2.50 | 2.94 | +0.018 |
+| the other throws the higher single | 265 | 0.013 | +1.35 | 1.66 | +0.018 |
+| counter2 throws the higher single | mine 9x1 stock, other 4x1 stock | 243 | 0.012 | +1.39 | 2.79 | +0.017 |
+| counter2 throws the higher single, other draw too | 189 | 0.009 | +1.73 | 3.17 | +0.016 |
+| same throw, counter2 takes the open card (3-5) | 938 | 0.047 | +0.33 | 1.14 | +0.015 |
+| counter2 throws the higher single | mine 10x1 stock, other 8x1 stock | 142 | 0.007 | -2.12 | 3.20 | -0.015 |
+| counter2 throws a set, not a single | 626 | 0.031 | +0.45 | 1.46 | +0.014 |
+| counter2 throws the higher single | mine 10x1 open, other 5x1 open | 351 | 0.018 | +0.74 | 2.05 | +0.013 |
+| counter2 throws the higher single | mine 8x1 stock, other 5x1 stock | 146 | 0.007 | -1.67 | 3.08 | -0.012 |
+| counter2 throws the higher single | mine 10x1 stock, other 9x1 stock | 129 | 0.006 | +1.69 | 2.52 | +0.011 |
+| counter2 throws the higher single | mine 10x1 stock, other 3x1 stock | 968 | 0.048 | +0.22 | 1.31 | +0.011 |
+| counter2 throws the higher single | mine 9x1 stock, other 3x1 stock | 446 | 0.022 | +0.41 | 1.92 | +0.009 |
+| the other throws a set, not a single | 353 | 0.018 | -0.52 | 1.55 | -0.009 |
+| counter2 throws the higher single | mine 10x1 stock, other 6x1 stock | 287 | 0.014 | +0.61 | 2.14 | +0.009 |
+| counter2 throws the higher single | mine 10x1 stock, other 5x1 stock | 402 | 0.020 | +0.40 | 2.05 | +0.008 |
+| the other throws the higher single | opp 4 cards | 170 | 0.009 | +0.76 | 2.07 | +0.006 |
+| the other throws the higher single, other draw too | opp 4 cards | 142 | 0.007 | +0.87 | 2.94 | +0.006 |
+| the other throws a set, not a single | opp 5 cards | 269 | 0.013 | -0.46 | 1.71 | -0.006 |
+| another rank of the same points | opp 5 cards | 259 | 0.013 | +0.44 | 1.68 | +0.006 |
+| counter2 throws a set, not a single | opp 5 cards | 327 | 0.016 | -0.35 | 2.15 | -0.006 |
+| counter2 throws the higher single | mine 9x1 open, other 3x1 open | 120 | 0.006 | +0.79 | 3.31 | +0.005 |
+| counter2 throws the higher single | mine 10x1 open, other 6x1 open | 287 | 0.014 | -0.30 | 2.19 | -0.004 |
+| same throw, counter2 takes the open card (0-2) | 148 | 0.007 | +0.57 | 2.91 | +0.004 |
+| same throw, counter2 takes the open card (0-2) | opp 5 cards | 132 | 0.007 | +0.62 | 3.19 | +0.004 |
+| another rank of the same points | 542 | 0.027 | +0.15 | 1.12 | +0.004 |
+| same throw, counter2 takes the open card (3-5) | opp 2 cards | 188 | 0.009 | -0.35 | 1.77 | -0.003 |
+| same throw, counter2 takes the open card (3-5) | mine 10x1 open, other 10x1 stock | 280 | 0.014 | -0.22 | 2.14 | -0.003 |
+| counter2 throws the higher single | opp 4 cards | 147 | 0.007 | -0.37 | 2.96 | -0.003 |
+| counter2 throws the higher single | mine 7x1 stock, other 4x1 stock | 213 | 0.011 | +0.25 | 3.10 | +0.003 |
+| same throw, counter2 takes the open card (3-5) | opp 3 cards | 350 | 0.018 | +0.13 | 1.96 | +0.002 |
+| another rank of the same points | opp 4 cards | 234 | 0.012 | -0.15 | 1.72 | -0.002 |
+| another rank of the same points | mine 10x1 stock, other 10x1 stock | 467 | 0.023 | +0.05 | 1.21 | +0.001 |
+| counter2 throws the higher single | mine 6x1 stock, other 3x1 stock | 175 | 0.009 | +0.02 | 3.09 | +0.000 |

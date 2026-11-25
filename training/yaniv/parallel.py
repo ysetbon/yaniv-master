@@ -44,6 +44,10 @@ def chooser(spec: Spec):
     kind = spec[0]
     if kind == "counter":
         return choose_heuristic
+    if kind == "counter2":
+        from .heuristic2 import choose_counter2
+
+        return choose_counter2
     if kind == "greedy":
         return choose_greedy
     if kind == "random":
