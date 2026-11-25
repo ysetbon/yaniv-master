@@ -295,7 +295,7 @@ def config(**over) -> dict:
 
 
 # ---------------------------------------------------------------- Yaniv
-def add_yaniv_units(kit: Kit) -> list[dict]:
+def add_yaniv_units_hm5(kit: Kit) -> list[dict]:
     """The 'call' reasons, each a combination of units that is 0 or 1 (and 0 on every throw row)."""
     reasons = []
     kit.unit(1, "sure_call", {"sure_yaniv": 1.0, "yaniv": 1.0}, bias=-1.0, note="the call cannot be caught")
@@ -321,6 +321,85 @@ def add_yaniv_units(kit: Kit) -> list[dict]:
     kit.unit(1, "c1_b", dict(w), bias=-10.0 * C1_BASE - YBIG * 10, note="ramp shifted")
     reasons.append({"c1_a": 1.0, "c1_b": -1.0})
     return reasons
+
+
+# ---------------------------------------------------------------- Yaniv (this net's rule)
+Y_A = {"1": 0.04, "2": 0.021, "3": 0.0055, "4": 0.0021}   # threshold per "point" for 1 / 2 / 3 / 4 opponent cards
+Y_LOW = 0.005          # always call under this assaf (against 5 cards this is the only risky call made)
+Y_BASE = 5.5           # threshold "points" = BASE + PTS_W x my points - PLY_W x clip(ply, PLY_LO, PLY_HI)
+Y_PTS_W = 0.5          # (= 5 + 0.5 (pts - 5) + 0.2 (15 - ply): 5 at 5 points, ply 15)
+Y_PLY_W = 0.2
+Y_PLY_LO, Y_PLY_HI = 8.0, 20.0
+Y_SWAP = 2.0           # veto reason 3 when best_shed - open card >= SWAP points
+Y_K = 2000.0           # ramp steepness on assaf: a reason goes 0 -> 1 over 1/K = 0.0005 of assaf, centred on T
+Y_G = 4000.0           # gate: larger than K x any threshold
+
+
+def add_yaniv_units(kit: Kit, a=None, low=Y_LOW, base=Y_BASE, pts_w=Y_PTS_W, ply_w=Y_PLY_W, ply_lo=Y_PLY_LO,
+                    ply_hi=Y_PLY_HI, swap=Y_SWAP, swap_on=True) -> list[dict]:
+    """Call Yaniv iff (measured in results/contest-fable-logs/yaniv.md)
+      1. the call cannot be caught (sure_yaniv), or
+      2. assaf < Y_LOW, or
+      3. no lower hand is one swap away AND assaf < Y_A[opp cards] x (Y_BASE + Y_PTS_W x my points - Y_PLY_W x clip(ply)).
+         "One swap away": my highest group is worth Y_SWAP or more points above the open card (best_shed, open_pts):
+         throwing it and taking the open card beats a call that can be caught (+4 points each time).
+    The uniform catch chance `assaf` understates the true catch rate about x20 against 4-5 cards, x6 against 3,
+    x2.5 against 2 and x1 against 1 (the same for the counter, hm5 and the trained net), so the threshold is
+    set by the opponent's card count; the break-even true catch rate is about 20%."""
+    a = {**Y_A, **(a or {})}
+    reasons = []
+    kit.unit(1, "sure_call", {"sure_yaniv": 1.0, "yaniv": 1.0}, bias=-1.0, note="the call cannot be caught")
+    reasons.append({"sure_call": 1.0})
+
+    w = {"assaf": -Y_K, "yaniv": Y_G}
+    kit.unit(1, "ylow_a", w, bias=Y_K * low + 0.5 - Y_G, note="Yaniv row: Y_K (LOW - assaf) + 0.5")
+    kit.unit(1, "ylow_b", dict(w), bias=Y_K * low - 0.5 - Y_G, note="... - 0.5: ylow_a - ylow_b = [assaf < LOW]")
+    reasons.append({"ylow_a": 1.0, "ylow_b": -1.0})
+
+    kit.unit(1, "yply_lo", {"ply": 48.0}, bias=-ply_lo, note="relu(ply - PLY_LO)")
+    kit.unit(1, "yply_hi", {"ply": 48.0}, bias=-ply_hi, note="relu(ply - PLY_HI): clip(ply) = LO + lo - hi")
+    veto = {}
+    if swap_on:
+        d = {"best_shed": 40.0, "open_pts": -10.0}
+        kit.unit(1, "yswap_a", d, bias=-(swap - 1.0), note="relu(best_shed - open - (SWAP - 1))")
+        kit.unit(1, "yswap_b", dict(d), bias=-swap, note="yswap_a - yswap_b = [my highest group >= open card + SWAP]")
+        veto = {"yswap_a": -Y_G, "yswap_b": Y_G}
+    for c in ("1", "2", "3", "4"):
+        t = Y_K * a[c]
+        m = {"assaf": -Y_K, "my_pts": t * pts_w * 40.0, "yply_lo": -t * ply_w, "yply_hi": t * ply_w,
+             "yaniv": Y_G, f"opp_has_{c}": Y_G, **veto}
+        b = t * (base - ply_w * ply_lo) - 2.0 * Y_G
+        kit.unit(2, f"ycall{c}_a", m, bias=b + 0.5, note=f"Yaniv row, opponent holds {c}, no swap: Y_K (T - assaf) + 0.5")
+        kit.unit(2, f"ycall{c}_b", dict(m), bias=b - 0.5, note="... - 0.5: the difference is [assaf < T]")
+        reasons.append({f"ycall{c}_a": 1.0, f"ycall{c}_b": -1.0})
+    return reasons
+
+
+# ---------------------------------------------------------------- the triple take
+TRIP = 40.0          # larger than the points the pair-throw line is ahead by on hm5's own count (~3p + 5)
+TRIP_MIN = 7         # ranks worth this much or more
+TRIP_OPP = (4, 5)    # opponent card counts where it applies
+TRIP_MIN5 = 5        # ranks worth this much or more when the opponent has 5 cards (5s and 6s: only then)
+
+
+def add_triple_units(kit: Kit, trip=TRIP, trip_min=TRIP_MIN, trip_opp=TRIP_OPP, trip_min5=None) -> None:
+    """The triple take (results/contest-fable-logs/survey.md): the open card has the rank of a PAIR I hold. Keep the
+    pair, throw another card and take the open card: three of a kind leave together next turn, one card fewer than
+    throwing the pair now. Worth +3 to +5 points each time for ranks worth 7+ against 4-5 cards and for 5s / 6s
+    against 5 cards; it loses against 1-3 cards. One layer-1 unit per rank:
+        trip_r = relu(3 open_r + 2 take_open + 4 hand_r - 10 throw_r + [gate] - 7)
+    = 1 when I hold two r, take the open r and do not throw r."""
+    trip_min5 = trip_min if trip_min5 is None else trip_min5
+    out = {}
+    gate = {f"opp_has_{c}": 1.0 for c in trip_opp}
+    for r, p in zip(RANKS, RANK_POINTS):
+        if p < min(trip_min, trip_min5):
+            continue
+        gate = {f"opp_has_{c}": 1.0 for c in (trip_opp if p >= trip_min else (5,))}
+        kit.unit(1, f"trip_{r}", {f"open_{r}": 3.0, "take_open": 2.0, f"hand_{r}": 4.0, f"throw_{r}": -10.0, **gate},
+                 bias=-7.0, note=f"takes an open {r} onto a kept pair of {r}s, opponent has {trip_opp} cards")
+        out[f"trip_{r}"] = trip
+    kit.out(out)
 
 
 def finish_yaniv(kit: Kit, reasons: list[dict]) -> None:
@@ -428,11 +507,15 @@ def fold_output(kit: Kit) -> None:
     kit.output = (final, bias)
 
 
-def build(**over):
+def build(yaniv: str = "new", triple: bool = True, **over):
+    """The contest net. `yaniv="hm5"`, `triple=False` and the table overrides in `config` rebuild earlier variants
+    (yaniv="hm5", triple=False is handmade5 exactly)."""
     cfg = config(**over)
     kit = Kit()
     add_throw_units(kit, cfg)
-    reasons = add_yaniv_units(kit)
+    if triple:
+        add_triple_units(kit, TRIP, TRIP_MIN, TRIP_OPP, TRIP_MIN5)
+    reasons = add_yaniv_units(kit) if yaniv == "new" else add_yaniv_units_hm5(kit)
     reasons += add_score_units(kit)
     finish_yaniv(kit, reasons)
     fold_output(kit)
