@@ -145,6 +145,22 @@ def alt_leave(view, actions, a, ctx):
     return b, json.dumps(f)
 
 
+def alt_hm5(view, actions, a, ctx):
+    """Variant check: hero = a variant net; alternative = hm5's move where it differs (gain < 0: the variant's
+    move was better)."""
+    from .features import action_key
+    from .train import net_chooser
+    if "Hch" not in _NETS:
+        _NETS["Hch"] = net_chooser(_net("hm5"), 0.0)
+    b = _NETS["Hch"](view, actions, None)
+    if action_key(b) == action_key(a):
+        return None
+    f = _facts(view, actions)
+    f["dir"] = "hm5"
+    f["a"], f["b"] = _kind(a, view), _kind(b, view)
+    return b, json.dumps(f)
+
+
 def alt_trained(view, actions, a, ctx):
     """Step 2: after both hands hold <= 4, the trained net's move."""
     from .engine import popcount
