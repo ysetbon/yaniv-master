@@ -1,0 +1,3 @@
+hm5 vs counter (seed 1): margin +1.616 +-0.097 a round (20000 rounds), rounds won 55.8%, calls caught 4.8%; matches 2868-1132 (71.7%, 95% 70.3%-73.1%)
+hm5 vs trained (seed 1): margin -0.145 +-0.081 a round (20000 rounds), rounds won 50.8%, calls caught 7.7%; matches 2458-1542 (61.5%, 95% 59.9%-62.9%)
+trained vs counter (seed 1): margin +1.616 +-0.093 a round (20000 rounds), rounds won 54.6%, calls caught 4.6%; matches 2565-1435 (64.1%, 95% 62.6%-65.6%)
