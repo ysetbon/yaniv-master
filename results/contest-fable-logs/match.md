@@ -218,3 +218,23 @@ of them with the deny predicate true (the other 5 on the 0.5-point ramp at the e
 
     FULL v hm5:  rounds from 0-0 (20,000): margin +0.000 +-0.000, 50.0% (play from 0-0 is unchanged, as designed);
                  matches 5647-4353 of 10,000 = 56.5% (95% 55.5-57.4)                      <- +6.5 points head to head
+    CUT  v hm5:  matches 5155-4845 of 10,000 = 51.5% (50.6-52.5)   -> the cut weights alone +1.5, the denial veto ~+5
+    FULL v trained: 6344-3656 = 63.4% (62.5-64.4)     hm5 v trained, same seed: 6247-3753 = 62.5% (61.5-63.4)   +0.9
+    FULL v counter: 7213-2787 = 72.1% (71.2-73.0)     hm5 v counter, same seed: 7128-2872 = 71.3% (70.4-72.2)   +0.8
+  (each 10,000-match figure is +-0.5 standard error; the two differences against trained / counter are ~+-0.7 each, so
+  "not worse, probably a little better"; the head-to-head +6.5 is 13 standard errors.)
+  Rounds from 0-0 were run once (FULL v hm5): identical play, as every added unit needs a score.
+
+## 5. Conclusions
+1. The Yaniv threshold by score band, "must not be caught", bust avoidance and safer throws at high scores gain nothing
+   measurable: hm5's point play is already right in every score band (the value of a point changes smoothly; both
+   players' options scale together).
+2. What the match scores change is the CLIFFS at exactly 50 / 100: (a) my own cut landing was under-weighted (+1.5
+   head to head), and (b) an hm5-like opponent sits on ITS cut on purpose and hm5 hands it over by calling Yaniv 0.73
+   times a match; not calling when its score + what I know of its hand sits on the cut is worth ~+5 head to head.
+3. Caveat for the lead: DENY exploits a cut-seeking opponent. Against one that does not seek cuts it costs ~0.4 a match
+   in the paired data (not visible in the duels v trained / counter, which came out +0.9 / +0.8 with CUT included).
+   The always-right part (no hidden card, exact) is `"DENY":[null,2]` (571 units with nothing else).
+4. Not done (stopped narrowly, as instructed): residual paired run with FULL as hero; DENY alone / BUSTCALL alone duels;
+   the "far behind at 86-93, opponent < 50: do not call" cell (+2.1 +-0.5 / +2.7 +-0.9 / +1.5 +-1.0, ~0.15 a match);
+   FULL against a FULL-like rival (if the rival also denies, my own cut-sitting pays less).
