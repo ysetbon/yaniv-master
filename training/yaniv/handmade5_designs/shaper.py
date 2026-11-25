@@ -37,6 +37,7 @@ CFG = dict(
     SET5=0.0,          # bonus for throwing a set while I hold 5 cards (the first shrink)
     OUTS=0.0,          # points per unit of sum over kept ranks of unseen cards of that rank / N_TYP
     TWOS55=0.0,        # bonus for throwing a set of 2s while both players hold 5 cards
+    SET55=0.0,         # bonus for throwing any set while both players hold 5 cards
 )
 
 
@@ -88,6 +89,10 @@ def add_shape_units(kit: Kit, c: dict) -> None:
                  note="1 if a set of 2s is thrown while both players hold 5 cards (nobody can call soon, and "
                       "a 5-card hand holding 2-2 cannot get to 7 points: the 2s are heavy cards here)")
         kit.out({"twos_55": c["TWOS55"]})
+    if c["SET55"]:
+        kit.unit(1, "set_55", {"is_set": 1.0, "opp_has_5": 1.0, "my_cards": 5.0}, bias=-6.0,
+                 note="1 if a set is thrown while both players hold 5 cards")
+        kit.out({"set_55": c["SET55"]})
     if c["OUTS"]:
         total = {}
         for r, p in zip(RANKS, RANK_POINTS):
