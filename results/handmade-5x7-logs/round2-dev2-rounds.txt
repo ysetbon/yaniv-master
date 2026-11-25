@@ -1,0 +1,6 @@
+/tmp/claude-0/-home-user-yaniv-master/a532e2e0-83d9-59dd-8a1a-414723f6a44f/scratchpad/lead/counts.json: margin +1.64 a round, rounds won 16798/30000 (56.0%), Yaniv calls 16217 of which caught 720 (4.4%);  [83s]
+switch:/tmp/claude-0/-home-user-yaniv-master/a532e2e0-83d9-59dd-8a1a-414723f6a44f/scratchpad/lead/counts.json:public/model/yaniv-net-4cards-yaniv7-handmade.json: margin +1.52 a round, rounds won 16647/30000 (55.5%), Yaniv calls 16086 of which caught 728 (4.5%);  [161s]
+switch:/tmp/claude-0/-home-user-yaniv-master/a532e2e0-83d9-59dd-8a1a-414723f6a44f/scratchpad/lead/merge.json:public/model/yaniv-net-4cards-yaniv7-handmade.json: margin +1.55 a round, rounds won 16632/30000 (55.4%), Yaniv calls 16075 of which caught 735 (4.6%);  [235s]
+public/model/yaniv-net-4cards-yaniv7-handmade.json: margin +1.34 a round, rounds won 16349/30000 (54.5%), Yaniv calls 15751 of which caught 716 (4.5%);  [312s]
+public/model/yaniv-net.json: margin +1.59 a round, rounds won 16443/30000 (54.8%), Yaniv calls 15621 of which caught 690 (4.4%);  [405s]
+/tmp/claude-0/-home-user-yaniv-master/a532e2e0-83d9-59dd-8a1a-414723f6a44f/scratchpad/lead/counts.json: margin +0.11 a round, rounds won 15175/30000 (50.6%), Yaniv calls 15157 of which caught 939 (6.2%);  [37s]
