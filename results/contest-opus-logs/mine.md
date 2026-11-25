@@ -62,7 +62,7 @@ another designer, and not significant vs counter; not pursued.
 
 ## 6. Block `add_mine_units` (TRIPLE), 10 units, layer 1
 
-One unit per rank R in 4..K: relu(take_open + open_R + 4 hand_R - 4 throw_R - 4 [throw is A/2/3/joker] - 3),
+One unit per rank R in 4..K: relu(4 take_open + 4 open_R + 4 hand_R - 4 throw_R - 4 [throw is A/2/3/joker] - 9),
 output +5 (one card charge: the third R leaves with the pair next turn, so the extra card costs no turn).
 Built: [125, 228, 98, ...], 568 hidden (hm5 558 + 10). An earlier draft with a layer-2 points step cost 42
 units (inputs carried to layer 2): replaced by the thrown-rank test in layer 1.
@@ -99,3 +99,26 @@ bonus 5 in 0.002 decisions a round (seed 5900): no change worth having. Kept 5.
   Best: both take the open R for a triple but throw different singles, +1.75 (1.44) / +1.53 (1.72), n ~ 50.
 - Inference from the opponent's draws (it passed an open X, so it likely holds no X): not in the 125 inputs
   (no draw history beyond known_), so it cannot be a rule of this net.
+
+## 8. Final block, checks
+
+The first build (`mine_triple5`, bias -3 with weight 1 on take_open/open_R) also fired, without taking the open
+card, when I held three R's and the open card was the fourth; fixed to weights 4 / bias -9 (`mine_triple5b`):
+same decisions as mine_triple5 in 4,000 play-out rounds (0 differ), same play-out record (seed 5600).
+Same-seed whole-game checks (4,000 rounds, 800 matches; margin, rounds won, matches):
+
+| seed | opponent | hm5 | TRIPLE | diff margin | diff matches |
+|---|---|---|---|---|---|
+| 310 | counter | +1.78, 56.6%, 73.0% | +1.89, 57.0%, 75.1% | +0.11 | +2.1 |
+| 310 | trained | +0.08, 51.4%, 65.5% | +0.24, 52.1%, 65.2% | +0.16 | -0.3 |
+| 310 | hm5 | 0.00 | +0.15, 50.5%, 51.1% | +0.15 | +1.1 |
+| 311 | counter | +1.69, 56.4%, 70.5% | +1.93, 57.1%, 72.2% | +0.24 | +1.7 |
+| 311 | trained | +0.20, 51.5%, 59.5% | +0.42, 52.4%, 65.2% | +0.22 | +5.7 |
+| 311 | hm5 | 0.00 | +0.03, 50.1%, 51.2% | +0.03 | +1.2 |
+| 312 (5b) | counter | +1.78, 56.8%, 73.2% | +1.97, 57.4%, 75.5% | +0.19 | +2.3 |
+| 312 (5b) | trained | -0.00, 51.8%, 64.0% | +0.17, 52.2%, 64.2% | +0.17 | +0.2 |
+| 312 (5b) | hm5 | 0.00 | +0.09, 50.1%, 50.2% | +0.09 | +0.2 |
+
+Mean margin gain: +0.18 vs counter, +0.18 vs trained, +0.09 vs hm5 (each ~+-0.1 paired); matches +1.4 points
+on average, within noise (+-3.4 a run). Play-outs say +0.15 / +0.12 a round. Keep: 10 units,
+`add_mine_units` in training/yaniv/contest_opus_mine.py; net scratchpad/mine/mine_triple5b.json.
