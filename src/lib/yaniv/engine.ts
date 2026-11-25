@@ -26,27 +26,16 @@ export const SUIT_NAMES = ["clubs", "diamonds", "hearts", "spades"] as const;
 export const POINTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10];
 
 /**
- * The games the page offers, picked with /?game=<id>. The smaller ones are
- * trained with main.py --hand H --yaniv-at Y, and each net lives in its own file
- * (`net` is appended to the file name: "-handmade" picks the hand-written net).
+ * The game the page plays: the real game (5 cards each, Yaniv at 7 or less) against the latest net, team
+ * fable's contest net, written by hand (training/yaniv/contest_fable.py, results/contest-fable.md). The other
+ * nets stay in public/model for the training tools; the page offers only this one.
  */
 export const GAMES = [
-  // The real game against team fable's contest net, written by hand (training/yaniv/contest_fable.py,
-  // results/contest-fable.md): the strongest net in this repo against the trained and earlier hand-written ones.
   { id: "standard", hand: 5, yanivAt: 7, net: "-contest-fable", label: "Standard" },
-  // The same game against the trained net (public/model/yaniv-net.json).
-  { id: "trained", hand: 5, yanivAt: 7, net: "", label: "Standard: trained net" },
-  // The real game against the earlier hand-written nets: a main net, then the 4-card net once both hands hold
-  // 4 cards or fewer, packed as one file (training/yaniv/handmade5_pack.py).
-  { id: "5x7-handmade", hand: 5, yanivAt: 7, net: "-handmade", label: "Standard: earlier hand-written net" },
-  { id: "4x7", hand: 4, yanivAt: 7, net: "", label: "4 cards, Yaniv 7" },
-  // The same game against a net whose weights were written by hand (training/yaniv/handmade.py).
-  { id: "4x7-handmade", hand: 4, yanivAt: 7, net: "-handmade", label: "4 cards, Yaniv 7: hand-written net" },
-  { id: "small", hand: 4, yanivAt: 9, net: "", label: "4 cards, Yaniv 9" },
 ] as const;
 export type GameRules = (typeof GAMES)[number];
 
-/** The game a /?game= value names; the standard game for anything else. */
+/** The game the page plays, whatever /?game= says. */
 export function gameById(id: string | null): GameRules {
   return GAMES.find((game) => game.id === id) ?? GAMES[0];
 }

@@ -25,7 +25,6 @@ import { loadNet, type Net } from "@/lib/ai/net";
 import {
   ASSAF_PENALTY,
   HAND_SIZE,
-  GAMES,
   gameById,
   rulesSuffix,
   setRules,
@@ -148,7 +147,6 @@ export function Game() {
   useEffect(() => {
     let cancel = false;
     async function boot() {
-      // /?game=4x7 or /?game=small plays a smaller game the trainer can learn, against its own net.
       const wanted = gameById(new URLSearchParams(window.location.search).get("game"));
       setRules(wanted.hand, wanted.yanivAt);
       setGame(wanted.id);
@@ -381,18 +379,6 @@ export function Game() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <select
-            aria-label="Game"
-            value={game}
-            onChange={(event) => reloadAs(event.target.value)}
-            className="h-9 rounded-lg border border-[#f2c75c]/40 bg-[#1b140e] px-2 text-sm text-[#f6edd9] hover:bg-white/10"
-          >
-            {GAMES.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </select>
           <RulesButton />
           <Button
             variant="outline"
