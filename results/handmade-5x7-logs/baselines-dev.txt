@@ -1,0 +1,1 @@
+counter: margin +0.00 a round, rounds won 6000/12000 (50.0%), Yaniv calls 5993 of which caught 419 (7.0%); matches 1500-1500 (50.0%, 95% range 48.2%-51.8%)  [108s]

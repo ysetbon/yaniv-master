@@ -27,15 +27,33 @@ from pathlib import Path
 from .engine import HAND_SIZE, STANDARD_RULES, YANIV_LIMIT, View, play_round, popcount
 
 
-def small_enough(view: View, at: int) -> bool:
-    return popcount(view.my_hand) <= at and view.opp_size <= at
+WHEN = ("both", "mine", "opp", "either")
 
 
-def switch_chooser(main, endgame, at: int = 4):
-    """`main` chooses until both hands hold `at` cards or fewer; from then on `endgame` does."""
+def small_enough(view: View, at: int, when: str = "both") -> bool:
+    """Has the hand-over point come? "both": both hands hold `at` cards or fewer (the rest of the round is
+    then exactly the smaller game); "mine" / "opp": only my hand / only the opponent's has to be that small;
+    "either": one of the two is enough."""
+    mine, theirs = popcount(view.my_hand) <= at, view.opp_size <= at
+    if when == "both":
+        return mine and theirs
+    if when == "mine":
+        return mine
+    if when == "opp":
+        return theirs
+    if when == "either":
+        return mine or theirs
+    raise ValueError(f"when={when!r}: give one of {WHEN}")
+
+
+def switch_chooser(main, endgame, at: int = 4, when: str = "both"):
+    """`main` chooses until both hands hold `at` cards or fewer; from then on `endgame` does.
+    `when` picks another hand-over rule (see small_enough)."""
+    if when not in WHEN:
+        raise ValueError(f"when={when!r}: give one of {WHEN}")
 
     def choose(view: View, actions, rng):
-        return (endgame if small_enough(view, at) else main)(view, actions, rng)
+        return (endgame if small_enough(view, at, when) else main)(view, actions, rng)
 
     return choose
 
