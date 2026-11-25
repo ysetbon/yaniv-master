@@ -238,3 +238,44 @@ Head to head against hm5 over both seeds (80,000 rounds): **+0.112 +-0.020 a rou
 gain does not show (50.1% +-1.3): +0.11 points a round is about a tenth of hm5's edge over the counter per
 round, which is worth ~20 points of matches there, so the expected match effect is ~+0.5 to +1 point, under
 this test's resolution. Honest reading: a real but small round gain; no measurable match gain; no sign of harm.
+
+`duel py:contest_fable_yaniv.build trained counter --rounds 0 --matches 4000 --seed 1 --workers 2` (hm5's
+baselines on the same seed and count, from BRIEF.md: 61.5% and 71.7%):
+- vs trained: matches 2527-1473 (**63.2%**, 95% 61.7-64.7%); hm5: 61.5%.
+- vs counter: matches 2886-1114 (**72.2%**, 95% 70.7-73.5%); hm5: 71.7%.
+Both a little above hm5's, neither beyond the noise (+-1.5).
+
+## Summary
+
+- Best design: `py:contest_fable_yaniv.build`, 565 hidden units (+7 over contest_fable's 558).
+- Rounds: +0.112 +-0.020 head to head against hm5 (80,000 rounds, seeds 31 and 32); +0.054 against trained and
+  +0.120 against the counter over hm5 on the same deals (seed 31, 40,000 rounds each, each side +-0.06).
+- Matches: 50.1% against hm5 (6,000), 63.2% against trained, 72.2% against the counter (4,000 each): no
+  measurable change.
+- Robust part: the swap veto (+0.035 a round first order against all three opponents). The threshold by the
+  opponent's card count is worth about +0.1 first order against the two nets and nothing against the counter.
+
+## What failed / was not worth it
+
+- A rule on est - pts alone (B, B2): worse than assaf by card count (-0.03 to +0.06).
+- Full-weight points and ply terms together (F): they double-count (+0.03 to +0.09); half weights are used.
+- Swap that saves one point, swap of a set, 'throw highest and draw from the deck', breaking a set to take the
+  open card: all negative (part 2b).
+- Open card as a risk term: real against the trained net only; not built.
+- The gain is small because hm5's rule was already close to the break-even in every (cards, assaf) cell.
+
+## Every measurement, in order
+
+1. probe smoke test: `contest_fable_yaniv_probe run hm5 600 5` (works; 0.84 Yaniv-legal decisions a round).
+2. `run hm5 60000 7101`, `run trained 60000 7101`, `run counter 60000 7101` (hero hm5): parts 1-3.
+3. tables: `contest_fable_yaniv_tab OPP 7101 [rate|called|held]`, `grid`, scratch `zone.py two.py twoh.py thr.py
+   swap.py swap2.py rate.py`; rules `r1.py` (A, B, B2), `r2.py` (D), `r3.py` (X, A, A+X, D+X), `r4.py` (X, A', A'+X,
+   pts+X, ply+X, F), `r5.py` (V1, V2). All in part 3's table.
+4. `python -m training.yaniv.contest_fable_yaniv` (build + check, 2,000 rounds seed 11): 0 mismatches.
+5. `duel py:contest_fable_yaniv.build hm5 trained counter --rounds 40000 --matches 0 --seed 31`, then the same for
+   `hm5` against trained and counter: part 5.
+6. hero = design, `run hm5 60000 7202 v2`, `run trained 60000 7202 v2`: part 6.
+7. `duel ... hm5 --rounds 40000 --matches 6000 --seed 32`; `duel ... trained counter --rounds 0 --matches 4000
+   --seed 1`: part 7.
+Not done: matches with the design measured against a score-aware rival; a 100,000-round counter check of the
+threshold part; any use of my_score / opp_score (another thread's).
