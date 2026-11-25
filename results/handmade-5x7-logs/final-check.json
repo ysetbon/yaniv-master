@@ -1,0 +1,78 @@
+{
+ "public/model/yaniv-net-4cards-yaniv7-handmade.json": {
+  "rounds": {
+   "wins": 538,
+   "losses": 462,
+   "ties": 0,
+   "calls": 517,
+   "assafs": 26,
+   "win_rate": 0.538,
+   "hero_avg": 6.852,
+   "villain_avg": 7.885,
+   "assaf_rate": 0.05029013539651837
+  },
+  "matches": {
+   "wins": 274,
+   "losses": 126,
+   "ties": 0,
+   "win_rate": 0.685
+  }
+ },
+ "public/model/yaniv-net-5cards-handmade.json": {
+  "rounds": {
+   "wins": 555,
+   "losses": 445,
+   "ties": 0,
+   "calls": 532,
+   "assafs": 24,
+   "win_rate": 0.555,
+   "hero_avg": 6.646,
+   "villain_avg": 8.127,
+   "assaf_rate": 0.045112781954887216
+  },
+  "matches": {
+   "wins": 290,
+   "losses": 110,
+   "ties": 0,
+   "win_rate": 0.725
+  }
+ },
+ "public/model/yaniv-net-handmade.json": {
+  "rounds": {
+   "wins": 553,
+   "losses": 447,
+   "ties": 0,
+   "calls": 530,
+   "assafs": 24,
+   "win_rate": 0.553,
+   "hero_avg": 6.618,
+   "villain_avg": 8.114,
+   "assaf_rate": 0.045283018867924525
+  },
+  "matches": {
+   "wins": 282,
+   "losses": 118,
+   "ties": 0,
+   "win_rate": 0.705
+  }
+ },
+ "switch:public/model/yaniv-net.json:public/model/yaniv-net-4cards-yaniv7-handmade.json": {
+  "rounds": {
+   "wins": 558,
+   "losses": 442,
+   "ties": 0,
+   "calls": 538,
+   "assafs": 24,
+   "win_rate": 0.558,
+   "hero_avg": 6.555,
+   "villain_avg": 8.097,
+   "assaf_rate": 0.04460966542750929
+  },
+  "matches": {
+   "wins": 274,
+   "losses": 126,
+   "ties": 0,
+   "win_rate": 0.685
+  }
+ }
+}
