@@ -1,0 +1,389 @@
+counter2 against counter, 30000 rounds: every position where Yaniv is legal and not sure, played out both ways (call, and counter2's best throw)
+| split | cell | n | call minus throw | ±95% |
+|---|---|---|---|---|
+| by believed edge (call - throw) | -1-1 | 2578 | -0.44 | 0.70 |
+| by believed edge (call - throw) | -12--8 | 2537 | -9.63 | 0.91 |
+| by believed edge (call - throw) | -3--1 | 2356 | -2.41 | 0.75 |
+| by believed edge (call - throw) | -5--3 | 1823 | -4.71 | 0.95 |
+| by believed edge (call - throw) | -8--5 | 2456 | -6.71 | 0.86 |
+| by believed edge (call - throw) | 1-3 | 2619 | +1.95 | 0.61 |
+| by believed edge (call - throw) | 12+ | 344 | +9.14 | 1.50 |
+| by believed edge (call - throw) | 3-5 | 2648 | +2.76 | 0.59 |
+| by believed edge (call - throw) | 5-8 | 2441 | +3.58 | 0.66 |
+| by believed edge (call - throw) | 8-12 | 1160 | +5.99 | 0.94 |
+| by believed edge (call - throw) | <-12 | 3896 | -18.27 | 0.75 |
+| by its cards and risk | 1 / 0.5+ | 590 | -23.34 | 1.84 |
+| by its cards and risk | 2 / 0.03-0.06 | 89 | -1.00 | 3.90 |
+| by its cards and risk | 2 / 0.06-0.1 | 123 | -3.14 | 3.54 |
+| by its cards and risk | 2 / 0.1-0.15 | 214 | +0.37 | 2.36 |
+| by its cards and risk | 2 / 0.15-0.2 | 197 | +0.63 | 2.54 |
+| by its cards and risk | 2 / 0.2-0.3 | 574 | -8.75 | 1.90 |
+| by its cards and risk | 2 / 0.3-0.5 | 1866 | -14.47 | 1.15 |
+| by its cards and risk | 2 / 0.5+ | 1411 | -20.07 | 1.34 |
+| by its cards and risk | 3 / 0.03-0.06 | 672 | +2.18 | 1.21 |
+| by its cards and risk | 3 / 0.06-0.1 | 1151 | +0.12 | 0.98 |
+| by its cards and risk | 3 / 0.1-0.15 | 1608 | -0.67 | 0.89 |
+| by its cards and risk | 3 / 0.15-0.2 | 1298 | -5.11 | 1.16 |
+| by its cards and risk | 3 / 0.2-0.3 | 2101 | -7.63 | 1.03 |
+| by its cards and risk | 3 / 0.3-0.5 | 1893 | -10.59 | 1.11 |
+| by its cards and risk | 3 / 0.5+ | 151 | -16.61 | 3.88 |
+| by its cards and risk | 3 / <0.03 | 936 | +3.34 | 0.82 |
+| by its cards and risk | 4 / 0.03-0.06 | 1448 | +2.68 | 0.77 |
+| by its cards and risk | 4 / 0.06-0.1 | 1232 | +0.73 | 0.96 |
+| by its cards and risk | 4 / 0.1-0.15 | 918 | -1.72 | 1.29 |
+| by its cards and risk | 4 / 0.15-0.2 | 541 | -1.94 | 1.84 |
+| by its cards and risk | 4 / 0.2-0.3 | 483 | -4.39 | 1.83 |
+| by its cards and risk | 4 / 0.3-0.5 | 117 | -10.27 | 3.93 |
+| by its cards and risk | 4 / <0.03 | 2840 | +4.37 | 0.45 |
+| by its cards and risk | 5 / 0.03-0.06 | 315 | +1.67 | 1.49 |
+| by its cards and risk | 5 / 0.06-0.1 | 137 | +1.62 | 2.87 |
+| by its cards and risk | 5 / <0.03 | 1825 | +4.35 | 0.47 |
+| by my cards and risk | 1 / 0.03-0.06 | 292 | +0.31 | 1.05 |
+| by my cards and risk | 1 / 0.06-0.1 | 356 | -2.48 | 1.38 |
+| by my cards and risk | 1 / 0.1-0.15 | 366 | -4.00 | 1.58 |
+| by my cards and risk | 1 / 0.15-0.2 | 225 | -4.87 | 2.16 |
+| by my cards and risk | 1 / 0.2-0.3 | 364 | -11.92 | 2.04 |
+| by my cards and risk | 1 / 0.3-0.5 | 336 | -17.96 | 2.31 |
+| by my cards and risk | 1 / 0.5+ | 195 | -29.27 | 2.68 |
+| by my cards and risk | 1 / <0.03 | 619 | +2.21 | 0.46 |
+| by my cards and risk | 2 / 0.03-0.06 | 879 | +2.49 | 0.73 |
+| by my cards and risk | 2 / 0.06-0.1 | 1116 | +0.98 | 0.86 |
+| by my cards and risk | 2 / 0.1-0.15 | 1280 | -0.27 | 0.88 |
+| by my cards and risk | 2 / 0.15-0.2 | 907 | -4.90 | 1.31 |
+| by my cards and risk | 2 / 0.2-0.3 | 1505 | -9.20 | 1.10 |
+| by my cards and risk | 2 / 0.3-0.5 | 2053 | -14.50 | 1.03 |
+| by my cards and risk | 2 / 0.5+ | 1010 | -21.92 | 1.42 |
+| by my cards and risk | 2 / <0.03 | 2269 | +3.81 | 0.37 |
+| by my cards and risk | 3 / 0.03-0.06 | 1016 | +1.74 | 1.09 |
+| by my cards and risk | 3 / 0.06-0.1 | 866 | +0.64 | 1.27 |
+| by my cards and risk | 3 / 0.1-0.15 | 869 | -0.34 | 1.40 |
+| by my cards and risk | 3 / 0.15-0.2 | 712 | -2.69 | 1.69 |
+| by my cards and risk | 3 / 0.2-0.3 | 977 | -5.49 | 1.55 |
+| by my cards and risk | 3 / 0.3-0.5 | 1192 | -9.12 | 1.51 |
+| by my cards and risk | 3 / 0.5+ | 741 | -17.62 | 1.97 |
+| by my cards and risk | 3 / <0.03 | 1940 | +4.37 | 0.61 |
+| by my cards and risk | 4 / 0.03-0.06 | 311 | +4.74 | 2.15 |
+| by my cards and risk | 4 / 0.06-0.1 | 287 | +0.08 | 2.65 |
+| by my cards and risk | 4 / 0.1-0.15 | 271 | -1.71 | 3.00 |
+| by my cards and risk | 4 / 0.15-0.2 | 189 | -1.53 | 3.47 |
+| by my cards and risk | 4 / 0.2-0.3 | 302 | +0.36 | 3.12 |
+| by my cards and risk | 4 / 0.3-0.5 | 302 | -5.26 | 3.00 |
+| by my cards and risk | 4 / 0.5+ | 197 | -18.26 | 3.88 |
+| by my cards and risk | 4 / <0.03 | 701 | +6.16 | 1.19 |
+| by my cards and risk | 5 / <0.03 | 83 | +8.24 | 3.42 |
+| by my total and risk | 2 / <0.03 | 207 | +5.69 | 1.41 |
+| by my total and risk | 3 / 0.03-0.06 | 216 | +1.54 | 1.98 |
+| by my total and risk | 3 / 0.06-0.1 | 160 | -2.08 | 2.59 |
+| by my total and risk | 3 / 0.1-0.15 | 224 | -0.68 | 2.19 |
+| by my total and risk | 3 / 0.15-0.2 | 97 | -2.61 | 3.53 |
+| by my total and risk | 3 / 0.2-0.3 | 154 | -10.06 | 3.47 |
+| by my total and risk | 3 / 0.3-0.5 | 135 | -11.07 | 3.95 |
+| by my total and risk | 3 / 0.5+ | 118 | -24.89 | 3.83 |
+| by my total and risk | 3 / <0.03 | 643 | +3.37 | 1.02 |
+| by my total and risk | 4 / 0.03-0.06 | 371 | +1.46 | 1.42 |
+| by my total and risk | 4 / 0.06-0.1 | 408 | +0.21 | 1.54 |
+| by my total and risk | 4 / 0.1-0.15 | 411 | +0.26 | 1.42 |
+| by my total and risk | 4 / 0.15-0.2 | 281 | -1.65 | 2.11 |
+| by my total and risk | 4 / 0.2-0.3 | 380 | -9.05 | 2.17 |
+| by my total and risk | 4 / 0.3-0.5 | 433 | -14.23 | 2.17 |
+| by my total and risk | 4 / 0.5+ | 219 | -25.72 | 2.81 |
+| by my total and risk | 4 / <0.03 | 1093 | +4.19 | 0.62 |
+| by my total and risk | 5 / 0.03-0.06 | 616 | +2.08 | 1.15 |
+| by my total and risk | 5 / 0.06-0.1 | 722 | -0.56 | 1.18 |
+| by my total and risk | 5 / 0.1-0.15 | 716 | -0.22 | 1.24 |
+| by my total and risk | 5 / 0.15-0.2 | 510 | -5.31 | 1.84 |
+| by my total and risk | 5 / 0.2-0.3 | 717 | -7.89 | 1.58 |
+| by my total and risk | 5 / 0.3-0.5 | 941 | -12.68 | 1.53 |
+| by my total and risk | 5 / 0.5+ | 424 | -22.86 | 2.23 |
+| by my total and risk | 5 / <0.03 | 1390 | +3.42 | 0.57 |
+| by my total and risk | 6 / 0.03-0.06 | 644 | +2.86 | 1.19 |
+| by my total and risk | 6 / 0.06-0.1 | 688 | +1.70 | 1.30 |
+| by my total and risk | 6 / 0.1-0.15 | 762 | -2.36 | 1.44 |
+| by my total and risk | 6 / 0.15-0.2 | 606 | -4.07 | 1.71 |
+| by my total and risk | 6 / 0.2-0.3 | 1004 | -8.59 | 1.48 |
+| by my total and risk | 6 / 0.3-0.5 | 1311 | -14.30 | 1.41 |
+| by my total and risk | 6 / 0.5+ | 683 | -20.23 | 1.95 |
+| by my total and risk | 6 / <0.03 | 1260 | +4.33 | 0.67 |
+| by my total and risk | 7 / 0.03-0.06 | 610 | +2.78 | 1.31 |
+| by my total and risk | 7 / 0.06-0.1 | 608 | +0.54 | 1.53 |
+| by my total and risk | 7 / 0.1-0.15 | 647 | -0.77 | 1.67 |
+| by my total and risk | 7 / 0.15-0.2 | 525 | -3.23 | 2.01 |
+| by my total and risk | 7 / 0.2-0.3 | 863 | -4.32 | 1.69 |
+| by my total and risk | 7 / 0.3-0.5 | 1066 | -9.40 | 1.52 |
+| by my total and risk | 7 / 0.5+ | 697 | -17.66 | 1.93 |
+| by my total and risk | 7 / <0.03 | 968 | +5.37 | 0.80 |
+| by risk | 0.03-0.06 | 2524 | +2.29 | 0.59 |
+| by risk | 0.06-0.1 | 2643 | +0.33 | 0.66 |
+| by risk | 0.1-0.15 | 2804 | -0.94 | 0.70 |
+| by risk | 0.15-0.2 | 2052 | -3.72 | 0.92 |
+| by risk | 0.2-0.3 | 3168 | -7.32 | 0.82 |
+| by risk | 0.3-0.5 | 3903 | -12.38 | 0.78 |
+| by risk | 0.5+ | 2152 | -20.72 | 1.05 |
+| by risk | <0.03 | 5612 | +4.19 | 0.31 |
+counter2 against public/model/yaniv-net-5cards-handmade.json, 30000 rounds: every position where Yaniv is legal and not sure, played out both ways (call, and counter2's best throw)
+| split | cell | n | call minus throw | ±95% |
+|---|---|---|---|---|
+| by believed edge (call - throw) | -1-1 | 2950 | +1.49 | 0.67 |
+| by believed edge (call - throw) | -12--8 | 4767 | -8.70 | 0.63 |
+| by believed edge (call - throw) | -3--1 | 2946 | -2.08 | 0.72 |
+| by believed edge (call - throw) | -5--3 | 3022 | -3.31 | 0.74 |
+| by believed edge (call - throw) | -8--5 | 4303 | -5.36 | 0.64 |
+| by believed edge (call - throw) | 1-3 | 2973 | +3.60 | 0.62 |
+| by believed edge (call - throw) | 12+ | 324 | +9.75 | 1.72 |
+| by believed edge (call - throw) | 3-5 | 2589 | +4.77 | 0.62 |
+| by believed edge (call - throw) | 5-8 | 2252 | +5.59 | 0.72 |
+| by believed edge (call - throw) | 8-12 | 1023 | +8.38 | 0.99 |
+| by believed edge (call - throw) | <-12 | 9125 | -17.95 | 0.47 |
+| by its cards and risk | 1 / 0.3-0.5 | 288 | -2.59 | 2.21 |
+| by its cards and risk | 1 / 0.5+ | 1772 | -24.81 | 0.91 |
+| by its cards and risk | 2 / 0.03-0.06 | 118 | +1.89 | 3.36 |
+| by its cards and risk | 2 / 0.06-0.1 | 238 | +0.60 | 1.97 |
+| by its cards and risk | 2 / 0.1-0.15 | 737 | +1.96 | 0.97 |
+| by its cards and risk | 2 / 0.15-0.2 | 483 | +2.16 | 1.48 |
+| by its cards and risk | 2 / 0.2-0.3 | 1813 | -6.76 | 0.98 |
+| by its cards and risk | 2 / 0.3-0.5 | 4671 | -12.93 | 0.68 |
+| by its cards and risk | 2 / 0.5+ | 3162 | -19.11 | 0.84 |
+| by its cards and risk | 3 / 0.03-0.06 | 979 | +4.74 | 0.86 |
+| by its cards and risk | 3 / 0.06-0.1 | 1540 | +2.00 | 0.85 |
+| by its cards and risk | 3 / 0.1-0.15 | 2209 | -0.53 | 0.81 |
+| by its cards and risk | 3 / 0.15-0.2 | 1932 | -2.17 | 0.93 |
+| by its cards and risk | 3 / 0.2-0.3 | 3341 | -6.39 | 0.79 |
+| by its cards and risk | 3 / 0.3-0.5 | 2886 | -8.30 | 0.88 |
+| by its cards and risk | 3 / 0.5+ | 321 | -18.36 | 2.64 |
+| by its cards and risk | 3 / <0.03 | 1095 | +5.78 | 0.77 |
+| by its cards and risk | 4 / 0.03-0.06 | 1385 | +4.29 | 0.82 |
+| by its cards and risk | 4 / 0.06-0.1 | 1257 | +1.89 | 1.09 |
+| by its cards and risk | 4 / 0.1-0.15 | 962 | +0.39 | 1.27 |
+| by its cards and risk | 4 / 0.15-0.2 | 558 | -3.08 | 1.79 |
+| by its cards and risk | 4 / 0.2-0.3 | 472 | -4.20 | 2.01 |
+| by its cards and risk | 4 / 0.3-0.5 | 199 | -6.81 | 3.20 |
+| by its cards and risk | 4 / <0.03 | 2349 | +6.51 | 0.51 |
+| by its cards and risk | 5 / 0.03-0.06 | 204 | +3.19 | 1.76 |
+| by its cards and risk | 5 / <0.03 | 1023 | +5.11 | 0.71 |
+| by my cards and risk | 1 / 0.03-0.06 | 426 | +2.06 | 1.12 |
+| by my cards and risk | 1 / 0.06-0.1 | 584 | -1.98 | 1.27 |
+| by my cards and risk | 1 / 0.1-0.15 | 849 | -2.22 | 1.05 |
+| by my cards and risk | 1 / 0.15-0.2 | 554 | -5.13 | 1.47 |
+| by my cards and risk | 1 / 0.2-0.3 | 1144 | -8.83 | 1.14 |
+| by my cards and risk | 1 / 0.3-0.5 | 1229 | -15.03 | 1.21 |
+| by my cards and risk | 1 / 0.5+ | 957 | -29.68 | 0.98 |
+| by my cards and risk | 1 / <0.03 | 729 | +4.12 | 0.56 |
+| by my cards and risk | 2 / 0.03-0.06 | 1082 | +3.82 | 0.77 |
+| by my cards and risk | 2 / 0.06-0.1 | 1228 | +1.52 | 0.96 |
+| by my cards and risk | 2 / 0.1-0.15 | 1797 | -0.95 | 0.83 |
+| by my cards and risk | 2 / 0.15-0.2 | 1337 | -2.72 | 1.05 |
+| by my cards and risk | 2 / 0.2-0.3 | 2686 | -8.10 | 0.85 |
+| by my cards and risk | 2 / 0.3-0.5 | 4242 | -12.56 | 0.69 |
+| by my cards and risk | 2 / 0.5+ | 2557 | -22.34 | 0.83 |
+| by my cards and risk | 2 / <0.03 | 1621 | +5.62 | 0.51 |
+| by my cards and risk | 3 / 0.03-0.06 | 881 | +5.32 | 1.07 |
+| by my cards and risk | 3 / 0.06-0.1 | 961 | +3.59 | 1.20 |
+| by my cards and risk | 3 / 0.1-0.15 | 1001 | +2.88 | 1.25 |
+| by my cards and risk | 3 / 0.15-0.2 | 828 | +0.97 | 1.47 |
+| by my cards and risk | 3 / 0.2-0.3 | 1446 | -3.02 | 1.21 |
+| by my cards and risk | 3 / 0.3-0.5 | 2097 | -6.17 | 1.08 |
+| by my cards and risk | 3 / 0.5+ | 1414 | -14.72 | 1.33 |
+| by my cards and risk | 3 / <0.03 | 1442 | +6.20 | 0.72 |
+| by my cards and risk | 4 / 0.03-0.06 | 275 | +5.49 | 2.32 |
+| by my cards and risk | 4 / 0.06-0.1 | 320 | +4.25 | 2.30 |
+| by my cards and risk | 4 / 0.1-0.15 | 297 | +4.68 | 2.64 |
+| by my cards and risk | 4 / 0.15-0.2 | 260 | +2.25 | 3.00 |
+| by my cards and risk | 4 / 0.2-0.3 | 415 | +1.81 | 2.32 |
+| by my cards and risk | 4 / 0.3-0.5 | 437 | -4.41 | 2.55 |
+| by my cards and risk | 4 / 0.5+ | 315 | -13.00 | 2.97 |
+| by my cards and risk | 4 / <0.03 | 620 | +8.12 | 1.33 |
+| by my cards and risk | 5 / <0.03 | 87 | +11.18 | 2.51 |
+| by my total and risk | 1 / <0.03 | 175 | +6.12 | 1.61 |
+| by my total and risk | 2 / 0.03-0.06 | 241 | +3.04 | 1.61 |
+| by my total and risk | 2 / 0.06-0.1 | 248 | +2.08 | 1.54 |
+| by my total and risk | 2 / 0.1-0.15 | 320 | +1.54 | 1.40 |
+| by my total and risk | 2 / 0.15-0.2 | 211 | +0.03 | 2.17 |
+| by my total and risk | 2 / 0.2-0.3 | 401 | -3.37 | 1.69 |
+| by my total and risk | 2 / 0.3-0.5 | 201 | -3.83 | 2.47 |
+| by my total and risk | 2 / 0.5+ | 192 | -28.25 | 1.92 |
+| by my total and risk | 2 / <0.03 | 621 | +6.50 | 0.71 |
+| by my total and risk | 3 / 0.03-0.06 | 544 | +3.46 | 1.12 |
+| by my total and risk | 3 / 0.06-0.1 | 583 | +0.31 | 1.28 |
+| by my total and risk | 3 / 0.1-0.15 | 838 | +0.06 | 1.00 |
+| by my total and risk | 3 / 0.15-0.2 | 404 | -0.27 | 1.63 |
+| by my total and risk | 3 / 0.2-0.3 | 809 | -5.91 | 1.37 |
+| by my total and risk | 3 / 0.3-0.5 | 810 | -8.85 | 1.41 |
+| by my total and risk | 3 / 0.5+ | 537 | -28.19 | 1.44 |
+| by my total and risk | 3 / <0.03 | 1064 | +4.04 | 0.74 |
+| by my total and risk | 4 / 0.03-0.06 | 500 | +3.62 | 1.17 |
+| by my total and risk | 4 / 0.06-0.1 | 614 | -0.18 | 1.46 |
+| by my total and risk | 4 / 0.1-0.15 | 854 | -1.84 | 1.25 |
+| by my total and risk | 4 / 0.15-0.2 | 578 | -4.40 | 1.60 |
+| by my total and risk | 4 / 0.2-0.3 | 1048 | -11.18 | 1.37 |
+| by my total and risk | 4 / 0.3-0.5 | 1530 | -16.23 | 1.13 |
+| by my total and risk | 4 / 0.5+ | 755 | -25.46 | 1.34 |
+| by my total and risk | 4 / <0.03 | 787 | +5.64 | 0.88 |
+| by my total and risk | 5 / 0.03-0.06 | 553 | +4.22 | 1.32 |
+| by my total and risk | 5 / 0.06-0.1 | 604 | +2.04 | 1.52 |
+| by my total and risk | 5 / 0.1-0.15 | 783 | -2.71 | 1.44 |
+| by my total and risk | 5 / 0.15-0.2 | 700 | -3.15 | 1.59 |
+| by my total and risk | 5 / 0.2-0.3 | 1156 | -6.75 | 1.32 |
+| by my total and risk | 5 / 0.3-0.5 | 1958 | -11.16 | 1.06 |
+| by my total and risk | 5 / 0.5+ | 1030 | -22.30 | 1.36 |
+| by my total and risk | 5 / <0.03 | 718 | +5.80 | 0.90 |
+| by my total and risk | 6 / 0.03-0.06 | 440 | +4.42 | 1.62 |
+| by my total and risk | 6 / 0.06-0.1 | 598 | +3.93 | 1.50 |
+| by my total and risk | 6 / 0.1-0.15 | 587 | +2.90 | 1.62 |
+| by my total and risk | 6 / 0.15-0.2 | 592 | -1.59 | 1.73 |
+| by my total and risk | 6 / 0.2-0.3 | 1286 | -5.80 | 1.30 |
+| by my total and risk | 6 / 0.3-0.5 | 1953 | -10.40 | 1.12 |
+| by my total and risk | 6 / 0.5+ | 1310 | -18.27 | 1.30 |
+| by my total and risk | 6 / <0.03 | 601 | +6.95 | 1.00 |
+| by my total and risk | 7 / 0.03-0.06 | 355 | +6.69 | 1.63 |
+| by my total and risk | 7 / 0.06-0.1 | 427 | +4.10 | 1.90 |
+| by my total and risk | 7 / 0.1-0.15 | 549 | +3.48 | 1.81 |
+| by my total and risk | 7 / 0.15-0.2 | 477 | +1.55 | 2.04 |
+| by my total and risk | 7 / 0.2-0.3 | 942 | -2.60 | 1.51 |
+| by my total and risk | 7 / 0.3-0.5 | 1533 | -7.48 | 1.27 |
+| by my total and risk | 7 / 0.5+ | 1426 | -16.48 | 1.31 |
+| by my total and risk | 7 / <0.03 | 523 | +9.12 | 1.32 |
+| by risk | 0.03-0.06 | 2686 | +4.27 | 0.56 |
+| by risk | 0.06-0.1 | 3110 | +1.86 | 0.63 |
+| by risk | 0.1-0.15 | 3961 | +0.15 | 0.58 |
+| by risk | 0.15-0.2 | 2997 | -1.68 | 0.73 |
+| by risk | 0.2-0.3 | 5710 | -6.23 | 0.58 |
+| by risk | 0.3-0.5 | 8045 | -10.75 | 0.52 |
+| by risk | 0.5+ | 5266 | -20.99 | 0.62 |
+| by risk | <0.03 | 4499 | +6.02 | 0.36 |
+counter2 against public/model/yaniv-net.json, 30000 rounds: every position where Yaniv is legal and not sure, played out both ways (call, and counter2's best throw)
+| split | cell | n | call minus throw | ±95% |
+|---|---|---|---|---|
+| by believed edge (call - throw) | -1-1 | 3307 | +0.77 | 0.64 |
+| by believed edge (call - throw) | -12--8 | 6625 | -7.23 | 0.53 |
+| by believed edge (call - throw) | -3--1 | 3563 | -2.22 | 0.67 |
+| by believed edge (call - throw) | -5--3 | 3958 | -4.17 | 0.65 |
+| by believed edge (call - throw) | -8--5 | 5960 | -5.55 | 0.54 |
+| by believed edge (call - throw) | 1-3 | 3168 | +3.29 | 0.60 |
+| by believed edge (call - throw) | 12+ | 336 | +9.42 | 1.76 |
+| by believed edge (call - throw) | 3-5 | 2785 | +4.13 | 0.59 |
+| by believed edge (call - throw) | 5-8 | 2352 | +5.94 | 0.67 |
+| by believed edge (call - throw) | 8-12 | 1075 | +8.13 | 0.97 |
+| by believed edge (call - throw) | <-12 | 12358 | -15.01 | 0.40 |
+| by its cards and risk | 1 / 0.2-0.3 | 307 | +2.24 | 1.85 |
+| by its cards and risk | 1 / 0.3-0.5 | 1662 | -1.60 | 0.87 |
+| by its cards and risk | 1 / 0.5+ | 3287 | -18.81 | 0.73 |
+| by its cards and risk | 2 / 0.03-0.06 | 142 | +1.43 | 2.60 |
+| by its cards and risk | 2 / 0.06-0.1 | 301 | +0.20 | 1.80 |
+| by its cards and risk | 2 / 0.1-0.15 | 605 | -0.34 | 1.28 |
+| by its cards and risk | 2 / 0.15-0.2 | 732 | -0.75 | 1.33 |
+| by its cards and risk | 2 / 0.2-0.3 | 2707 | -6.16 | 0.79 |
+| by its cards and risk | 2 / 0.3-0.5 | 6322 | -9.81 | 0.57 |
+| by its cards and risk | 2 / 0.5+ | 3587 | -16.81 | 0.77 |
+| by its cards and risk | 3 / 0.03-0.06 | 1065 | +3.72 | 0.90 |
+| by its cards and risk | 3 / 0.06-0.1 | 1748 | +0.50 | 0.84 |
+| by its cards and risk | 3 / 0.1-0.15 | 2535 | -1.93 | 0.77 |
+| by its cards and risk | 3 / 0.15-0.2 | 2239 | -3.26 | 0.87 |
+| by its cards and risk | 3 / 0.2-0.3 | 3708 | -6.58 | 0.75 |
+| by its cards and risk | 3 / 0.3-0.5 | 3305 | -8.64 | 0.81 |
+| by its cards and risk | 3 / 0.5+ | 355 | -18.02 | 2.42 |
+| by its cards and risk | 3 / <0.03 | 1140 | +5.49 | 0.77 |
+| by its cards and risk | 4 / 0.03-0.06 | 1581 | +3.32 | 0.80 |
+| by its cards and risk | 4 / 0.06-0.1 | 1407 | +0.88 | 1.00 |
+| by its cards and risk | 4 / 0.1-0.15 | 1081 | -0.32 | 1.27 |
+| by its cards and risk | 4 / 0.15-0.2 | 564 | -2.76 | 1.89 |
+| by its cards and risk | 4 / 0.2-0.3 | 522 | -4.48 | 2.02 |
+| by its cards and risk | 4 / 0.3-0.5 | 192 | -5.59 | 3.45 |
+| by its cards and risk | 4 / <0.03 | 2617 | +5.57 | 0.51 |
+| by its cards and risk | 5 / 0.03-0.06 | 223 | +3.04 | 1.60 |
+| by its cards and risk | 5 / 0.06-0.1 | 84 | +0.75 | 4.76 |
+| by its cards and risk | 5 / <0.03 | 1247 | +5.26 | 0.63 |
+| by my cards and risk | 1 / 0.03-0.06 | 521 | -0.62 | 1.23 |
+| by my cards and risk | 1 / 0.06-0.1 | 864 | -3.83 | 1.18 |
+| by my cards and risk | 1 / 0.1-0.15 | 1113 | -3.33 | 1.03 |
+| by my cards and risk | 1 / 0.15-0.2 | 779 | -5.86 | 1.35 |
+| by my cards and risk | 1 / 0.2-0.3 | 1806 | -7.03 | 0.92 |
+| by my cards and risk | 1 / 0.3-0.5 | 2316 | -10.04 | 0.86 |
+| by my cards and risk | 1 / 0.5+ | 1551 | -23.53 | 0.94 |
+| by my cards and risk | 1 / <0.03 | 893 | +3.40 | 0.64 |
+| by my cards and risk | 2 / 0.03-0.06 | 1190 | +3.79 | 0.79 |
+| by my cards and risk | 2 / 0.06-0.1 | 1416 | +0.10 | 0.92 |
+| by my cards and risk | 2 / 0.1-0.15 | 1839 | -2.58 | 0.89 |
+| by my cards and risk | 2 / 0.15-0.2 | 1661 | -3.73 | 0.97 |
+| by my cards and risk | 2 / 0.2-0.3 | 3463 | -8.17 | 0.75 |
+| by my cards and risk | 2 / 0.3-0.5 | 5998 | -9.06 | 0.57 |
+| by my cards and risk | 2 / 0.5+ | 3412 | -18.72 | 0.73 |
+| by my cards and risk | 2 / <0.03 | 1912 | +4.76 | 0.49 |
+| by my cards and risk | 3 / 0.03-0.06 | 985 | +3.94 | 1.04 |
+| by my cards and risk | 3 / 0.06-0.1 | 970 | +4.10 | 1.14 |
+| by my cards and risk | 3 / 0.1-0.15 | 1021 | +2.15 | 1.25 |
+| by my cards and risk | 3 / 0.15-0.2 | 896 | +0.47 | 1.40 |
+| by my cards and risk | 3 / 0.2-0.3 | 1587 | -1.70 | 1.13 |
+| by my cards and risk | 3 / 0.3-0.5 | 2726 | -5.36 | 0.90 |
+| by my cards and risk | 3 / 0.5+ | 1957 | -12.68 | 1.08 |
+| by my cards and risk | 3 / <0.03 | 1540 | +6.53 | 0.69 |
+| by my cards and risk | 4 / 0.03-0.06 | 287 | +6.13 | 2.16 |
+| by my cards and risk | 4 / 0.06-0.1 | 287 | +4.63 | 2.49 |
+| by my cards and risk | 4 / 0.1-0.15 | 303 | +3.52 | 2.62 |
+| by my cards and risk | 4 / 0.15-0.2 | 244 | +2.59 | 3.14 |
+| by my cards and risk | 4 / 0.2-0.3 | 375 | +2.69 | 2.47 |
+| by my cards and risk | 4 / 0.3-0.5 | 410 | -5.18 | 2.47 |
+| by my cards and risk | 4 / 0.5+ | 302 | -11.40 | 2.97 |
+| by my cards and risk | 4 / <0.03 | 631 | +7.52 | 1.33 |
+| by my cards and risk | 5 / <0.03 | 82 | +10.26 | 3.12 |
+| by my total and risk | 1 / 0.06-0.1 | 87 | +3.08 | 2.95 |
+| by my total and risk | 1 / 0.1-0.15 | 106 | +4.56 | 2.43 |
+| by my total and risk | 1 / 0.15-0.2 | 136 | -0.26 | 2.80 |
+| by my total and risk | 1 / 0.2-0.3 | 249 | +1.26 | 2.08 |
+| by my total and risk | 1 / 0.3-0.5 | 209 | -0.35 | 2.28 |
+| by my total and risk | 1 / <0.03 | 174 | +7.01 | 1.55 |
+| by my total and risk | 2 / 0.03-0.06 | 274 | +1.23 | 1.74 |
+| by my total and risk | 2 / 0.06-0.1 | 389 | +0.26 | 1.49 |
+| by my total and risk | 2 / 0.1-0.15 | 506 | +0.71 | 1.27 |
+| by my total and risk | 2 / 0.15-0.2 | 444 | -3.34 | 1.70 |
+| by my total and risk | 2 / 0.2-0.3 | 989 | -2.11 | 1.11 |
+| by my total and risk | 2 / 0.3-0.5 | 1132 | -2.49 | 1.07 |
+| by my total and risk | 2 / 0.5+ | 500 | -21.24 | 1.65 |
+| by my total and risk | 2 / <0.03 | 577 | +6.05 | 0.80 |
+| by my total and risk | 3 / 0.03-0.06 | 530 | +3.09 | 1.19 |
+| by my total and risk | 3 / 0.06-0.1 | 579 | -2.13 | 1.51 |
+| by my total and risk | 3 / 0.1-0.15 | 824 | -4.62 | 1.29 |
+| by my total and risk | 3 / 0.15-0.2 | 488 | -2.24 | 1.66 |
+| by my total and risk | 3 / 0.2-0.3 | 1351 | -8.23 | 1.14 |
+| by my total and risk | 3 / 0.3-0.5 | 1989 | -6.01 | 0.91 |
+| by my total and risk | 3 / 0.5+ | 872 | -21.83 | 1.31 |
+| by my total and risk | 3 / <0.03 | 1070 | +4.57 | 0.77 |
+| by my total and risk | 4 / 0.03-0.06 | 513 | +2.74 | 1.32 |
+| by my total and risk | 4 / 0.06-0.1 | 644 | -1.22 | 1.45 |
+| by my total and risk | 4 / 0.1-0.15 | 694 | -4.59 | 1.52 |
+| by my total and risk | 4 / 0.15-0.2 | 640 | -7.19 | 1.64 |
+| by my total and risk | 4 / 0.2-0.3 | 1228 | -10.24 | 1.25 |
+| by my total and risk | 4 / 0.3-0.5 | 2006 | -11.56 | 0.98 |
+| by my total and risk | 4 / 0.5+ | 1081 | -19.48 | 1.26 |
+| by my total and risk | 4 / <0.03 | 996 | +4.02 | 0.76 |
+| by my total and risk | 5 / 0.03-0.06 | 646 | +3.19 | 1.25 |
+| by my total and risk | 5 / 0.06-0.1 | 695 | +1.18 | 1.32 |
+| by my total and risk | 5 / 0.1-0.15 | 816 | -1.19 | 1.35 |
+| by my total and risk | 5 / 0.15-0.2 | 750 | -1.40 | 1.48 |
+| by my total and risk | 5 / 0.2-0.3 | 1153 | -5.67 | 1.32 |
+| by my total and risk | 5 / 0.3-0.5 | 2305 | -9.28 | 0.95 |
+| by my total and risk | 5 / 0.5+ | 1332 | -15.87 | 1.20 |
+| by my total and risk | 5 / <0.03 | 922 | +5.16 | 0.81 |
+| by my total and risk | 6 / 0.03-0.06 | 552 | +3.70 | 1.40 |
+| by my total and risk | 6 / 0.06-0.1 | 629 | +2.58 | 1.52 |
+| by my total and risk | 6 / 0.1-0.15 | 721 | +0.87 | 1.52 |
+| by my total and risk | 6 / 0.15-0.2 | 647 | -2.49 | 1.67 |
+| by my total and risk | 6 / 0.2-0.3 | 1326 | -5.91 | 1.28 |
+| by my total and risk | 6 / 0.3-0.5 | 2231 | -10.15 | 1.03 |
+| by my total and risk | 6 / 0.5+ | 1692 | -16.07 | 1.13 |
+| by my total and risk | 6 / <0.03 | 738 | +6.79 | 0.99 |
+| by my total and risk | 7 / 0.03-0.06 | 423 | +5.42 | 1.47 |
+| by my total and risk | 7 / 0.06-0.1 | 516 | +2.77 | 1.71 |
+| by my total and risk | 7 / 0.1-0.15 | 611 | +1.84 | 1.74 |
+| by my total and risk | 7 / 0.15-0.2 | 494 | +0.54 | 2.07 |
+| by my total and risk | 7 / 0.2-0.3 | 953 | -3.08 | 1.55 |
+| by my total and risk | 7 / 0.3-0.5 | 1610 | -7.66 | 1.20 |
+| by my total and risk | 7 / 0.5+ | 1723 | -16.99 | 1.15 |
+| by my total and risk | 7 / <0.03 | 553 | +7.58 | 1.26 |
+| by risk | 0.03-0.06 | 3011 | +3.35 | 0.55 |
+| by risk | 0.06-0.1 | 3557 | +0.67 | 0.60 |
+| by risk | 0.1-0.15 | 4291 | -1.23 | 0.59 |
+| by risk | 0.15-0.2 | 3602 | -2.66 | 0.68 |
+| by risk | 0.2-0.3 | 7250 | -5.90 | 0.51 |
+| by risk | 0.3-0.5 | 11483 | -8.22 | 0.42 |
+| by risk | 0.5+ | 7235 | -17.79 | 0.52 |
+| by risk | <0.03 | 5058 | +5.49 | 0.35 |
