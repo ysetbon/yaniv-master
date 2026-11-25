@@ -1,1 +1,2 @@
 py:contest_fable.build@{"LIVE":{"5":0,"4":0}} vs hm5 (seed 31): margin -0.081 +-0.037 a round (20000 rounds), rounds won 49.7%, calls caught 6.2%;
+py:contest_fable.build@{"LIVE":{"5":0,"4":0}} vs trained (seed 31): margin +0.048 +-0.080 a round (20000 rounds), rounds won 51.0%, calls caught 7.1%;
