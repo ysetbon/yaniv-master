@@ -16,6 +16,8 @@ from .features import action_key
 
 ROOT = Path(__file__).resolve().parents[2]
 _C: dict = {}
+# the frozen baseline (opus v3 = hm5 + endgame + mine + match blocks), so the shipped file cannot change mid-run
+HERO = os.environ.get("RACE_HERO", "/tmp/claude-0/-home-user-yaniv-master/3c7d4d81-ef83-553b-adc8-6a5382f1abf0/scratchpad/opus-v3.json")
 
 
 def _chooser(name: str):
@@ -99,13 +101,13 @@ alt_hm5 = _alt_player("hm5")
 
 
 # ---------------------------------------------------------------- own rules
-def _hero_best(view, actions, ok, hero="opus"):
+def _hero_best(view, actions, ok, hero=None):
     """The hero net's best move among those with ok(action) True (None if none)."""
     from .features import score_actions
     acts = [x for x in actions if x.kind != "yaniv" and ok(x)]
     if not acts:
         return None
-    sc = score_actions(_net(hero), view, acts)
+    sc = score_actions(_net(hero or HERO), view, acts)
     return acts[int(sc.argmax())]
 
 
@@ -143,8 +145,9 @@ def alt_otherthrow(view, actions, a, ctx):
     return _record(view, a, b, "other")
 
 
-def run(alt: str, opp: str, rounds: int, seed: int, out: str, hero: str = "opus") -> None:
+def run(alt: str, opp: str, rounds: int, seed: int, out: str, hero: str = "") -> None:
     from .contest_opus_playout import playout
+    hero = hero or HERO
     recs, n, margin = playout(hero, opp, f"training.yaniv.contest_opus_race:{alt}", rounds, seed, processes=2)
     Path(out).write_text(json.dumps({"rounds": n, "margin": margin, "hero": hero, "opp": opp, "alt": alt,
                                      "seed": seed, "recs": recs}))

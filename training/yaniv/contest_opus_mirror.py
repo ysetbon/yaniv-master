@@ -107,6 +107,22 @@ def alt_low(view, actions, a, ctx):
     return b, json.dumps(f)
 
 
+def alt_low5(view, actions, a, ctx):
+    """CATCH probe with a 5-card opponent that is known to hold a card worth 7+ (it took it: it likely holds the
+    pair and throws it next turn, so its hand drops fast): the lowest expected hand, if 1+ point under hm5's."""
+    if a.kind == "yaniv" or view.opp_size != 5:
+        return None
+    if max([POINTS_OF[c] for c in cards_from_mask(view.opp_known)], default=0) < 7:
+        return None
+    acts = [x for x in actions if x.kind != "yaniv"]
+    b = min(acts, key=lambda x: (_after(view, x), (view.my_hand & ~x.discard_mask).bit_count(), x.draw != "open"))
+    if _after(view, a) - _after(view, b) < 1.0:
+        return None
+    f = facts(view, a, b)
+    f["src"] = "low5"
+    return b, json.dumps(f)
+
+
 def run(alt: str, opp: str, rounds: int, seed: int, out: str, hero: str = "hm5") -> None:
     from .contest_opus_playout import playout
     recs, n, margin = playout(hero, opp, f"training.yaniv.contest_opus_mirror:{alt}", rounds, seed, processes=2)
