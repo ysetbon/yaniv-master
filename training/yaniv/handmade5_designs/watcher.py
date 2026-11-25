@@ -3,31 +3,32 @@ what good players were SEEN to do there.
 
     python -m training.yaniv.handmade5_designs.watcher [OUT.json]
 
-Method (results/handmade-5x7-logs/watcher.md has the tables): on 84,000 real-game decisions where somebody
-held 5 cards I recorded what the trained net, the 4-card hand-written net (training/yaniv/handmade.py, "the
-bar") and the card counter would each play, tabulated the choices by situation, and where the trained net and
-the bar disagreed I played the round out both ways on the same deal (matched rollouts) to see who is right.
-The two nets agree on 83-92% of throws; the rules below are the places where the rollouts said the bar is
-wrong in a 5-card phase. Nothing is copied from the trained net's weights and nothing is fitted: each rule is
-a sentence, each constant a round number.
+Method (results/handmade-5x7-logs/watcher.md has the tables and every script's name): on 84,000 real-game
+decisions where somebody held 5 cards I recorded what the trained net, the 4-card hand-written net
+(training/yaniv/handmade.py, "the bar") and the card counter would each play, tabulated the choices by
+situation, and where the trained net and the bar disagreed I played the round out both ways on the same deal
+(matched rollouts, the mover continuing as the bar against the counter) to see who is right. Nothing is
+copied from the trained net's weights and nothing is fitted: a rule is a sentence, a constant a round number.
 
-The net is the bar (same units, imported from handmade.py: held points, the one-step plan, the heavy-card
-charge, the catch bonus, the Yaniv reasons, the match-score units) with these terms changed:
+What the watching said: the two nets play the same move on 83% of throws at 5 v 5 and about 90% in the other
+5-card phases; half of the differences are which of two ten-point cards to throw (rollouts: no difference),
+and in every other kind of difference but one the bar's move was as good or better (it is right to keep a
+high card whose twin the opponent holds, right not to take unpaired open 4s and 5s, right to throw the
+heavier of two pairs first when the opponent is under 5 cards). So this net IS the bar (same units, imported
+from handmade.py: held points, the one-step plan, the heavy-card charge, the catch bonus, the Yaniv reasons,
+the match-score units) with the one rule where the trained net was right:
 
-  RULE 1 (a pair of 2s goes before a high single while the opponent holds 4-5 cards). The trained net throws
-     22 over a higher single 86-96% of the time at 5 v 5 and ~55% at 5 v 4, the bar never; on 2,143 matched
-     rollouts throwing the 22 was worth +5.1 points at 5 v 5, +3.6 at 4 v 5, +2.7 at 5 v 4 and 0 at 5 v 3.
-     Reason: an opponent with 4-5 cards is far from calling, so what I hold now costs little and a hand one
-     card smaller is worth more than 6 points less. In words: "while the opponent holds 4 or 5 cards a 2 is a
-     heavy card like any other" (the bar counts it as half a heavy card). Aces and jokers stay light: nobody
-     throws AA and the rollouts agree (see the log).
-  RULE 2 (do not hang on to a high card just because the opponent holds its twin). The bar charges up to 6
-     points for leaving face up a rank the opponent is known to hold, so it throws a 5 and keeps a J for the
-     rest of the round; the trained net and the counter both throw the J, and on 274 matched rollouts that
-     was worth +4.0 points. In a 5-card phase the charge is cut to a tie-break (FEED5).
-  (Things watched and NOT changed, because the rollouts did not separate the two nets: the trained net throws
-  the lighter of two pairs first (+0.7 +- 0.6), takes unpaired open 4s late in the round (-0.2 +- 0.8), and
-  sometimes throws a lower single keeping a high one (-0.4 +- 0.7).)
+  RULE 1: while I hold 5 cards and the opponent 4 or 5, a pair of 2s goes before a high single.
+     Seen: with one pair of 2s and a higher single the trained net throws the 22 86-96% of the time at 5 v 5
+     and 46-61% at 5 v 4 (10-29% at 5 v 3); the bar and the counter never do. Rollouts, 22 thrown instead of
+     the bar's single: +5.1 +- 0.7 points at 5 v 5 and +2.7 +- 0.8 at 5 v 4 on the positions where the trained
+     net does it; on every position with 22 and a single worth 5+: +4.7 +- 0.5 at 5 v 5, +0.6 +- 0.5 at 5 v 4,
+     0 at 4 v 5, -3 at 5 v 3. A pair of aces stays (nobody throws it; rollouts -1.4 at 5 v 5, -5 elsewhere).
+     Reason: an opponent with 4-5 cards is at least two turns from calling (it calls next turn 1% / 5% of the
+     time), so the points I hold now cost little, and a hand one card smaller reaches a callable total a turn
+     sooner. In units: in that phase a 2 is a heavy card like any other (TWO_FULL), and a heavy card is charged
+     CARD_BIG = 8 points instead of 5, so that 22 (4 points out, one card fewer) beats throwing a ten (10
+     points out) even when the plan sees a second ten to throw next turn.
 """
 
 from __future__ import annotations
@@ -42,21 +43,18 @@ from training.yaniv.network import save_net
 SCRATCH = Path("/tmp/claude-0/-home-user-yaniv-master/a532e2e0-83d9-59dd-8a1a-414723f6a44f/scratchpad/watcher")
 
 # ---------------------------------------------------------------- constants
-# Everything not named here is the bar's (handmade.py: CARD 5, CARD_SOON 2, PAIR_OPEN 5, OPEN_TELL 1.5, the
-# plan's EST_* table, the catch bonus, the Yaniv thresholds, the score units).
-TWO_LIGHT = hm.TWO_LIGHT   # 0.5: a 2 counts as half a heavy card ... (bar)
-TWO_FULL = 1.0             # ... but as a whole one while both players hold 5 cards (RULE 1: on every position
-                           # with 22 + a single worth 5+, throwing the 22 was worth +4.7 points at 5 v 5,
-                           # +0.5 at 5 v 4, 0 at 4 v 5, -3 at 5 v 3; the trained net does it 90% / 55% / 60% / 15%)
-BIG_OPP = (5,)             # RULE 1 holds while I hold 5 cards and the opponent holds one of these counts
-LIGHT_PAIR_FIRST = 0.0     # bonus at 5 v 5 for throwing a set while keeping a pair (two pairs: the lighter goes first)
-CARD_5V5 = 8.0             # charge per heavy card while both hold 5 cards (the bar's CARD is 5 everywhere)
-FEED5 = hm.FEED         # (flat, per point) for leaving face up a rank the opponent is known to hold: only
-                           # a tie-break between equal cards (RULE 2; the bar's is (1.0, 0.5) = 6 for a ten)
+# Everything not named here is the bar's (handmade.py: CARD 5, CARD_SOON 2, PAIR_OPEN 5, OPEN_TELL 1.5, FEED,
+# the plan's EST_* table, the catch bonus, the Yaniv thresholds, the score units).
+BIG_OPP = (4, 5)           # RULE 1 holds while I hold 5 cards and the opponent holds one of these counts
+                           # (rollouts: + at 5 v 5 and 5 v 4, 0 at 4 v 5, - at 5 v 3)
+TWO_LIGHT = hm.TWO_LIGHT   # 0.5: a 2 counts as half a heavy card (the bar) ...
+TWO_FULL = 1.0             # ... but as a whole one in RULE 1's phase (the trained net throws 22 there, see above)
+CARD_BIG = 8.0             # charge per heavy card in RULE 1's phase (the bar's CARD is 5): a card must be worth
+                           # more than the 6 points between 22 and a ten; 8 leaves 2 points to spare
 
 
 def add_throw_units(kit: Kit) -> None:
-    """handmade.add_throw_units with RULE 1 and RULE 2 (the rest is the bar's, unit for unit)."""
+    """handmade.add_throw_units with RULE 1 added (the rest is the bar's, unit for unit)."""
     CARD, CARD_SOON = hm.CARD, hm.CARD_SOON
     kit.unit(1, "light_thrown", {"n_thrown": 4.0, "throw_A": 4.0, "throw_JOKER": 4.0}, bias=-4.0,
              note="cards thrown if the thrown rank is A or joker (light cards leaving), else 0")
@@ -76,26 +74,22 @@ def add_throw_units(kit: Kit) -> None:
     for s, w in heavy.items():
         out[s] = out.get(s, 0.0) - CARD * w
 
-    # RULE 1: while both players hold 5 cards (nobody is near calling) a 2 is a heavy card like any other, and
-    # every heavy card is charged CARD_5V5 instead of CARD.
-    # (my_cards is cards / 5, so 6 opp_has_5 + 30 my_cards - 36 is 0 at 5 v 5 and -6 or less otherwise)
-    both5 = {**{f"opp_has_{n}": 6.0 for n in BIG_OPP}, "my_cards": 30.0}
-    kit.unit(2, "twos_5v5", {"hand_2": 4.0, "twos_thrown": -1.0, "took_two_open": 1.0, **both5}, bias=-36.0,
-             note="2s in my hand after the move, only while both players hold 5 cards")
-    out["twos_5v5"] = -CARD * (TWO_FULL - TWO_LIGHT)     # the rest of a heavy card's charge
-    if CARD_5V5 != CARD:
+    # RULE 1: while I hold 5 cards and the opponent 4-5 (nobody is near calling) a 2 is a heavy card like any
+    # other, and every heavy card is charged CARD_BIG instead of CARD.
+    # (my_cards is cards / 5, so 6 [opp has 4-5] + 30 my_cards - 36 is 0 in that phase and -6 or less outside)
+    phase = {**{f"opp_has_{n}": 6.0 for n in BIG_OPP}, "my_cards": 30.0}
+    kit.unit(2, "twos_big", {"hand_2": 4.0, "twos_thrown": -1.0, "took_two_open": 1.0, **phase}, bias=-36.0,
+             note="2s in my hand after the move, only while I hold 5 cards and the opponent 4-5")
+    out["twos_big"] = -CARD * (TWO_FULL - TWO_LIGHT)     # the rest of a heavy card's charge
+    if CARD_BIG != CARD:
         # heavy cards after the move with the 2s counted whole; a card taken onto its twin is not counted (it
         # leaves with the twin next turn: the bar's PAIR_OPEN = CARD says the same)
         full = {"n_kept": 5.0, "hand_A": -4.0, "hand_JOKER": -4.0, "light_thrown": 1.0,
                 "take_open": 1.0, "took_light_open": -1.0, "deck_heavy": 1.0, "pairs_open": -1.0}
-        kit.unit(2, "heavy_5v5", {**full, **both5}, bias=-36.0,
-                 note="heavy cards after the move (2s whole, a paired open card not counted), only at 5 v 5")
-        out["heavy_5v5"] = -(CARD_5V5 - CARD)
+        kit.unit(2, "heavy_big", {**full, **phase}, bias=-36.0,
+                 note="heavy cards after the move (2s whole, a paired open card not counted), same phase")
+        out["heavy_big"] = -(CARD_BIG - CARD)
 
-    if LIGHT_PAIR_FIRST:
-        kit.unit(1, "set_keeps_pair_5v5", {"is_set": 1.0, "keeps_pair": 1.0, "opp_has_5": 1.0, "my_cards": 5.0},
-                 bias=-7.0, note="at 5 v 5: throws a set and still keeps a pair")
-        out["set_keeps_pair_5v5"] = LIGHT_PAIR_FIRST
     kit.unit(1, "open_tell", {"open_pts": 10.0, "take_open": 10.0, "pairs_open": -10.0}, bias=-13.0,
              note="points above 3 of an open card taken that pairs nothing")
     kit.unit(1, "callable_vs4", {"callable_next": 1.0, "opp_has_4": 1.0}, bias=-1.0,
@@ -103,11 +97,11 @@ def add_throw_units(kit: Kit) -> None:
     out.update({"pairs_open": hm.PAIR_OPEN, "open_tell": -hm.OPEN_TELL, "callable_vs4": hm.CALLABLE_VS4,
                 "low_top": -hm.LOW_TOP})
 
-    # RULE 2: feeding is only a tie-break
+    # feeding penalty: the bar's (watched: the trained net ignores it and loses 4 points each time)
     for r, p in zip(RANK_NAMES, RANK_POINTS):
         kit.unit(1, f"feed_{r}", {f"throw_{r}": 1.0, f"known_{r}": 4.0}, bias=-1.0,
                  note=f"leaves a {r} face up while the opponent is known to hold one")
-        out[f"feed_{r}"] = -(FEED5[0] + FEED5[1] * p)
+        out[f"feed_{r}"] = -(hm.FEED[0] + hm.FEED[1] * p)
     kit.out(out)
 
     hm.add_plan_units(kit)

@@ -1,25 +1,41 @@
-"""port: the 4-card hand-written net (training/yaniv/handmade.py) carried to the 5-card phases of the real game,
-with every constant that was read off 4-card play looked at again and, where a real-game measurement or a reason
-says so, made to depend on the opponent's card count (inputs opp_has_1..5, one on).
+"""port: the 4-card hand-written net (training/yaniv/handmade.py) carried to the 5-card phases of the real game
+(5 cards each, Yaniv at 7). It is meant to play while either player still holds 5 cards; the 4-card net takes
+over once both hands hold 4 or fewer.
 
-    python -m training.yaniv.handmade5_designs.port [OUT.json]      # default OUT: the scratch dir below
+    python -m training.yaniv.handmade5_designs.port [OUT.json]      # default OUT: SCRATCH/port.json
     python -m training.yaniv.handmade5_designs.port -v              # also prints every unit with its purpose
 
-Nothing is trained, fitted or searched. The structure is handmade.py's, unchanged: held points, a one-step plan
-weighted by P(the opponent calls before my next turn), a charge per heavy card kept, a catch bonus, the small
-terms, the three Yaniv reasons and the match-score units (those last two are imported from handmade.py as they
-are). What this file adds is that four tables are now written per opponent card count:
+Nothing is trained, fitted or searched. The structure is handmade.py's: held points, a one-step plan weighted by
+P(the opponent calls before my next turn), a charge per heavy card kept, a catch bonus, the small terms, the
+three Yaniv reasons and the match-score units (those last two are imported from handmade.py unchanged).
 
-  PI[c][bucket]     P(the counter calls on its next turn | it holds c cards, its estimated total's bucket)
-  CARD_BY[c]        the charge per heavy card kept
-  CATCH_AT[c]       how low my hand must be to catch its call: a distribution over thresholds (the counter's
-                    total when it calls rises with its card count: 2.7 / 4.5 / 5.5 / 6.1 / 6.3 on average)
-  CALLABLE[c]       bonus for making Yaniv surely legal next turn
-  OPEN_TELL_BY[c], LOW_TOP_BY[c]  the two open-card habits
+THE QUESTION was whether the 4-card constants need re-measuring for the real game. Every constant that was read
+off 4-card play is written here as a table by the opponent's card count (inputs opp_has_1..5, one on), so each
+could be re-set separately:
 
-With `FOUR_CARD = True` every table holds the 4-card net's numbers and the net plays exactly as handmade.py's
-(checked move for move); the values below are the real-game ones. Where each number comes from is in the
-comment beside it; the measurements and every variant tried are in results/handmade-5x7-logs/port.md.
+  PI[c][bucket]   P(the counter calls on its next turn | it holds c cards, bucket of its estimated total)
+  CARD_BY[c]      the charge per heavy card kept
+  CATCH_AT[c]     how low my hand must be to catch its call (a distribution over thresholds)
+  CALLABLE[c]     bonus for making Yaniv surely legal next turn
+  OPEN_TELL_BY[c], LOW_TOP_BY[c]   the two open-card habits
+  TWO_EXTRA[c], ACE_EXTRA[c]       how much of a heavy card a 2 / an ace counts for
+  LIVE[c]         (new, small) charge for throwing a single whose rank can still be paired
+
+THE ANSWER (results/handmade-5x7-logs/port.md has the measurements and every variant): the re-measured tables
+are nearly the 4-card ones, and putting them in changes almost no decision (the PI table: 30 of 34,000; the
+catch table 1%, the card charge +-2 about 1%), none with a measurable gain. So they stay at handmade.py's
+values. Two things do depend on the opponent's card count, both against an opponent that still holds 5 cards
+(it cannot call for a few turns, so what counts is how fast my hand shrinks, not the points I hold meanwhile):
+
+  1. TWO_EXTRA[5] = 0.5: a 2 is charged as a full heavy card, not half. The net then throws a pair of 2s
+     before a high single, as the trained net does (paired playouts: +0.15 +- 0.06 points a round).
+  2. LIVE[5] = 0.5: throwing a single costs 0.5 x its points / 10 per unseen copy of its rank. Measured: a
+     10-point single I keep is paired by the open card at my next turn 12.7% of the time against a 5-card
+     opponent (the counter throws its high cards first), a 2 or lower 0.3%. So a high single is worth holding
+     one more turn while a low set goes first (paired playouts: +0.08 +- 0.03 and +0.10 +- 0.04 a round).
+
+With TWO_EXTRA and LIVE emptied the net plays as handmade.py's does (checked: 2 of 2,053 decisions differ, from
+a 0.3-point base term of the catch bonus that handmade.py leaves out).
 """
 
 from __future__ import annotations
@@ -33,64 +49,71 @@ from training.yaniv.handmade_kit import RANK_POINTS, Kit
 from training.yaniv.network import save_net
 
 SCRATCH = Path("/tmp/claude-0/-home-user-yaniv-master/a532e2e0-83d9-59dd-8a1a-414723f6a44f/scratchpad/port")
-COUNTS = (1, 2, 3, 4, 5)
-
-FOUR_CARD = False   # True: every table below is replaced by the 4-card net's constants (the reproduction check)
+COUNTS = (1, 2, 3, 4, 5)     # the opponent's card count
 
 # ---------------------------------------------------------------- constants kept from handmade.py (see there)
 TWO_LIGHT = H.TWO_LIGHT      # a 2 counts as half a heavy card
 PAIR_OPEN = H.PAIR_OPEN      # taking an open card onto a kept card of its rank
 DECK_HEAVY = H.DECK_HEAVY    # chance a deck card is heavy ~ 1.07 - share of unseen worth <= 3
 FEED = H.FEED                # leaving face up a rank the opponent is known to hold
-N_TYP = H.N_TYP              # typical unseen count: P(deck card worth v) ~ unseen worth v / N_TYP
+N_TYP = H.N_TYP              # typical unseen count: P(deck card worth v) ~ unseen worth v / N_TYP (real game,
+                             # 5-card phase: 48 at the deal, about 40 after four throws; 38 kept)
 EST_CUTS = H.EST_CUTS        # buckets of the opponent's estimated total: < 5, 5-8, 8-11, 11-14, 14-17, 17+
 W_FLOOR = 0.05               # w = P(opponent calls before my next turn) + 0.05, as in handmade.py
 CATCH = H.CATCH              # an Assaf against the opponent: +30 to it
 
 # ---------------------------------------------------------------- tables by the opponent's card count
-# P(the counter calls on its next turn), by its card count and estimated-total bucket. MEASURED in the real game
-# (3,000 rounds of the 4-card net against the counter, port.md table 1); cells with no data are filled
-# monotonically. handmade.py's single row was 0.55 / 0.30 / 0.18 / 0.08 / 0.04 / 0.01: the real game agrees
-# with it within about 0.05 wherever a bucket is common, because opp_est already carries the card count.
-PI = {
-    1: [0.63, 0.62, 0.50, 0.30, 0.15, 0.05],   # 163 positions, all under 8
-    2: [0.43, 0.33, 0.27, 0.10, 0.04, 0.01],   # 5-8: 1098 positions
-    3: [0.30, 0.24, 0.17, 0.11, 0.05, 0.01],
-    4: [0.25, 0.18, 0.13, 0.09, 0.04, 0.015],
-    5: [0.20, 0.15, 0.10, 0.07, 0.03, 0.007],  # a 5-card hand needs <= 7 points in 5 cards: 0.7% over all
-}
-# Charge per heavy card kept. handmade.py: 5, and 3 when the opponent has 1-2 cards. See port.md for the 5-card value.
-CARD_BY = {1: 3.0, 2: 3.0, 3: 5.0, 4: 5.0, 5: 5.0}
-# P(the counter's total when it calls == m), by its card count: MEASURED (port.md table 2), rounded to 0.05.
-# My hand catches the call when it is <= the caller's total, so P(catch) = sum_m CATCH_AT[c][m] [my hand <= m].
-# handmade.py used one threshold, 5, for every count.
-CATCH_AT = {
-    1: {1: 0.25, 2: 0.25, 3: 0.20, 4: 0.20, 5: 0.10},
-    2: {2: 0.10, 3: 0.15, 4: 0.20, 5: 0.20, 6: 0.20, 7: 0.15},
-    3: {3: 0.10, 4: 0.10, 5: 0.20, 6: 0.30, 7: 0.30},
-    4: {4: 0.10, 5: 0.15, 6: 0.30, 7: 0.45},
-    5: {5: 0.15, 6: 0.30, 7: 0.55},
-}
-# Extra share of a heavy card that a 2 counts for, on top of TWO_LIGHT (so 0.5 makes a 2 a full heavy card).
-# handmade.py: 0 everywhere (a 2 is half a heavy card). See port.md for the 5-card value.
-TWO_EXTRA = {5: 0.0}
-# The same for an ace or a joker (handmade.py: 0, they are never charged).
-ACE_EXTRA = {5: 0.0}
-# Charge per unseen copy of the rank of a single card thrown (a "live" rank can still be paired from the deck or
-# from the opponent's throws), by the opponent's card count. handmade.py has no such term (0).
-LIVE = {}
-# Bonus for making Yaniv surely legal next turn. handmade.py: 3 against 4 cards only.
-CALLABLE = {4: 3.0}
+# P(the counter calls on its next turn), by its card count and the bucket of its estimated total.
+# KEPT at handmade.py's single row (0.55 / 0.30 / 0.18 / 0.08 / 0.04 / 0.01). Re-measured in the real game
+# (3,000 rounds of the 4-card net against the counter; measure.md table a agrees):
+#   1 card : 0.63 0.62  -    -    -    -          4 cards:  -    -   0.13 0.09 0.04 0.015
+#   2 cards: 0.43 0.33 0.27  -    -    -          5 cards:  -    -    -   0.07 0.03 0.007
+#   3 cards:  -   0.24 0.17 0.11 0.05 0.01
+# The estimate already carries the card count, so the rows agree with the single row within about 0.05 where
+# a bucket is common. Variant `pi` used the measured rows: 6 of 14,188 decisions changed in the 5-card phase,
+# 30 of 34,287 in the whole game, gain -0.03 +- 0.02 a round. Not adopted.
+PI = {c: list(H.EST_PI) for c in COUNTS}
+# Charge per heavy card kept: handmade.py's 5, and 3 when the opponent has 1-2 cards. Against 5 cards, 7 and 3
+# were tried (is shrinking worth more with more turns left?): 7 changes 0.6-0.9% of 5-card-phase decisions,
+# gain +0.03 +- 0.04, -0.02 +- 0.05, +0.07 +- 0.04 in three samples; 3: -0.06 +- 0.05. Against 4 cards 7 / 3:
+# 0.00 +- 0.03 / +0.01 +- 0.03. Kept at 5.
+CARD_BY = {1: H.CARD - H.CARD_SOON, 2: H.CARD - H.CARD_SOON, 3: H.CARD, 4: H.CARD, 5: H.CARD}
+# P(the counter's total when it calls == m): my hand catches the call when it is <= the caller's total, so
+# P(catch) = sum_m CATCH_AT[c][m] [my hand <= m]. KEPT at handmade.py's single threshold, 5. Measured in the
+# real game the caller's total rises with its card count (mean 2.7 / 4.5 / 5.5 / 6.1 / 6.3 for 1..5 cards;
+# with 4 cards it is 6 or 7 in 76% of calls). Variant `catch` used the measured distributions
+#   1: {1: .25, 2: .25, 3: .20, 4: .20, 5: .10}    2: {2: .10, 3: .15, 4: .20, 5: .20, 6: .20, 7: .15}
+#   3: {3: .10, 4: .10, 5: .20, 6: .30, 7: .30}    4: {4: .10, 5: .15, 6: .30, 7: .45}    5: {5: .15, 6: .30, 7: .55}
+# It changes 9 of 14,188 decisions in the 5-card phase (a 5-card opponent does not call, and with 5 cards I am
+# not low) and 1% in the whole game, gain +0.07 +- 0.07 a round: not measurable. Not adopted.
+CATCH_AT = {c: {H.CATCH_M: 1.0} for c in COUNTS}
+# Extra share of a heavy card that a 2 counts for, on top of TWO_LIGHT (0.5 makes a 2 a full heavy card).
+# handmade.py: none. Against a 5-card opponent: 0.5. Found by asking where the trained net's move differs from
+# the 4-card net's in the 5-card phase and playing both out: the one clear pattern was "throws a pair of 2s
+# where the hand-written net throws a single" (391 decisions in 5,000 rounds, +3.3 points each against a
+# 5-card opponent, about 0 against fewer cards). Reason: a 5-card opponent cannot call for a few turns, so
+# the 4 points the pair sheds are not what matters; the card count is. As a variant: +0.15 +- 0.06 a round.
+# 1.0 (a 2 dearer than other cards): +0.14 +- 0.09, no better. Against 4 cards too: -0.06 +- 0.05 there.
+TWO_EXTRA = {5: 0.5}
+# The same for an ace or a joker. Tried 0.5 against 5 cards: 18 decisions, -0.01. Kept at none.
+ACE_EXTRA = {}
+# Charge for throwing a single card, per unseen copy of its rank, x points / 10 if LIVE_BY_POINTS: a kept
+# single can still be paired, and a pair leaves in one throw. handmade.py has no such term. MEASURED (4,000
+# rounds): against a 5-card opponent the open card at my next turn pairs a 10-point single I kept 12.7% of the
+# time (6-9 points: 7.4%, 3-5: 3.7%, 0-2: 0.3%; the counter throws its high cards first), and a deck draw pairs
+# it 6%. A pair of 10s leaving together saves a turn, worth about a heavy-card charge plus a few points (~8):
+# 0.13 x 8 = 1 point for a 10 with its three other copies unseen, so about 0.4 a copy; 0.5 written.
+# Variants: 0.5 flat per copy, every count: +0.16 +- 0.06 and +0.07 +- 0.04; against 5 cards only: +0.06 +-
+# 0.03 and +0.08 +- 0.03; against 5 cards and x points / 10 (this one): +0.10 +- 0.04. 1.0: no better.
+LIVE = {5: 0.5}
+LIVE_BY_POINTS = True
+# Bonus for making Yaniv surely legal next turn: handmade.py's 3 against 4 cards. Against 5 cards too (a call
+# against 5 cards is caught 1-2% of the time): 50 decisions, +0.05 +- 0.03. Not adopted (inside the noise).
+CALLABLE = {4: H.CALLABLE_VS4}
 # Charge per point above 3 of an unpaired open card taken (handmade.py: 1.5) and for leaving a card worth <= 4
-# face up (handmade.py: 1.0), by the opponent's card count.
+# face up (handmade.py: 1.0). Against 5 cards, 0.75 and 0 were tried: 0.00 +- 0.04 and +0.04 +- 0.04. Kept.
 OPEN_TELL_BY = {c: H.OPEN_TELL for c in COUNTS}
 LOW_TOP_BY = {c: H.LOW_TOP for c in COUNTS}
-
-if FOUR_CARD:
-    PI = {c: list(H.EST_PI) for c in COUNTS}
-    CARD_BY = {1: H.CARD - H.CARD_SOON, 2: H.CARD - H.CARD_SOON, 3: H.CARD, 4: H.CARD, 5: H.CARD}
-    CATCH_AT = {c: {H.CATCH_M: 1.0} for c in COUNTS}
-    CALLABLE = {4: H.CALLABLE_VS4}
 
 
 # ---------------------------------------------------------------- helpers
@@ -180,11 +203,13 @@ def add_throw_units(kit: Kit) -> None:
 
     # ---- live ranks: a tie-breaker between singles of equal points ----
     for counts, live in _groups(LIVE):
-        for r in RANKS:
+        for r, p in zip(RANKS, RANK_POINTS):
+            if p * live < 0.1:
+                continue
             kit.unit(1, f"live_{r}_vs{_tag(counts)}",
                      {f"unseen_{r}": 1.0, f"throw_{r}": 1.0, "is_single": 1.0, **_has(counts, 1.0)}, bias=-3.0,
                      note=f"unseen copies / 4 of the single {r} thrown, when the opponent has {counts} cards")
-            out[f"live_{r}_vs{_tag(counts)}"] = -4.0 * live
+            out[f"live_{r}_vs{_tag(counts)}"] = -4.0 * live * (p / 10.0 if LIVE_BY_POINTS else 1.0)
 
     # ---- feeding penalty ----
     for r, p in zip(RANKS, RANK_POINTS):
@@ -242,7 +267,7 @@ def add_plan_units(kit: Kit) -> None:
 
 def add_catch_units(kit: Kit) -> None:
     """CATCH x PI[c][bucket] x P(my hand after the draw <= the caller's total), the caller's total drawn from
-    CATCH_AT[c]. For threshold m: deck draw P = sum_k [kept <= k] P(card worth exactly m - k); open card exact."""
+    CATCH_AT[c] (handmade.py leaves out the last bucket's 0.01: 0.3 points at most). For threshold m: deck draw P = sum_k [kept <= k] P(card worth exactly m - k); open card exact."""
     thresholds = sorted({m for row in CATCH_AT.values() for m in row})
     p_low = {}
     for m in thresholds:
@@ -259,19 +284,21 @@ def add_catch_units(kit: Kit) -> None:
         terms[f"low{m}_open"] = 1.0
         p_low[m] = terms                                   # P(my hand after the draw <= m), in 0..1
     out = {}
-    for c in COUNTS:
+    both = {c: (PI[c], CATCH_AT[c]) for c in COUNTS}
+    for counts, (pi, at) in _groups(both):
+        tag = _tag(counts)
         mix: dict = {}
-        for m, share in CATCH_AT[c].items():               # P(my hand <= the caller's total)
+        for m, share in at.items():                        # P(my hand <= the caller's total)
             for s, w in p_low[m].items():
                 mix[s] = mix.get(s, 0.0) + share * w
-        row = PI[c] + [0.0]
+        row = pi + [0.0]
         for i, t in enumerate(EST_CUTS + [None]):
             if row[i] == row[i + 1]:
                 continue
             e = H._est_under(kit, t) if t is not None else {}
-            name = f"catch_vs{c}_est{t}" if t is not None else f"catch_vs{c}"
-            kit.unit(3, name, {**mix, **e, f"opp_has_{c}": 1.0}, bias=-2.0 if t is not None else -1.0,
-                     note=f"P(my hand after the draw catches a call) when the opponent has {c} cards"
+            name = f"catch_vs{tag}_est{t}" if t is not None else f"catch_vs{tag}"
+            kit.unit(3, name, {**mix, **e, **_has(counts, 1.0)}, bias=-2.0 if t is not None else -1.0,
+                     note=f"P(my hand after the draw catches a call) when the opponent has {counts} cards"
                           + (f" and its estimate is under {t}" if t is not None else ""))
             out[name] = CATCH * (row[i] - row[i + 1])
     kit.out(out)
@@ -281,7 +308,8 @@ def add_catch_units(kit: Kit) -> None:
 def build():
     kit = Kit()
     add_throw_units(kit)
-    reasons = H.add_yaniv_units(kit)        # the three Yaniv reasons, unchanged (port.md: measured, no change needed)
+    reasons = H.add_yaniv_units(kit)        # the three Yaniv reasons, unchanged: in the 5-card phase nearly every
+                                            # call of mine is against 5 cards (caught 1-2%), and is made
     reasons += H.add_score_units(kit)       # match-score units, unchanged
     H.finish_yaniv(kit, reasons)
     H.fold_output(kit)

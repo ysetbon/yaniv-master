@@ -440,8 +440,11 @@ def _behaviour(job):
                     kind = f"same throw; only {taker} takes the open card (worth {band}, {pair})"
                 else:
                     t1, t2 = throw_kind(k1, counts, top), throw_kind(k2, counts, top)
-                    if t1 == t2:
-                        kind = f"both throw {t1.replace('its ', 'a ')} but a different rank"
+                    if t1 == t2 and pts_of[k1[1]] == pts_of[k2[1]] and k1[2] == k2[2]:
+                        kind = (f"both throw {t1.replace('its highest', 'a ten-point')} but a different rank of the "
+                                f"same points (which of T/J/Q/K goes)")
+                    elif t1 == t2:
+                        kind = f"both throw {t1.replace('its ', 'a ')} but of a different rank and value"
                     else:
                         kind = f"hm4 throws {t1}, the trained net throws {t2.replace('its', 'the')}"
                 kinds[kind] += 1
@@ -504,7 +507,7 @@ def part_e(rounds: int) -> None:
                     + [three(sets, lambda k, lo=lo, hi=hi, o=o: lo <= k[1] <= hi and k[4] == o, lambda k: k[6] == "set")
                        for o in (True, False)])
     print(table(["pair", "throws the set", "keeps the pair, throws another card", "breaks the pair",
-                 "throws the set | opp has 5", "throws the set | opp has <= 4"], rows))
+                 "throws the set when the opp has 5", "throws the set when the opp has <= 4"], rows))
     print("\nThree of a kind held (or four): P(throws the whole set): "
           + three(sets, lambda k: k[2] >= 3, lambda k: k[6] == "set") + "\n")
     print("### e2. Taking the open card (Yaniv not legal)\n")
@@ -536,7 +539,7 @@ def part_e(rounds: int) -> None:
                  "trained differs from counter"], rows))
     total = sum(kinds.values())
     print(f"\n### e4. The most common kinds of hm4-vs-trained disagreement ({total:,} disagreements)\n")
-    for kind, n in kinds.most_common(8):
+    for kind, n in kinds.most_common(9):
         print(f"- **{kind}**: {n} ({n / total:.1%})")
         for ex in examples[kind][:3]:
             print(f"  - {ex}")
