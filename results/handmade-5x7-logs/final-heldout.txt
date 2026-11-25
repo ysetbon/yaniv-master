@@ -1,0 +1,6 @@
+counter: margin +0.00 a round, rounds won 9999/20000 (50.0%), Yaniv calls 9989 of which caught 733 (7.3%); matches 2000-2000 (50.0%, 95% range 48.5%-51.5%)  [146s]
+public/model/yaniv-net.json: margin +1.67 a round, rounds won 10958/20000 (54.8%), Yaniv calls 10357 of which caught 438 (4.2%); matches 2544-1456 (63.6%, 95% range 62.1%-65.1%)  [298s]
+public/model/yaniv-net-4cards-yaniv7-handmade.json: margin +1.31 a round, rounds won 10849/20000 (54.2%), Yaniv calls 10425 of which caught 481 (4.6%); matches 2825-1175 (70.6%, 95% range 69.2%-72.0%)  [450s]
+public/model/yaniv-net-5cards-handmade.json: margin +1.49 a round, rounds won 11084/20000 (55.4%), Yaniv calls 10689 of which caught 489 (4.6%); matches 2923-1077 (73.1%, 95% range 71.7%-74.4%)  [607s]
+public/model/yaniv-net-handmade.json: margin +1.42 a round, rounds won 11013/20000 (55.1%), Yaniv calls 10617 of which caught 490 (4.6%); matches 2871-1129 (71.8%, 95% range 70.4%-73.1%)  [774s]
+switch:public/model/yaniv-net.json:public/model/yaniv-net-4cards-yaniv7-handmade.json: margin +1.37 a round, rounds won 10965/20000 (54.8%), Yaniv calls 10598 of which caught 503 (4.7%); matches 2784-1216 (69.6%, 95% range 68.2%-71.0%)  [920s]

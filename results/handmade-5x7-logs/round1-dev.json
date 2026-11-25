@@ -1,0 +1,97 @@
+{
+ "switch:/tmp/claude-0/-home-user-yaniv-master/a532e2e0-83d9-59dd-8a1a-414723f6a44f/scratchpad/lead/port.json:public/model/yaniv-net-4cards-yaniv7-handmade.json": {
+  "rounds": {
+   "wins": 6692,
+   "losses": 5308,
+   "ties": 0,
+   "calls": 6473,
+   "assafs": 319,
+   "win_rate": 0.5576666666666666,
+   "hero_avg": 6.4545,
+   "villain_avg": 8.049916666666666,
+   "assaf_rate": 0.04928163139193573
+  },
+  "matches": {
+   "wins": 2129,
+   "losses": 871,
+   "ties": 0,
+   "win_rate": 0.7096666666666667
+  }
+ },
+ "switch:/tmp/claude-0/-home-user-yaniv-master/a532e2e0-83d9-59dd-8a1a-414723f6a44f/scratchpad/lead/counts.json:public/model/yaniv-net-4cards-yaniv7-handmade.json": {
+  "rounds": {
+   "wins": 6739,
+   "losses": 5261,
+   "ties": 0,
+   "calls": 6514,
+   "assafs": 313,
+   "win_rate": 0.5615833333333333,
+   "hero_avg": 6.4,
+   "villain_avg": 8.101666666666667,
+   "assaf_rate": 0.04805035308566165
+  },
+  "matches": {
+   "wins": 2128,
+   "losses": 872,
+   "ties": 0,
+   "win_rate": 0.7093333333333334
+  }
+ },
+ "switch:/tmp/claude-0/-home-user-yaniv-master/a532e2e0-83d9-59dd-8a1a-414723f6a44f/scratchpad/lead/watcher.json:public/model/yaniv-net-4cards-yaniv7-handmade.json": {
+  "rounds": {
+   "wins": 6706,
+   "losses": 5294,
+   "ties": 0,
+   "calls": 6486,
+   "assafs": 319,
+   "win_rate": 0.5588333333333333,
+   "hero_avg": 6.4504166666666665,
+   "villain_avg": 8.080333333333334,
+   "assaf_rate": 0.04918285538082023
+  },
+  "matches": {
+   "wins": 2132,
+   "losses": 868,
+   "ties": 0,
+   "win_rate": 0.7106666666666667
+  }
+ },
+ "/tmp/claude-0/-home-user-yaniv-master/a532e2e0-83d9-59dd-8a1a-414723f6a44f/scratchpad/lead/port.json": {
+  "rounds": {
+   "wins": 6685,
+   "losses": 5315,
+   "ties": 0,
+   "calls": 6471,
+   "assafs": 323,
+   "win_rate": 0.5570833333333334,
+   "hero_avg": 6.468583333333333,
+   "villain_avg": 8.04425,
+   "assaf_rate": 0.049915005408746715
+  },
+  "matches": {
+   "wins": 2132,
+   "losses": 868,
+   "ties": 0,
+   "win_rate": 0.7106666666666667
+  }
+ },
+ "/tmp/claude-0/-home-user-yaniv-master/a532e2e0-83d9-59dd-8a1a-414723f6a44f/scratchpad/lead/counts.json": {
+  "rounds": {
+   "wins": 6812,
+   "losses": 5188,
+   "ties": 0,
+   "calls": 6600,
+   "assafs": 310,
+   "win_rate": 0.5676666666666667,
+   "hero_avg": 6.35025,
+   "villain_avg": 8.13475,
+   "assaf_rate": 0.04696969696969697
+  },
+  "matches": {
+   "wins": 2146,
+   "losses": 854,
+   "ties": 0,
+   "win_rate": 0.7153333333333334
+  }
+ }
+}

@@ -32,6 +32,9 @@ export const POINTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10];
  */
 export const GAMES = [
   { id: "standard", hand: 5, yanivAt: 7, net: "", label: "Standard" },
+  // The real game against hand-written nets: a main net, then the 4-card net once both hands hold
+  // 4 cards or fewer, packed as one file (training/yaniv/handmade5_pack.py).
+  { id: "5x7-handmade", hand: 5, yanivAt: 7, net: "-handmade", label: "Standard: hand-written net" },
   { id: "4x7", hand: 4, yanivAt: 7, net: "", label: "4 cards, Yaniv 7" },
   // The same game against a net whose weights were written by hand (training/yaniv/handmade.py).
   { id: "4x7-handmade", hand: 4, yanivAt: 7, net: "-handmade", label: "4 cards, Yaniv 7: hand-written net" },

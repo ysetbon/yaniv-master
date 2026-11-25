@@ -1,0 +1,116 @@
+{
+ "counter": {
+  "rounds": {
+   "wins": 9999,
+   "losses": 9999,
+   "ties": 2,
+   "calls": 9989,
+   "assafs": 733,
+   "win_rate": 0.49995,
+   "hero_avg": 7.18755,
+   "villain_avg": 7.18755,
+   "assaf_rate": 0.07338071879066974
+  },
+  "matches": {
+   "wins": 2000,
+   "losses": 2000,
+   "ties": 0,
+   "win_rate": 0.5
+  }
+ },
+ "public/model/yaniv-net.json": {
+  "rounds": {
+   "wins": 10958,
+   "losses": 9041,
+   "ties": 1,
+   "calls": 10357,
+   "assafs": 438,
+   "win_rate": 0.5479,
+   "hero_avg": 6.39415,
+   "villain_avg": 8.06695,
+   "assaf_rate": 0.042290238486048085
+  },
+  "matches": {
+   "wins": 2544,
+   "losses": 1456,
+   "ties": 0,
+   "win_rate": 0.636
+  }
+ },
+ "public/model/yaniv-net-4cards-yaniv7-handmade.json": {
+  "rounds": {
+   "wins": 10849,
+   "losses": 9148,
+   "ties": 3,
+   "calls": 10425,
+   "assafs": 481,
+   "win_rate": 0.54245,
+   "hero_avg": 6.55095,
+   "villain_avg": 7.8569,
+   "assaf_rate": 0.046139088729016786
+  },
+  "matches": {
+   "wins": 2825,
+   "losses": 1175,
+   "ties": 0,
+   "win_rate": 0.70625
+  }
+ },
+ "public/model/yaniv-net-5cards-handmade.json": {
+  "rounds": {
+   "wins": 11084,
+   "losses": 8913,
+   "ties": 3,
+   "calls": 10689,
+   "assafs": 489,
+   "win_rate": 0.5542,
+   "hero_avg": 6.46315,
+   "villain_avg": 7.9549,
+   "assaf_rate": 0.04574796519786697
+  },
+  "matches": {
+   "wins": 2923,
+   "losses": 1077,
+   "ties": 0,
+   "win_rate": 0.73075
+  }
+ },
+ "public/model/yaniv-net-handmade.json": {
+  "rounds": {
+   "wins": 11013,
+   "losses": 8984,
+   "ties": 3,
+   "calls": 10617,
+   "assafs": 490,
+   "win_rate": 0.55065,
+   "hero_avg": 6.4894,
+   "villain_avg": 7.9104,
+   "assaf_rate": 0.04615239709899218
+  },
+  "matches": {
+   "wins": 2871,
+   "losses": 1129,
+   "ties": 0,
+   "win_rate": 0.71775
+  }
+ },
+ "switch:public/model/yaniv-net.json:public/model/yaniv-net-4cards-yaniv7-handmade.json": {
+  "rounds": {
+   "wins": 10965,
+   "losses": 9031,
+   "ties": 4,
+   "calls": 10598,
+   "assafs": 503,
+   "win_rate": 0.54825,
+   "hero_avg": 6.5303,
+   "villain_avg": 7.8989,
+   "assaf_rate": 0.04746178524249858
+  },
+  "matches": {
+   "wins": 2784,
+   "losses": 1216,
+   "ties": 0,
+   "win_rate": 0.696
+  }
+ }
+}

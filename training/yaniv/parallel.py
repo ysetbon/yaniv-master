@@ -53,7 +53,7 @@ def chooser(spec: Spec):
     if kind == "switch":
         from .hybrid import switch_chooser
 
-        return switch_chooser(chooser(spec[1]), chooser(spec[2]), spec[3])
+        return switch_chooser(chooser(spec[1]), chooser(spec[2]), spec[3], spec[4] if len(spec) > 4 else "both")
     if kind == "search":
         from .search import net_prior, search_chooser
 
@@ -75,9 +75,10 @@ def search_spec(net, value=None, samples: int = 96, depth: int = 2, width: int =
             table, seed)
 
 
-def switch_spec(main: Spec, endgame: Spec, at: int = 4) -> Spec:
-    """`main` plays until both hands hold `at` cards or fewer, then `endgame` plays (hybrid.py)."""
-    return ("switch", main, endgame, at)
+def switch_spec(main: Spec, endgame: Spec, at: int = 4, when: str = "both") -> Spec:
+    """`main` plays until both hands hold `at` cards or fewer, then `endgame` plays (hybrid.py).
+    `when` picks another hand-over rule: "mine", "opp" or "either" (hybrid.small_enough)."""
+    return ("switch", main, endgame, at, when)
 
 
 def _mlp(dims, weights, biases) -> MLP:
