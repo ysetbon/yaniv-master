@@ -507,16 +507,45 @@ def fold_output(kit: Kit) -> None:
     kit.output = (final, bias)
 
 
-def build(yaniv: str = "new", triple: bool = True, **over):
-    """The contest net. `yaniv="hm5"`, `triple=False` and the table overrides in `config` rebuild earlier variants
-    (yaniv="hm5", triple=False is handmade5 exactly)."""
+# ---------------------------------------------------------------- match-score constants (contest_fable_match.py)
+# Measured in results/contest-fable-logs/match.md; each piece is exactly 0 while my score is low.
+MATCH = {
+    "OPEN": {50: (1.5, 18.0), 100: (1.5, 24.0)},   # open take landing my score on a cut: (flat, x threat); more at 100
+    "DECK": {50: 30.0, 100: 40.0},                 # x ~P(the deck card lands me exactly on the cut) x threat
+    "THI": {50: 15.0, 100: 18.0},                  # opponent estimate at which the threat of its call reaches 0
+    "DENY": (3.0, 2),      # no Yaniv call that would hand the opponent ITS cut: its score + estimate within 0.5 of
+                           # 50 / 100, or within 3 with 1-2 hidden cards (at most 2 hidden)
+    "BUSTCALL": 0.15,      # call at assaf < 0.15 when my score + points > 100: losing the round ends the match anyway
+}
+
+
+def build(yaniv: str = "new", triple: bool = True, catch_gate: bool = True, match: bool = True, **over):
+    """The contest net:
+      add_throw_units       handmade5's valuation of a throw (tables by the opponent's card count)
+      fix_catch             ... with the catch bonus paid only when I keep 2+ cards (contest_fable_reads.py)
+      add_triple_units      the triple take
+      add_yaniv_units       this net's Yaniv rule (swap veto, threshold by the opponent's card count)
+      match-score units     landing on my own cut, not handing the opponent its cut, calling when a lost round
+                            ends the match anyway (contest_fable_match.py)
+    Each argument switches one piece off to rebuild an earlier variant; all four off (yaniv="hm5", triple=False,
+    catch_gate=False, match=False) is handmade5 exactly. `over` are table overrides (see `config`)."""
+    from training.yaniv import contest_fable_match as cm          # helpers of this net (they import this module)
+    from training.yaniv import contest_fable_reads as cr
+
     cfg = config(**over)
     kit = Kit()
     add_throw_units(kit, cfg)
+    if catch_gate:
+        cr.fix_catch(kit, "k3")
     if triple:
         add_triple_units(kit, TRIP, TRIP_MIN, TRIP_OPP, TRIP_MIN5)
     reasons = add_yaniv_units(kit) if yaniv == "new" else add_yaniv_units_hm5(kit)
-    reasons += add_score_units(kit)
+    if match:
+        reasons += cm.add_score_units(kit, MATCH["OPEN"], MATCH["DECK"], MATCH["THI"])
+        reasons += cm.add_match_units(kit, MATCH["BUSTCALL"], None, None, None)
+        reasons += cm.add_deny_units(kit, MATCH["DENY"])
+    else:
+        reasons += add_score_units(kit)
     finish_yaniv(kit, reasons)
     fold_output(kit)
     net = kit.build()
