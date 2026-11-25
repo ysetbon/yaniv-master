@@ -7,7 +7,9 @@ is complete: it scores every legal move, calls Yaniv by handmade.py's rule and k
 
 Nothing is trained, fitted or searched. The throw value is handmade.py's (held points, one-step plan, heavy-
 card charge, catch bonus, open-card habits, feeding penalty), copied here so its constants can be set for the
-5-card game, plus the SHAPING units below. Every constant is named in CFG with where its number comes from;
+5-card game, plus the SHAPING units below (add_shape_units): the one that pays is "throw a pair of 2s while both players
+still hold 5 cards" - nobody can call for a while, a 5-card hand that keeps 2-2 cannot get under 8 points, so
+the 2s are worth more as the throw that shrinks the hand than as low cards. Every constant is named in CFG with where its number comes from;
 `NAME=value` on the command line builds a variant by hand (each variant measured is in
 results/handmade-5x7-logs/shaper.md).
 """
@@ -33,11 +35,19 @@ CFG = dict(
     OPEN_TELL=1.5,     # per point above 3 of an unpaired open card taken
     CALLABLE_VS4=3.0,  # Yaniv surely legal next turn while the opponent holds 4 cards
     LOW_TOP=1.0,       # leaving a card worth <= 4 face up
-    # ---- shaping units (0 = unit not built)
-    SET5=0.0,          # bonus for throwing a set while I hold 5 cards (the first shrink)
-    OUTS=0.0,          # points per unit of sum over kept ranks of unseen cards of that rank / N_TYP
-    TWOS55=0.0,        # bonus for throwing a set of 2s while both players hold 5 cards
-    SET55=0.0,         # bonus for throwing any set while both players hold 5 cards
+    # ---- shaping units (0 = unit not built). Numbers come from matched comparisons (results/handmade-5x7-logs/
+    # shaper.md): at sampled positions the net's move and an alternative were each played to the end of the round.
+    TWOS55=6.0,        # bonus for throwing a set of 2s while both players hold 5 cards. handmade.py keeps 2-2
+                       # as light cards and throws a high single; throwing the 2s instead scored +3.6 +-0.6
+                       # points a time (n=970; +3.9 +-0.9 on the new deals among them). Its score is behind the single's
+                       # by 4 - 0.94 x (my second-highest card), up to ~6 points: 6 + SET55 covers that.
+                       # Not with an ace pair (-3.3) and not once the opponent has 4 cards or fewer (0 +-0.7).
+    SET55=2.0,         # bonus for throwing any set while both hold 5 cards: tips the last case where a pair
+                       # of 3s loses to a single (K, Q, 3, 3, x: LOW_TOP's -1 decides it; +3.0 +-1.9, n=97)
+    TWOS45=0.0,        # the same bonus while I hold 4 cards and the opponent 5: measured neutral, not built
+    OUTS=0.0,          # points per unseen card of each kept rank (as OUTS x unseen / N_TYP): keep the rank
+                       # that can still be paired. Matched comparison: about +2 +-0.9 a time but only ~0.02 times a round;
+                       # no effect on the working test, not built (39 units)
 )
 
 
@@ -80,15 +90,15 @@ def add_throw_units(kit: Kit, c: dict) -> None:
 
 
 def add_shape_units(kit: Kit, c: dict) -> None:
-    if c["SET5"]:
-        kit.unit(1, "set_from5", {"is_set": 1.0, "my_cards": 5.0}, bias=-5.0,
-                 note="1 if a set is thrown while I hold 5 cards: the hand shrinks below 5 for good")
-        kit.out({"set_from5": c["SET5"]})
     if c["TWOS55"]:
         kit.unit(1, "twos_55", {"is_set": 1.0, "throw_2": 1.0, "opp_has_5": 1.0, "my_cards": 5.0}, bias=-7.0,
                  note="1 if a set of 2s is thrown while both players hold 5 cards (nobody can call soon, and "
                       "a 5-card hand holding 2-2 cannot get to 7 points: the 2s are heavy cards here)")
         kit.out({"twos_55": c["TWOS55"]})
+    if c["TWOS45"]:
+        kit.unit(1, "twos_45", {"is_set": 1.0, "throw_2": 1.0, "opp_has_5": 1.0, "my_cards": -5.0}, bias=2.0,
+                 note="1 if a set of 2s is thrown while I hold 4 cards (or fewer) and the opponent 5")
+        kit.out({"twos_45": c["TWOS45"]})
     if c["SET55"]:
         kit.unit(1, "set_55", {"is_set": 1.0, "opp_has_5": 1.0, "my_cards": 5.0}, bias=-6.0,
                  note="1 if a set is thrown while both players hold 5 cards")
