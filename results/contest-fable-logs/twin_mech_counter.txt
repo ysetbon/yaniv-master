@@ -1,0 +1,103 @@
+## mech: hero hm5 vs counter, 40000 rounds, seed 11
+single-turn records 259718 over 40000 rounds (6.49 held high singles a round, counted once per hero turn)
+opp1 = the opponent's very next throw is of that rank; opp2 = next throw or the one after (I still hold it as a single); end = it called Yaniv instead
+by points class, opp cards
+  oc4 10                                       n  29819 (0.745 a round)  opp1   8.5% +-0.2%  opp2   9.6% +-0.2%  end   3.9% +-0.1%
+  oc4 5-7                                      n  51945 (1.299 a round)  opp1   9.8% +-0.1%  opp2  14.4% +-0.2%  end   3.9% +-0.1%
+  oc4 8-9                                      n  23025 (0.576 a round)  opp1   9.8% +-0.2%  opp2  12.8% +-0.2%  end   3.8% +-0.1%
+  oc5 10                                       n  46596 (1.165 a round)  opp1  11.5% +-0.1%  opp2  14.2% +-0.2%  end   0.5% +-0.0%
+  oc5 5-7                                      n  72001 (1.800 a round)  opp1   7.1% +-0.1%  opp2  13.1% +-0.1%  end   0.5% +-0.0%
+  oc5 8-9                                      n  36332 (0.908 a round)  opp1  10.2% +-0.2%  opp2  15.9% +-0.2%  end   0.5% +-0.0%
+by exact points (oc 5)
+  p 5                                          n  26616 (0.665 a round)  opp1   5.8% +-0.1%  opp2  11.1% +-0.2%  end   0.5% +-0.0%
+  p 6                                          n  24045 (0.601 a round)  opp1   7.4% +-0.2%  opp2  13.7% +-0.2%  end   0.5% +-0.0%
+  p 7                                          n  21340 (0.533 a round)  opp1   8.5% +-0.2%  opp2  15.0% +-0.2%  end   0.6% +-0.1%
+  p 8                                          n  19474 (0.487 a round)  opp1   9.8% +-0.2%  opp2  16.1% +-0.3%  end   0.5% +-0.1%
+  p 9                                          n  16858 (0.421 a round)  opp1  10.6% +-0.2%  opp2  15.7% +-0.3%  end   0.6% +-0.1%
+  p10                                          n  46596 (1.165 a round)  opp1  11.5% +-0.1%  opp2  14.2% +-0.2%  end   0.5% +-0.0%
+by points class and unseen copies (known = 0)
+  oc4 10 u0                                    n    568 (0.014 a round)  opp1   0.0% +-0.0%  opp2   0.0% +-0.0%  end   5.6% +-1.0%
+  oc4 10 u1                                    n   3900 (0.098 a round)  opp1   2.2% +-0.2%  opp2   2.3% +-0.2%  end   4.8% +-0.3%
+  oc4 10 u2                                    n   8067 (0.202 a round)  opp1   4.1% +-0.2%  opp2   4.9% +-0.2%  end   4.7% +-0.2%
+  oc4 10 u3                                    n  17031 (0.426 a round)  opp1  11.1% +-0.2%  opp2  12.5% +-0.3%  end   3.3% +-0.1%
+  oc4 5-7 u0                                   n    355 (0.009 a round)  opp1   0.0% +-0.0%  opp2   0.6% +-0.4%  end   7.6% +-1.4%
+  oc4 5-7 u1                                   n   2176 (0.054 a round)  opp1   1.5% +-0.3%  opp2   2.5% +-0.3%  end   5.9% +-0.5%
+  oc4 5-7 u2                                   n   4020 (0.101 a round)  opp1   3.7% +-0.3%  opp2   6.2% +-0.4%  end   6.6% +-0.4%
+  oc4 5-7 u3                                   n  44349 (1.109 a round)  opp1   9.9% +-0.1%  opp2  14.8% +-0.2%  end   3.6% +-0.1%
+  oc4 8-9 u0                                   n    237 (0.006 a round)  opp1   0.0% +-0.0%  opp2   0.0% +-0.0%  end   5.9% +-1.5%
+  oc4 8-9 u1                                   n   1711 (0.043 a round)  opp1   1.9% +-0.3%  opp2   1.9% +-0.3%  end   5.3% +-0.5%
+  oc4 8-9 u2                                   n   3369 (0.084 a round)  opp1   4.5% +-0.4%  opp2   5.6% +-0.4%  end   5.1% +-0.4%
+  oc4 8-9 u3                                   n  17552 (0.439 a round)  opp1  10.9% +-0.2%  opp2  14.6% +-0.3%  end   3.4% +-0.1%
+  oc5 10 u0                                    n    268 (0.007 a round)  opp1   0.0% +-0.0%  opp2   0.0% +-0.0%  end   1.5% +-0.7%
+  oc5 10 u1                                    n   2316 (0.058 a round)  opp1   2.1% +-0.3%  opp2   3.1% +-0.4%  end   1.3% +-0.2%
+  oc5 10 u2                                    n   8285 (0.207 a round)  opp1   3.4% +-0.2%  opp2   5.2% +-0.2%  end   0.8% +-0.1%
+  oc5 10 u3                                    n  35182 (0.880 a round)  opp1  12.7% +-0.2%  opp2  15.8% +-0.2%  end   0.3% +-0.0%
+  oc5 5-7 u0                                   n    115 (0.003 a round)  opp1   0.0% +-0.0%  opp2   0.9% +-0.9%  end   2.6% +-1.5%
+  oc5 5-7 u1                                   n   1060 (0.026 a round)  opp1   1.1% +-0.3%  opp2   4.8% +-0.7%  end   2.4% +-0.5%
+  oc5 5-7 u2                                   n   2880 (0.072 a round)  opp1   2.9% +-0.3%  opp2   7.0% +-0.5%  end   1.8% +-0.2%
+  oc5 5-7 u3                                   n  66822 (1.671 a round)  opp1   6.7% +-0.1%  opp2  12.8% +-0.1%  end   0.5% +-0.0%
+  oc5 8-9 u0                                   n    108 (0.003 a round)  opp1   0.0% +-0.0%  opp2   0.0% +-0.0%  end   1.9% +-1.3%
+  oc5 8-9 u1                                   n    933 (0.023 a round)  opp1   1.6% +-0.4%  opp2   2.6% +-0.5%  end   1.6% +-0.4%
+  oc5 8-9 u2                                   n   3060 (0.076 a round)  opp1   3.8% +-0.3%  opp2   6.9% +-0.5%  end   0.9% +-0.2%
+  oc5 8-9 u3                                   n  31953 (0.799 a round)  opp1  10.3% +-0.2%  opp2  16.5% +-0.2%  end   0.5% +-0.0%
+opponent KNOWN to hold the rank
+  oc4 10 known                                 n    253 (0.006 a round)  opp1 100.0% +-0.0%  opp2 100.0% +-0.0%  end   0.0% +-0.0%
+  oc4 5-7 known                                n   1045 (0.026 a round)  opp1  50.3% +-1.5%  opp2  59.6% +-1.5%  end   0.5% +-0.2%
+  oc4 8-9 known                                n    156 (0.004 a round)  opp1 100.0% +-0.0%  opp2 100.0% +-0.0%  end   0.0% +-0.0%
+  oc5 10 known                                 n    545 (0.014 a round)  opp1 100.0% +-0.0%  opp2 100.0% +-0.0%  end   0.0% +-0.0%
+  oc5 5-7 known                                n   1124 (0.028 a round)  opp1  48.6% +-1.5%  opp2  58.9% +-1.5%  end   0.0% +-0.0%
+  oc5 8-9 known                                n    278 (0.007 a round)  opp1 100.0% +-0.0%  opp2 100.0% +-0.0%  end   0.0% +-0.0%
+by ply (ten-cards, oc 5)
+  ply  0+ u1                                   n     76 (0.002 a round)  opp1   0.0% +-0.0%  opp2  10.5% +-3.5%  end   0.0% +-0.0%
+  ply  0+ u2                                   n    650 (0.016 a round)  opp1   7.8% +-1.1%  opp2  18.0% +-1.5%  end   0.0% +-0.0%
+  ply  0+ u3                                   n  14099 (0.352 a round)  opp1  17.0% +-0.3%  opp2  20.9% +-0.3%  end   0.0% +-0.0%
+  ply  2+ u1                                   n    250 (0.006 a round)  opp1   5.6% +-1.5%  opp2   9.6% +-1.9%  end   0.4% +-0.4%
+  ply  2+ u2                                   n   2686 (0.067 a round)  opp1  16.8% +-0.7%  opp2  19.0% +-0.8%  end   0.0% +-0.0%
+  ply  2+ u3                                   n  12850 (0.321 a round)  opp1  11.7% +-0.3%  opp2  14.6% +-0.3%  end   0.2% +-0.0%
+  ply  4+ u1                                   n    413 (0.010 a round)  opp1   4.1% +-1.0%  opp2   5.3% +-1.1%  end   0.5% +-0.3%
+  ply  4+ u2                                   n   1949 (0.049 a round)  opp1   7.5% +-0.6%  opp2   8.3% +-0.6%  end   0.5% +-0.2%
+  ply  4+ u3                                   n   4730 (0.118 a round)  opp1   7.7% +-0.4%  opp2   9.7% +-0.4%  end   0.5% +-0.1%
+  ply  6+ u1                                   n    404 (0.010 a round)  opp1   3.7% +-0.9%  opp2   3.7% +-0.9%  end   1.2% +-0.6%
+  ply  6+ u2                                   n   1317 (0.033 a round)  opp1   4.5% +-0.6%  opp2   4.8% +-0.6%  end   1.1% +-0.3%
+  ply  6+ u3                                   n   1963 (0.049 a round)  opp1   6.7% +-0.6%  opp2   8.8% +-0.6%  end   1.7% +-0.3%
+  ply  8+ u1                                   n    409 (0.010 a round)  opp1   2.9% +-0.8%  opp2   2.9% +-0.8%  end   1.0% +-0.5%
+  ply  8+ u2                                   n    907 (0.023 a round)  opp1   4.2% +-0.7%  opp2   4.4% +-0.7%  end   1.1% +-0.3%
+  ply  8+ u3                                   n    861 (0.022 a round)  opp1   6.0% +-0.8%  opp2   7.5% +-0.9%  end   1.7% +-0.4%
+  ply 10+ u0                                   n    155 (0.004 a round)  opp1   0.0% +-0.0%  opp2   0.0% +-0.0%  end   1.9% +-1.1%
+  ply 10+ u1                                   n    793 (0.020 a round)  opp1   2.4% +-0.5%  opp2   2.4% +-0.5%  end   2.4% +-0.5%
+  ply 10+ u2                                   n   1292 (0.032 a round)  opp1   4.2% +-0.6%  opp2   4.3% +-0.6%  end   2.4% +-0.4%
+  ply 10+ u3                                   n    679 (0.017 a round)  opp1   5.6% +-0.9%  opp2   6.0% +-0.9%  end   2.2% +-0.6%
+only turns where I hold >= 2 high singles (the choice exists), ten-cards and 8-9
+  oc4 10 u0 k0                                 n    192 (0.005 a round)  opp1   0.0% +-0.0%  opp2   0.0% +-0.0%  end   4.2% +-1.4%
+  oc4 10 u1 k0                                 n   1855 (0.046 a round)  opp1   2.0% +-0.3%  opp2   2.3% +-0.3%  end   3.9% +-0.5%
+  oc4 10 u2 k0                                 n   4261 (0.107 a round)  opp1   4.1% +-0.3%  opp2   5.4% +-0.3%  end   4.3% +-0.3%
+  oc4 10 u2 k1                                 n    182 (0.005 a round)  opp1 100.0% +-0.0%  opp2 100.0% +-0.0%  end   0.0% +-0.0%
+  oc4 10 u3 k0                                 n  12161 (0.304 a round)  opp1  11.9% +-0.3%  opp2  13.5% +-0.3%  end   3.1% +-0.2%
+  oc4 8-9 u0 k0                                n     72 (0.002 a round)  opp1   0.0% +-0.0%  opp2   0.0% +-0.0%  end   5.6% +-2.7%
+  oc4 8-9 u1 k0                                n    742 (0.019 a round)  opp1   2.0% +-0.5%  opp2   2.2% +-0.5%  end   5.4% +-0.8%
+  oc4 8-9 u2 k0                                n   1556 (0.039 a round)  opp1   3.9% +-0.5%  opp2   5.6% +-0.6%  end   4.2% +-0.5%
+  oc4 8-9 u2 k1                                n     90 (0.002 a round)  opp1 100.0% +-0.0%  opp2 100.0% +-0.0%  end   0.0% +-0.0%
+  oc4 8-9 u3 k0                                n  13053 (0.326 a round)  opp1  10.8% +-0.3%  opp2  15.0% +-0.3%  end   3.3% +-0.2%
+  oc5 10 u0 k0                                 n    107 (0.003 a round)  opp1   0.0% +-0.0%  opp2   0.0% +-0.0%  end   1.9% +-1.3%
+  oc5 10 u1 k0                                 n   1284 (0.032 a round)  opp1   2.2% +-0.4%  opp2   3.8% +-0.5%  end   0.9% +-0.3%
+  oc5 10 u2 k0                                 n   5872 (0.147 a round)  opp1   3.4% +-0.2%  opp2   5.8% +-0.3%  end   0.7% +-0.1%
+  oc5 10 u2 k1                                 n    434 (0.011 a round)  opp1 100.0% +-0.0%  opp2 100.0% +-0.0%  end   0.0% +-0.0%
+  oc5 10 u3 k0                                 n  29579 (0.739 a round)  opp1  13.2% +-0.2%  opp2  16.2% +-0.2%  end   0.3% +-0.0%
+  oc5 8-9 u1 k0                                n    479 (0.012 a round)  opp1   1.5% +-0.5%  opp2   3.1% +-0.8%  end   1.0% +-0.5%
+  oc5 8-9 u2 k0                                n   1953 (0.049 a round)  opp1   3.1% +-0.4%  opp2   7.1% +-0.6%  end   0.5% +-0.2%
+  oc5 8-9 u2 k1                                n    202 (0.005 a round)  opp1 100.0% +-0.0%  opp2 100.0% +-0.0%  end   0.0% +-0.0%
+  oc5 8-9 u3 k0                                n  26855 (0.671 a round)  opp1  10.3% +-0.2%  opp2  16.8% +-0.2%  end   0.4% +-0.0%
+when the twin came (opp1, n 24064, 0.602 a round): what I did
+  oc4 10                                       n   2548 (0.064 a round)  took  91.4% +-0.6%  threw_it   8.6% +-0.6%
+  oc4 5-7                                      n   5077 (0.127 a round)  took  93.7% +-0.3%  threw_it   3.4% +-0.3%
+  oc4 8-9                                      n   2253 (0.056 a round)  took  93.0% +-0.5%  threw_it   7.0% +-0.5%
+  oc5 10                                       n   5359 (0.134 a round)  took  98.2% +-0.2%  threw_it   1.8% +-0.2%
+  oc5 5-7                                      n   5131 (0.128 a round)  took  97.0% +-0.2%  threw_it   1.4% +-0.2%
+  oc5 8-9                                      n   3696 (0.092 a round)  took  98.1% +-0.2%  threw_it   1.9% +-0.2%
+after I took it (n 23044, 0.576 a round): pair thrown on my next turn / I called
+  oc4 10                                       n   2328 (0.058 a round)  pair_thrown  96.0% +-0.4%  called   0.0% +-0.0%
+  oc4 5-7                                      n   4755 (0.119 a round)  pair_thrown  90.9% +-0.4%  called   0.0% +-0.0%
+  oc4 8-9                                      n   2096 (0.052 a round)  pair_thrown  95.3% +-0.5%  called   0.0% +-0.0%
+  oc5 10                                       n   5262 (0.132 a round)  pair_thrown  99.6% +-0.1%  called   0.0% +-0.0%
+  oc5 5-7                                      n   4977 (0.124 a round)  pair_thrown  98.0% +-0.2%  called   0.0% +-0.0%
+  oc5 8-9                                      n   3626 (0.091 a round)  pair_thrown  99.4% +-0.1%  called   0.0% +-0.0%

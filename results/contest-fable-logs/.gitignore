@@ -1,0 +1,3 @@
+# raw play-both-moves-out records: large, rebuilt by the commands in the logs
+*.pkl
+!wtable.outcomes.pkl

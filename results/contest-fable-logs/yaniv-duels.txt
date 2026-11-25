@@ -1,0 +1,8 @@
+py:contest_fable_yaniv.build vs hm5 (seed 31): margin +0.133 +-0.028 a round (40000 rounds), rounds won 51.6%, calls caught 6.8%;
+py:contest_fable_yaniv.build vs trained (seed 31): margin +0.150 +-0.058 a round (40000 rounds), rounds won 52.8%, calls caught 7.6%;
+py:contest_fable_yaniv.build vs counter (seed 31): margin +1.773 +-0.068 a round (40000 rounds), rounds won 57.3%, calls caught 4.7%;
+hm5 vs trained (seed 31): margin +0.096 +-0.057 a round (40000 rounds), rounds won 51.4%, calls caught 7.1%;
+hm5 vs counter (seed 31): margin +1.653 +-0.068 a round (40000 rounds), rounds won 56.3%, calls caught 4.7%;
+py:contest_fable_yaniv.build vs hm5 (seed 32): margin +0.091 +-0.029 a round (40000 rounds), rounds won 51.4%, calls caught 6.7%; matches 3004-2996 (50.1%, 95% 48.8%-51.3%)
+py:contest_fable_yaniv.build vs trained (seed 1): matches 2527-1473 (63.2%, 95% 61.7%-64.7%)
+py:contest_fable_yaniv.build vs counter (seed 1): matches 2886-1114 (72.2%, 95% 70.7%-73.5%)

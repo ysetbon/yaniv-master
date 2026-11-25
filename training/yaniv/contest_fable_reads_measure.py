@@ -18,7 +18,9 @@ COLS = ["round", "ply", "oc", "mc", "est", "opp_min", "known_n", "known_pts", "o
         "opp_last_n", "opp_last_pts", "opp_last_draw_open",   # truth about the opponent's last move (-1: none)
         "opp_true", "opp_hidden_pts", "opp_low_true",          # truth: its total, its hidden cards' points
         "e1", "h1", "e2", "hero_pays", "opp_calls_total",      # e1: opp calls on its next turn; h1: hero calls on
-        "my_last_pts", "my_last_taken", "opp_true_after"]      # its next; e2: opp calls on its 1st or 2nd next turn
+        "my_last_pts", "my_last_taken", "opp_true_after",      # its next; e2: opp calls on its 1st or 2nd next turn
+        "k_after", "take_open", "n_thrown", "pts_kept", "pts_after", "my_known_n", "my_known_pts",   # after my move:
+        "my_min_after"]   # my cards, did I take the open card, my points (truth), my cards the opponent knows
 
 
 def _job(job):
@@ -79,15 +81,23 @@ def _job(job):
                    int(opp_turns == 0), *opp_last,
                    mask_points(opp_hand), mask_points(opp_hand & ~v.opp_known),
                    sum(1 for c in cards_from_mask(opp_hand) if POINTS_OF[c] <= 3),
-                   0, 0, 0, 0, -1, -1, -1, -1]
+                   0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
             rows.append(row)
             mine.append((len(rows) - 1, opp_turns))
             if a.kind != "yaniv":
                 my_last = (POINTS_OF[a.top], len(rows) - 1)
                 row[COLS.index("my_last_pts")] = POINTS_OF[a.top]
+            if a.kind != "yaniv":
+                row[COLS.index("n_thrown")] = popcount(a.discard_mask)
+                row[COLS.index("take_open")] = int(a.draw == "open")
+                row[COLS.index("pts_kept")] = mask_points(v.my_hand & ~a.discard_mask)
             apply_action(st, a)
             if not st.terminal:
                 row[COLS.index("opp_true_after")] = mask_points(st.hands[1 - hs])
+                row[COLS.index("k_after")] = popcount(st.hands[hs])
+                row[COLS.index("pts_after")] = mask_points(st.hands[hs])
+                row[COLS.index("my_known_n")] = popcount(st.known[hs])
+                row[COLS.index("my_known_pts")] = mask_points(st.known[hs])
         if not st.terminal:
             resolve_showdown(st)
         for idx, _ in mine:

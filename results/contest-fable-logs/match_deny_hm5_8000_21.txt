@@ -1,0 +1,77 @@
+results/contest-fable-logs/match_rec_probe_deny_hm5_hm5_8000_21.pkl matches 8000 {'rounds': 130050, 'decisions': 907745, 'margin': -2700.0} records 64864
+-- hindsight
+  off                                            n  59014 ( 7.377/match)  equity each  -5.103 +-0.064  per match -37.6419   points each  -5.71 +-0.07
+  on cut                                         n   5850 ( 0.731/match)  equity each +18.692 +-0.254  per match +13.6686   points each  -4.43 +-0.14
+-- hidden opponent cards
+  ('need', 0)                                    n   1781 ( 0.223/match)  equity each  +1.352 +-0.373  per match +0.3011   points each  -3.09 +-0.27
+  ('need', 1)                                    n   4496 ( 0.562/match)  equity each  +1.074 +-0.262  per match +0.6034   points each  -5.05 +-0.21
+  ('need', 2)                                    n  12892 ( 1.611/match)  equity each  -1.257 +-0.164  per match -2.0254   points each  -5.65 +-0.15
+  ('need', 3)                                    n  45695 ( 5.712/match)  equity each  -4.001 +-0.079  per match -22.8522   points each  -5.72 +-0.08
+-- hidden x hindsight
+  ('need', 0, 'off')                             n   1463 ( 0.183/match)  equity each  -3.294 +-0.259  per match -0.6023   points each  -2.68 +-0.30
+  ('need', 0, 'on')                              n    318 ( 0.040/match)  equity each +22.727 +-1.087  per match +0.9034   points each  -4.94 +-0.57
+  ('need', 1, 'off')                             n   3403 ( 0.425/match)  equity each  -4.635 +-0.217  per match -1.9718   points each  -4.93 +-0.27
+  ('need', 1, 'on')                              n   1093 ( 0.137/match)  equity each +18.848 +-0.570  per match +2.5751   points each  -5.45 +-0.29
+  ('need', 2, 'off')                             n  10949 ( 1.369/match)  equity each  -4.946 +-0.152  per match -6.7693   points each  -5.87 +-0.18
+  ('need', 2, 'on')                              n   1943 ( 0.243/match)  equity each +19.532 +-0.442  per match +4.7438   points each  -4.42 +-0.23
+  ('need', 3, 'off')                             n  43199 ( 5.400/match)  equity each  -5.241 +-0.076  per match -28.2985   points each  -5.83 +-0.09
+  ('need', 3, 'on')                              n   2496 ( 0.312/match)  equity each +17.456 +-0.392  per match +5.4463   points each  -3.93 +-0.22
+-- exact
+  all known and exactly on cut                   n    318 ( 0.040/match)  equity each +22.727 +-1.087  per match +0.9034   points each  -4.94 +-0.57
+  other                                          n  64546 ( 8.068/match)  equity each  -3.083 +-0.068  per match -24.8767   points each  -5.59 +-0.07
+-- signed distance of opp score + est from the cut
+  ('t+est-cut', '-1-1')                          n   2646 ( 0.331/match)  equity each  +2.405 +-0.506  per match +0.7955   points each  -4.42 +-0.27
+  ('t+est-cut', '-2--1')                         n   1107 ( 0.138/match)  equity each  -1.613 +-0.736  per match -0.2232   points each  -4.80 +-0.42
+  ('t+est-cut', '-3--2')                         n   1158 ( 0.145/match)  equity each  -1.400 +-0.706  per match -0.2026   points each  -4.74 +-0.43
+  ('t+est-cut', '-5--3')                         n   2332 ( 0.291/match)  equity each  -2.378 +-0.481  per match -0.6933   points each  -4.43 +-0.30
+  ('t+est-cut', '-8--5')                         n   3271 ( 0.409/match)  equity each  -1.959 +-0.372  per match -0.8009   points each  -5.41 +-0.26
+  ('t+est-cut', '1-2')                           n   1228 ( 0.153/match)  equity each  +1.116 +-0.789  per match +0.1713   points each  -4.77 +-0.41
+  ('t+est-cut', '2-3')                           n   1212 ( 0.151/match)  equity each  +0.297 +-0.732  per match +0.0450   points each  -4.96 +-0.40
+  ('t+est-cut', '3-5')                           n   2079 ( 0.260/match)  equity each  -1.682 +-0.563  per match -0.4370   points each  -4.29 +-0.34
+  ('t+est-cut', '5-8')                           n   2490 ( 0.311/match)  equity each  -5.510 +-0.451  per match -1.7151   points each  -5.44 +-0.35
+  ('t+est-cut', '8+')                            n  10095 ( 1.262/match)  equity each  -4.760 +-0.166  per match -6.0064   points each  -6.21 +-0.18
+  ('t+est-cut', '<-8')                           n  37246 ( 4.656/match)  equity each  -3.202 +-0.067  per match -14.9067   points each  -5.78 +-0.10
+-- hidden x distance
+  ('need', 0, 't+est-cut', '-1-1')               n    339 ( 0.042/match)  equity each +20.876 +-1.107  per match +0.8846   points each  -4.93 +-0.54
+  ('need', 0, 't+est-cut', '-3--1')              n     30 ( 0.004/match)  equity each  -7.325 +-1.930  per match -0.0275   points each  -4.60 +-1.48
+  ('need', 0, 't+est-cut', '1-3')                n     55 ( 0.007/match)  equity each -12.186 +-2.773  per match -0.0838   points each  -5.85 +-0.88
+  ('need', 0, 't+est-cut', '3+')                 n    278 ( 0.035/match)  equity each  -3.978 +-0.646  per match -0.1382   points each  -3.72 +-0.74
+  ('need', 0, 't+est-cut', '<-3')                n   1079 ( 0.135/match)  equity each  -2.477 +-0.254  per match -0.3341   points each  -2.16 +-0.35
+  ('need', 1, 't+est-cut', '-1-1')               n    323 ( 0.040/match)  equity each +11.368 +-1.254  per match +0.4590   points each  -4.35 +-0.53
+  ('need', 1, 't+est-cut', '-3--1')              n    274 ( 0.034/match)  equity each  +9.493 +-1.300  per match +0.3251   points each  -5.72 +-0.65
+  ('need', 1, 't+est-cut', '1-3')                n    354 ( 0.044/match)  equity each +15.715 +-1.219  per match +0.6954   points each  -4.29 +-0.55
+  ('need', 1, 't+est-cut', '3+')                 n    758 ( 0.095/match)  equity each  -4.496 +-0.610  per match -0.4260   points each  -5.09 +-0.57
+  ('need', 1, 't+est-cut', '<-3')                n   2787 ( 0.348/match)  equity each  -1.292 +-0.261  per match -0.4502   points each  -5.16 +-0.29
+  ('need', 2, 't+est-cut', '-1-1')               n    562 ( 0.070/match)  equity each  +3.342 +-1.110  per match +0.2348   points each  -5.04 +-0.56
+  ('need', 2, 't+est-cut', '-3--1')              n    523 ( 0.065/match)  equity each  +3.583 +-1.106  per match +0.2343   points each  -4.84 +-0.58
+  ('need', 2, 't+est-cut', '1-3')                n    638 ( 0.080/match)  equity each  +7.875 +-0.992  per match +0.6280   points each  -4.31 +-0.55
+  ('need', 2, 't+est-cut', '3+')                 n   2655 ( 0.332/match)  equity each  -3.265 +-0.409  per match -1.0834   points each  -6.32 +-0.36
+  ('need', 2, 't+est-cut', '<-3')                n   8514 ( 1.064/match)  equity each  -1.916 +-0.170  per match -2.0391   points each  -5.64 +-0.19
+  ('need', 3, 't+est-cut', '-1-1')               n   1422 ( 0.178/match)  equity each  -4.404 +-0.662  per match -0.7828   points each  -4.06 +-0.41
+  ('need', 3, 't+est-cut', '-3--1')              n   1438 ( 0.180/match)  equity each  -5.328 +-0.621  per match -0.9577   points each  -4.57 +-0.40
+  ('need', 3, 't+est-cut', '1-3')                n   1393 ( 0.174/match)  equity each  -5.877 +-0.693  per match -1.0233   points each  -5.22 +-0.41
+  ('need', 3, 't+est-cut', '3+')                 n  10973 ( 1.372/match)  equity each  -4.747 +-0.183  per match -6.5108   points each  -5.79 +-0.17
+  ('need', 3, 't+est-cut', '<-3')                n  30469 ( 3.809/match)  equity each  -3.565 +-0.083  per match -13.5776   points each  -5.86 +-0.11
+-- sure call x distance
+  ('sure', 't+est-cut', '-1-1')                  n   1412 ( 0.176/match)  equity each +10.997 +-0.638  per match +1.9409   points each  -5.61 +-0.26
+  ('sure', 't+est-cut', '-3--1')                 n   1049 ( 0.131/match)  equity each  +5.518 +-0.748  per match +0.7236   points each  -6.33 +-0.33
+  ('sure', 't+est-cut', '1-3')                   n   1130 ( 0.141/match)  equity each +10.610 +-0.743  per match +1.4987   points each  -5.26 +-0.30
+  ('sure', 't+est-cut', '3+')                    n   3642 ( 0.455/match)  equity each  -4.530 +-0.347  per match -2.0623   points each  -9.46 +-0.23
+  ('sure', 't+est-cut', '<-3')                   n  10728 ( 1.341/match)  equity each  -3.129 +-0.147  per match -4.1958   points each  -9.12 +-0.14
+  ('unsure', 't+est-cut', '-1-1')                n   1234 ( 0.154/match)  equity each  -7.425 +-0.703  per match -1.1454   points each  -3.05 +-0.49
+  ('unsure', 't+est-cut', '-3--1')               n   1216 ( 0.152/match)  equity each  -7.562 +-0.647  per match -1.1493   points each  -3.43 +-0.48
+  ('unsure', 't+est-cut', '1-3')                 n   1310 ( 0.164/match)  equity each  -7.831 +-0.688  per match -1.2824   points each  -4.52 +-0.46
+  ('unsure', 't+est-cut', '3+')                  n  11022 ( 1.378/match)  equity each  -4.425 +-0.178  per match -6.0961   points each  -4.60 +-0.18
+  ('unsure', 't+est-cut', '<-3')                 n  32121 ( 4.015/match)  equity each  -3.040 +-0.080  per match -12.2051   points each  -4.52 +-0.11
+-- which cut x distance
+  ('cut', 100, 't+est-cut', '-1-1')              n    937 ( 0.117/match)  equity each  +3.800 +-1.149  per match +0.4451   points each  -4.53 +-0.45
+  ('cut', 100, 't+est-cut', '-3--1')             n    821 ( 0.103/match)  equity each  -2.342 +-1.134  per match -0.2403   points each  -4.73 +-0.50
+  ('cut', 100, 't+est-cut', '1-3')               n    933 ( 0.117/match)  equity each  +1.634 +-1.149  per match +0.1906   points each  -5.30 +-0.47
+  ('cut', 100, 't+est-cut', '3+')                n   2723 ( 0.340/match)  equity each  -4.837 +-0.536  per match -1.6463   points each  -5.96 +-0.32
+  ('cut', 100, 't+est-cut', '<-3')               n   8892 ( 1.111/match)  equity each  -4.123 +-0.225  per match -4.5825   points each  -5.94 +-0.19
+  ('cut', 50, 't+est-cut', '-1-1')               n   1709 ( 0.214/match)  equity each  +1.640 +-0.464  per match +0.3504   points each  -4.35 +-0.33
+  ('cut', 50, 't+est-cut', '-3--1')              n   1444 ( 0.180/match)  equity each  -1.027 +-0.471  per match -0.1854   points each  -4.80 +-0.38
+  ('cut', 50, 't+est-cut', '1-3')                n   1507 ( 0.188/match)  equity each  +0.137 +-0.503  per match +0.0258   points each  -4.59 +-0.36
+  ('cut', 50, 't+est-cut', '3+')                 n  11941 ( 1.493/match)  equity each  -4.363 +-0.153  per match -6.5122   points each  -5.77 +-0.17
+  ('cut', 50, 't+est-cut', '<-3')                n  33957 ( 4.245/match)  equity each  -2.784 +-0.066  per match -11.8184   points each  -5.61 +-0.10
+P(on cut) by (hidden, distance): {(0, '-1-1'): (339, 0.94), (0, '-3--1'): (30, 0.0), (0, '1-3'): (55, 0.0), (0, '3+'): (278, 0.0), (0, '<-3'): (1079, 0.0), (1, '-1-1'): (323, 0.79), (1, '-3--1'): (274, 0.64), (1, '1-3'): (354, 0.83), (1, '3+'): (758, 0.07), (1, '<-3'): (2787, 0.11), (2, '-1-1'): (562, 0.54), (2, '-3--1'): (523, 0.5), (2, '1-3'): (638, 0.56), (2, '3+'): (2655, 0.12), (2, '<-3'): (8514, 0.08), (3, '-1-1'): (1422, 0.24), (3, '-3--1'): (1438, 0.25), (3, '1-3'): (1393, 0.23), (3, '3+'): (10973, 0.05), (3, '<-3'): (30469, 0.03)}

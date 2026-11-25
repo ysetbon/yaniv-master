@@ -1,0 +1,423 @@
+results/contest-fable-logs/match_rec_probe_hm5_hm5_6000_11.pkl matches 6000 {'rounds': 97420, 'decisions': 678622, 'margin': -3436.0}
+-- by label
+  call:call                                      n  29007 ( 4.835/match)  equity each  -6.618 +-0.117  per match -31.9925   points each  -9.60 +-0.14
+  call:skip                                      n  48804 ( 8.134/match)  equity each  -2.933 +-0.079  per match -23.8538   points each  -5.66 +-0.08
+  cutdeck10_100                                  n  10927 ( 1.821/match)  equity each  +0.959 +-0.218  per match +1.7458   points each  -6.56 +-0.19
+  cutdeck10_50                                   n  18685 ( 3.114/match)  equity each  -0.442 +-0.111  per match -1.3754   points each  -6.83 +-0.14
+  cutkeep100                                     n   5666 ( 0.944/match)  equity each  -3.318 +-0.358  per match -3.1336   points each  -3.78 +-0.23
+  cutkeep50                                      n   9794 ( 1.632/match)  equity each  -2.462 +-0.163  per match -4.0188   points each  -3.81 +-0.17
+  cutopen100                                     n   9058 ( 1.510/match)  equity each  -0.020 +-0.264  per match -0.0298   points each  -7.46 +-0.22
+  cutopen50                                      n  15496 ( 2.583/match)  equity each  -0.998 +-0.130  per match -2.5771   points each  -7.67 +-0.16
+  minhold                                        n  50847 ( 8.475/match)  equity each  -2.344 +-0.109  per match -19.8632   points each  -1.64 +-0.08
+  nobust                                         n   2268 ( 0.378/match)  equity each  -0.410 +-0.536  per match -0.1548   points each  -3.61 +-0.39
+-- call by assaf band
+  ('call:call', '0.02-0.05')                     n   4144 ( 0.691/match)  equity each  -0.516 +-0.307  per match -0.3564   points each  -0.99 +-0.36
+  ('call:call', '0.05-0.1')                      n   7059 ( 1.177/match)  equity each  -1.802 +-0.223  per match -2.1201   points each  -2.62 +-0.26
+  ('call:call', '0.1-0.2')                       n   7628 ( 1.271/match)  equity each  -4.458 +-0.225  per match -5.6676   points each  -6.12 +-0.28
+  ('call:call', '0.2-0.35')                      n   5199 ( 0.867/match)  equity each -11.382 +-0.257  per match -9.8624   points each -16.95 +-0.33
+  ('call:call', '0.35-0.5')                      n   1961 ( 0.327/match)  equity each -12.045 +-0.456  per match -3.9368   points each -17.63 +-0.55
+  ('call:call', '0.5-0.75')                      n    704 ( 0.117/match)  equity each -10.993 +-0.829  per match -1.2899   points each -13.74 +-0.96
+  ('call:call', '0.75+')                         n   2308 ( 0.385/match)  equity each -22.795 +-0.301  per match -8.7683   points each -33.31 +-0.22
+  ('call:skip', '0.02-0.05')                     n   6176 ( 1.029/match)  equity each  -1.769 +-0.223  per match -1.8212   points each  -2.15 +-0.27
+  ('call:skip', '0.05-0.1')                      n    676 ( 0.113/match)  equity each  -2.320 +-0.636  per match -0.2614   points each  -1.84 +-0.73
+  ('call:skip', '0.1-0.2')                       n    150 ( 0.025/match)  equity each  -5.553 +-1.091  per match -0.1388   points each  +3.17 +-2.34
+  ('call:skip', '0.2-0.35')                      n     95 ( 0.016/match)  equity each  -7.929 +-1.510  per match -0.1255   points each +10.80 +-2.77
+  ('call:skip', '0.35-0.5')                      n     43 ( 0.007/match)  equity each -12.093 +-2.005  per match -0.0867   points each +11.93 +-4.39
+  ('call:skip', '0.75+')                         n     41 ( 0.007/match)  equity each -13.723 +-1.616  per match -0.0938   points each +30.71 +-2.01
+  ('call:skip', '<0.02')                         n  41599 ( 6.933/match)  equity each  -3.070 +-0.086  per match -21.2822   points each  -6.39 +-0.08
+-- call by my score band
+  ('call:call', 's40-63')                        n   6455 ( 1.076/match)  equity each  -7.256 +-0.286  per match -7.8063   points each -10.31 +-0.30
+  ('call:call', 's63-70')                        n   1309 ( 0.218/match)  equity each  -9.091 +-0.687  per match -1.9833   points each  -8.49 +-0.69
+  ('call:call', 's70-80')                        n   1758 ( 0.293/match)  equity each  -7.498 +-0.596  per match -2.1969   points each -10.01 +-0.57
+  ('call:call', 's80-86')                        n    655 ( 0.109/match)  equity each  -9.968 +-0.990  per match -1.0882   points each  -9.54 +-0.99
+  ('call:call', 's86-93')                        n    729 ( 0.121/match)  equity each -12.093 +-1.038  per match -1.4692   points each  -5.97 +-0.90
+  ('call:call', 's93+')                          n   1075 ( 0.179/match)  equity each  -3.702 +-0.836  per match -0.6632   points each -10.01 +-0.72
+  ('call:call', 's<40')                          n  17026 ( 2.838/match)  equity each  -5.915 +-0.123  per match -16.7853   points each  -9.51 +-0.19
+  ('call:skip', 's40-63')                        n   9579 ( 1.597/match)  equity each  -3.352 +-0.199  per match -5.3513   points each  -5.42 +-0.18
+  ('call:skip', 's63-70')                        n   2801 ( 0.467/match)  equity each  -3.789 +-0.378  per match -1.7689   points each  -4.78 +-0.37
+  ('call:skip', 's70-80')                        n   3089 ( 0.515/match)  equity each  -3.826 +-0.387  per match -1.9697   points each  -5.68 +-0.30
+  ('call:skip', 's80-86')                        n   1356 ( 0.226/match)  equity each  -2.443 +-0.595  per match -0.5520   points each  -7.12 +-0.49
+  ('call:skip', 's86-93')                        n   1389 ( 0.232/match)  equity each  +0.380 +-0.668  per match +0.0880   points each  -6.63 +-0.47
+  ('call:skip', 's93+')                          n   1610 ( 0.268/match)  equity each  -3.935 +-0.635  per match -1.0558   points each  -5.57 +-0.43
+  ('call:skip', 's<40')                          n  28980 ( 4.830/match)  equity each  -2.742 +-0.085  per match -13.2440   points each  -5.72 +-0.10
+-- call by my score x assaf
+  ('call:call', 's40-63', '0.02-0.05')           n    935 ( 0.156/match)  equity each  -0.069 +-0.748  per match -0.0107   points each  -1.96 +-0.78
+  ('call:call', 's40-63', '0.05-0.1')            n   1596 ( 0.266/match)  equity each  -1.796 +-0.549  per match -0.4778   points each  -3.03 +-0.54
+  ('call:call', 's40-63', '0.1-0.2')             n   1569 ( 0.262/match)  equity each  -4.090 +-0.549  per match -1.0696   points each  -6.39 +-0.61
+  ('call:call', 's40-63', '0.2-0.35')            n   1224 ( 0.204/match)  equity each -12.487 +-0.622  per match -2.5474   points each -17.51 +-0.66
+  ('call:call', 's40-63', '0.35-0.5')            n    461 ( 0.077/match)  equity each -14.625 +-1.105  per match -1.1237   points each -19.78 +-1.10
+  ('call:call', 's40-63', '0.5-0.75')            n    181 ( 0.030/match)  equity each -13.594 +-1.819  per match -0.4101   points each -15.51 +-1.85
+  ('call:call', 's40-63', '0.75+')               n    488 ( 0.081/match)  equity each -26.757 +-0.662  per match -2.1762   points each -33.80 +-0.47
+  ('call:call', 's63-70', '0.02-0.05')           n    184 ( 0.031/match)  equity each  -2.610 +-1.945  per match -0.0800   points each  -1.91 +-1.63
+  ('call:call', 's63-70', '0.05-0.1')            n    313 ( 0.052/match)  equity each  -4.109 +-1.333  per match -0.2144   points each  -2.10 +-1.26
+  ('call:call', 's63-70', '0.1-0.2')             n    376 ( 0.063/match)  equity each  -6.419 +-1.260  per match -0.4023   points each  -4.52 +-1.32
+  ('call:call', 's63-70', '0.2-0.35')            n    224 ( 0.037/match)  equity each -14.628 +-1.497  per match -0.5461   points each -16.04 +-1.65
+  ('call:call', 's63-70', '0.35-0.5')            n     88 ( 0.015/match)  equity each -15.479 +-2.500  per match -0.2270   points each -19.01 +-2.31
+  ('call:call', 's63-70', '0.5-0.75')            n     39 ( 0.006/match)  equity each -12.511 +-3.590  per match -0.0813   points each -12.36 +-4.46
+  ('call:call', 's63-70', '0.75+')               n     85 ( 0.014/match)  equity each -30.509 +-2.162  per match -0.4322   points each -31.22 +-1.49
+  ('call:call', 's70-80', '0.02-0.05')           n    260 ( 0.043/match)  equity each  +1.320 +-1.436  per match +0.0572   points each  -1.97 +-1.39
+  ('call:call', 's70-80', '0.05-0.1')            n    410 ( 0.068/match)  equity each  -3.759 +-1.159  per match -0.2569   points each  -4.96 +-1.12
+  ('call:call', 's70-80', '0.1-0.2')             n    483 ( 0.081/match)  equity each  -5.048 +-1.124  per match -0.4064   points each  -6.44 +-1.10
+  ('call:call', 's70-80', '0.2-0.35')            n    306 ( 0.051/match)  equity each  -9.781 +-1.281  per match -0.4989   points each -14.33 +-1.32
+  ('call:call', 's70-80', '0.35-0.5')            n    114 ( 0.019/match)  equity each -14.408 +-2.332  per match -0.2738   points each -17.67 +-2.19
+  ('call:call', 's70-80', '0.5-0.75')            n     38 ( 0.006/match)  equity each -16.120 +-4.671  per match -0.1021   points each -16.26 +-3.95
+  ('call:call', 's70-80', '0.75+')               n    147 ( 0.025/match)  equity each -29.230 +-1.841  per match -0.7161   points each -33.47 +-0.90
+  ('call:call', 's80-86', '0.02-0.05')           n     87 ( 0.015/match)  equity each  -1.301 +-2.606  per match -0.0189   points each  +2.22 +-2.27
+  ('call:call', 's80-86', '0.05-0.1')            n    149 ( 0.025/match)  equity each  -3.683 +-1.928  per match -0.0915   points each  -1.35 +-1.98
+  ('call:call', 's80-86', '0.1-0.2')             n    216 ( 0.036/match)  equity each -10.220 +-1.694  per match -0.3679   points each  -7.81 +-1.71
+  ('call:call', 's80-86', '0.2-0.35')            n    112 ( 0.019/match)  equity each -16.870 +-2.153  per match -0.3149   points each -21.53 +-2.11
+  ('call:call', 's80-86', '0.35-0.5')            n     44 ( 0.007/match)  equity each -17.173 +-4.257  per match -0.1259   points each -19.93 +-3.82
+  ('call:call', 's80-86', '0.75+')               n     34 ( 0.006/match)  equity each -25.823 +-4.401  per match -0.1463   points each -32.18 +-1.75
+  ('call:call', 's86-93', '0.02-0.05')           n    107 ( 0.018/match)  equity each  -9.050 +-2.761  per match -0.1614   points each  +0.89 +-2.15
+  ('call:call', 's86-93', '0.05-0.1')            n    169 ( 0.028/match)  equity each  -5.907 +-1.965  per match -0.1664   points each  +0.15 +-1.73
+  ('call:call', 's86-93', '0.1-0.2')             n    197 ( 0.033/match)  equity each -10.426 +-2.091  per match -0.3423   points each  -3.55 +-1.82
+  ('call:call', 's86-93', '0.2-0.35')            n    121 ( 0.020/match)  equity each -15.318 +-2.119  per match -0.3089   points each -10.19 +-2.26
+  ('call:call', 's86-93', '0.35-0.5')            n     49 ( 0.008/match)  equity each -23.591 +-4.395  per match -0.1927   points each -10.80 +-3.33
+  ('call:call', 's86-93', '0.75+')               n     65 ( 0.011/match)  equity each -23.290 +-3.364  per match -0.2523   points each -28.35 +-0.56
+  ('call:call', 's93+', '0.02-0.05')             n    154 ( 0.026/match)  equity each  -2.834 +-2.124  per match -0.0727   points each  -4.40 +-1.94
+  ('call:call', 's93+', '0.05-0.1')              n    276 ( 0.046/match)  equity each  +0.473 +-1.734  per match +0.0217   points each  -2.68 +-1.28
+  ('call:call', 's93+', '0.1-0.2')               n    266 ( 0.044/match)  equity each  -1.663 +-1.657  per match -0.0737   points each  -5.00 +-1.40
+  ('call:call', 's93+', '0.2-0.35')              n    177 ( 0.029/match)  equity each  -7.221 +-1.824  per match -0.2130   points each -18.95 +-1.72
+  ('call:call', 's93+', '0.35-0.5')              n     77 ( 0.013/match)  equity each  -5.167 +-2.591  per match -0.0663   points each -14.36 +-2.62
+  ('call:call', 's93+', '0.75+')                 n    102 ( 0.017/match)  equity each -16.418 +-2.592  per match -0.2791   points each -32.18 +-0.79
+  ('call:call', 's<40', '0.02-0.05')             n   2417 ( 0.403/match)  equity each  -0.173 +-0.321  per match -0.0698   points each  -0.41 +-0.46
+  ('call:call', 's<40', '0.05-0.1')              n   4146 ( 0.691/match)  equity each  -1.353 +-0.226  per match -0.9350   points each  -2.43 +-0.34
+  ('call:call', 's<40', '0.1-0.2')               n   4521 ( 0.753/match)  equity each  -3.989 +-0.238  per match -3.0054   points each  -6.22 +-0.37
+  ('call:call', 's<40', '0.2-0.35')              n   3035 ( 0.506/match)  equity each -10.741 +-0.275  per match -5.4332   points each -17.03 +-0.43
+  ('call:call', 's<40', '0.35-0.5')              n   1128 ( 0.188/match)  equity each -10.252 +-0.469  per match -1.9273   points each -17.08 +-0.74
+  ('call:call', 's<40', '0.5-0.75')              n    389 ( 0.065/match)  equity each  -9.999 +-0.833  per match -0.6482   points each -13.25 +-1.29
+  ('call:call', 's<40', '0.75+')                 n   1387 ( 0.231/match)  equity each -20.617 +-0.229  per match -4.7660   points each -33.59 +-0.29
+  ('call:skip', 's40-63', '0.02-0.05')           n   1205 ( 0.201/match)  equity each  -2.099 +-0.559  per match -0.4215   points each  -1.97 +-0.60
+  ('call:skip', 's40-63', '0.05-0.1')            n    103 ( 0.017/match)  equity each  -2.820 +-1.834  per match -0.0484   points each  -1.95 +-1.53
+  ('call:skip', 's40-63', '<0.02')               n   8271 ( 1.379/match)  equity each  -3.541 +-0.214  per match -4.8814   points each  -5.96 +-0.18
+  ('call:skip', 's63-70', '0.02-0.05')           n    382 ( 0.064/match)  equity each  -1.335 +-0.982  per match -0.0850   points each  -0.74 +-1.15
+  ('call:skip', 's63-70', '0.05-0.1')            n     66 ( 0.011/match)  equity each  -6.000 +-2.523  per match -0.0660   points each  -0.36 +-3.33
+  ('call:skip', 's63-70', '0.1-0.2')             n     49 ( 0.008/match)  equity each  -9.953 +-2.523  per match -0.0813   points each  +1.92 +-3.49
+  ('call:skip', 's63-70', '0.2-0.35')            n     38 ( 0.006/match)  equity each -15.347 +-2.586  per match -0.0972   points each +14.08 +-3.81
+  ('call:skip', 's63-70', '<0.02')               n   2223 ( 0.370/match)  equity each  -3.515 +-0.427  per match -1.3024   points each  -6.43 +-0.37
+  ('call:skip', 's70-80', '0.02-0.05')           n    366 ( 0.061/match)  equity each  +0.059 +-1.226  per match +0.0036   points each  +0.11 +-1.12
+  ('call:skip', 's70-80', '0.05-0.1')            n     38 ( 0.006/match)  equity each  -5.234 +-2.397  per match -0.0331   points each  -5.63 +-2.38
+  ('call:skip', 's70-80', '<0.02')               n   2685 ( 0.448/match)  equity each  -4.336 +-0.411  per match -1.9402   points each  -6.47 +-0.31
+  ('call:skip', 's80-86', '0.02-0.05')           n    164 ( 0.027/match)  equity each  -0.790 +-2.109  per match -0.0216   points each  -3.33 +-1.81
+  ('call:skip', 's80-86', '<0.02')               n   1181 ( 0.197/match)  equity each  -2.639 +-0.616  per match -0.5194   points each  -7.66 +-0.50
+  ('call:skip', 's86-93', '0.02-0.05')           n    178 ( 0.030/match)  equity each  +1.135 +-1.949  per match +0.0337   points each  -6.97 +-1.35
+  ('call:skip', 's86-93', '<0.02')               n   1192 ( 0.199/match)  equity each  +0.102 +-0.712  per match +0.0202   points each  -6.72 +-0.50
+  ('call:skip', 's93+', '0.02-0.05')             n    192 ( 0.032/match)  equity each  -4.350 +-1.641  per match -0.1392   points each  -2.19 +-1.27
+  ('call:skip', 's93+', '<0.02')                 n   1403 ( 0.234/match)  equity each  -3.814 +-0.687  per match -0.8918   points each  -6.03 +-0.45
+  ('call:skip', 's<40', '0.02-0.05')             n   3689 ( 0.615/match)  equity each  -1.937 +-0.236  per match -1.1912   points each  -2.29 +-0.35
+  ('call:skip', 's<40', '0.05-0.1')              n    424 ( 0.071/match)  equity each  -1.588 +-0.625  per match -0.1122   points each  -1.62 +-0.91
+  ('call:skip', 's<40', '0.1-0.2')               n    101 ( 0.017/match)  equity each  -3.419 +-0.995  per match -0.0576   points each  +3.78 +-3.03
+  ('call:skip', 's<40', '0.2-0.35')              n     57 ( 0.009/match)  equity each  -2.983 +-1.512  per match -0.0283   points each  +8.61 +-3.82
+  ('call:skip', 's<40', '0.75+')                 n     28 ( 0.005/match)  equity each  -9.266 +-1.442  per match -0.0432   points each +31.96 +-2.66
+  ('call:skip', 's<40', '<0.02')                 n  24644 ( 4.107/match)  equity each  -2.865 +-0.093  per match -11.7672   points each  -6.46 +-0.11
+-- call by s x t(lo<50,mid,hi>=80) x assaf
+  ('call:call', 's40-63', 'thi', '0.02-0.05')    n    127 ( 0.021/match)  equity each  +1.182 +-2.670  per match +0.0250   points each  -2.66 +-2.07
+  ('call:call', 's40-63', 'thi', '0.05-0.1')     n    157 ( 0.026/match)  equity each  +1.807 +-2.422  per match +0.0473   points each  -3.88 +-1.78
+  ('call:call', 's40-63', 'thi', '0.1-0.2')      n    138 ( 0.023/match)  equity each  -1.405 +-2.412  per match -0.0323   points each  -3.88 +-2.04
+  ('call:call', 's40-63', 'thi', '0.2-0.35')     n    131 ( 0.022/match)  equity each -12.396 +-2.557  per match -0.2706   points each -20.06 +-2.13
+  ('call:call', 's40-63', 'thi', '0.35-0.5')     n     49 ( 0.008/match)  equity each -10.561 +-3.429  per match -0.0862   points each -20.80 +-3.22
+  ('call:call', 's40-63', 'thi', '0.75+')        n     53 ( 0.009/match)  equity each -29.189 +-1.551  per match -0.2578   points each -35.68 +-1.45
+  ('call:call', 's40-63', 'tlo', '0.02-0.05')    n    525 ( 0.087/match)  equity each  -0.047 +-0.829  per match -0.0041   points each  -2.27 +-1.04
+  ('call:call', 's40-63', 'tlo', '0.05-0.1')     n    927 ( 0.154/match)  equity each  -1.770 +-0.597  per match -0.2735   points each  -2.88 +-0.70
+  ('call:call', 's40-63', 'tlo', '0.1-0.2')      n    950 ( 0.158/match)  equity each  -2.749 +-0.602  per match -0.4352   points each  -6.05 +-0.78
+  ('call:call', 's40-63', 'tlo', '0.2-0.35')     n    727 ( 0.121/match)  equity each  -9.893 +-0.674  per match -1.1986   points each -17.55 +-0.86
+  ('call:call', 's40-63', 'tlo', '0.35-0.5')     n    257 ( 0.043/match)  equity each -12.784 +-1.356  per match -0.5476   points each -20.21 +-1.50
+  ('call:call', 's40-63', 'tlo', '0.5-0.75')     n    101 ( 0.017/match)  equity each -12.542 +-2.152  per match -0.2111   points each -18.03 +-2.39
+  ('call:call', 's40-63', 'tlo', '0.75+')        n    295 ( 0.049/match)  equity each -23.029 +-0.858  per match -1.1323   points each -33.65 +-0.60
+  ('call:call', 's40-63', 'tmid', '0.02-0.05')   n    283 ( 0.047/match)  equity each  -0.671 +-1.517  per match -0.0317   points each  -1.07 +-1.39
+  ('call:call', 's40-63', 'tmid', '0.05-0.1')    n    512 ( 0.085/match)  equity each  -2.948 +-1.094  per match -0.2515   points each  -3.05 +-0.97
+  ('call:call', 's40-63', 'tmid', '0.1-0.2')     n    481 ( 0.080/match)  equity each  -7.510 +-1.132  per match -0.6021   points each  -7.80 +-1.10
+  ('call:call', 's40-63', 'tmid', '0.2-0.35')    n    366 ( 0.061/match)  equity each -17.674 +-1.262  per match -1.0781   points each -16.51 +-1.18
+  ('call:call', 's40-63', 'tmid', '0.35-0.5')    n    155 ( 0.026/match)  equity each -18.963 +-2.091  per match -0.4899   points each -18.74 +-1.87
+  ('call:call', 's40-63', 'tmid', '0.5-0.75')    n     62 ( 0.010/match)  equity each -15.144 +-3.601  per match -0.1565   points each -13.69 +-3.24
+  ('call:call', 's40-63', 'tmid', '0.75+')       n    140 ( 0.023/match)  equity each -33.692 +-1.065  per match -0.7861   points each -33.39 +-0.85
+  ('call:call', 's63-70', 'thi', '0.05-0.1')     n     49 ( 0.008/match)  equity each  -8.400 +-6.390  per match -0.0686   points each  -1.73 +-3.29
+  ('call:call', 's63-70', 'thi', '0.1-0.2')      n     36 ( 0.006/match)  equity each -15.775 +-7.451  per match -0.0947   points each  -8.53 +-4.25
+  ('call:call', 's63-70', 'tlo', '0.02-0.05')    n     98 ( 0.016/match)  equity each  +1.116 +-1.417  per match +0.0182   points each  +3.16 +-1.99
+  ('call:call', 's63-70', 'tlo', '0.05-0.1')     n    170 ( 0.028/match)  equity each  -2.229 +-0.909  per match -0.0632   points each  -2.22 +-1.66
+  ('call:call', 's63-70', 'tlo', '0.1-0.2')      n    224 ( 0.037/match)  equity each  -2.141 +-0.910  per match -0.0799   points each  -3.07 +-1.63
+  ('call:call', 's63-70', 'tlo', '0.2-0.35')     n    136 ( 0.023/match)  equity each -10.924 +-1.191  per match -0.2476   points each -18.57 +-2.14
+  ('call:call', 's63-70', 'tlo', '0.35-0.5')     n     55 ( 0.009/match)  equity each -10.918 +-1.548  per match -0.1001   points each -20.95 +-2.83
+  ('call:call', 's63-70', 'tlo', '0.5-0.75')     n     29 ( 0.005/match)  equity each  -9.923 +-3.201  per match -0.0480   points each -14.14 +-5.20
+  ('call:call', 's63-70', 'tlo', '0.75+')        n     50 ( 0.008/match)  equity each -19.385 +-1.597  per match -0.1615   points each -30.30 +-1.76
+  ('call:call', 's63-70', 'tmid', '0.02-0.05')   n     74 ( 0.012/match)  equity each -11.947 +-3.340  per match -0.1473   points each  -8.86 +-2.83
+  ('call:call', 's63-70', 'tmid', '0.05-0.1')    n     94 ( 0.016/match)  equity each  -5.272 +-2.392  per match -0.0826   points each  -2.05 +-2.37
+  ('call:call', 's63-70', 'tmid', '0.1-0.2')     n    116 ( 0.019/match)  equity each -11.776 +-2.730  per match -0.2277   points each  -6.06 +-2.59
+  ('call:call', 's63-70', 'tmid', '0.2-0.35')    n     68 ( 0.011/match)  equity each -19.234 +-3.343  per match -0.2180   points each -11.09 +-2.88
+  ('call:call', 's63-70', 'tmid', '0.35-0.5')    n     29 ( 0.005/match)  equity each -20.490 +-5.235  per match -0.0990   points each -15.03 +-4.32
+  ('call:call', 's63-70', 'tmid', '0.75+')       n     32 ( 0.005/match)  equity each -45.603 +-3.311  per match -0.2432   points each -32.94 +-2.80
+  ('call:call', 's70-80', 'thi', '0.02-0.05')    n     32 ( 0.005/match)  equity each  +5.454 +-8.510  per match +0.0291   points each  -6.81 +-3.21
+  ('call:call', 's70-80', 'thi', '0.05-0.1')     n     53 ( 0.009/match)  equity each  -6.192 +-6.251  per match -0.0547   points each  -3.38 +-2.97
+  ('call:call', 's70-80', 'thi', '0.1-0.2')      n     60 ( 0.010/match)  equity each  -8.213 +-5.853  per match -0.0821   points each  -4.00 +-2.80
+  ('call:call', 's70-80', 'thi', '0.2-0.35')     n     41 ( 0.007/match)  equity each -18.444 +-6.531  per match -0.1260   points each -11.12 +-3.66
+  ('call:call', 's70-80', 'tlo', '0.02-0.05')    n    139 ( 0.023/match)  equity each  -1.028 +-1.028  per match -0.0238   points each  -3.13 +-2.01
+  ('call:call', 's70-80', 'tlo', '0.05-0.1')     n    224 ( 0.037/match)  equity each  -1.292 +-0.789  per match -0.0482   points each  -4.14 +-1.53
+  ('call:call', 's70-80', 'tlo', '0.1-0.2')      n    250 ( 0.042/match)  equity each  -3.299 +-0.777  per match -0.1374   points each  -7.95 +-1.56
+  ('call:call', 's70-80', 'tlo', '0.2-0.35')     n    176 ( 0.029/match)  equity each  -6.344 +-0.737  per match -0.1861   points each -16.10 +-1.71
+  ('call:call', 's70-80', 'tlo', '0.35-0.5')     n     66 ( 0.011/match)  equity each  -7.444 +-1.445  per match -0.0819   points each -17.92 +-2.88
+  ('call:call', 's70-80', 'tlo', '0.75+')        n     84 ( 0.014/match)  equity each -15.042 +-0.897  per match -0.2106   points each -33.79 +-1.14
+  ('call:call', 's70-80', 'tmid', '0.02-0.05')   n     89 ( 0.015/match)  equity each  +3.500 +-2.333  per match +0.0519   points each  +1.60 +-2.23
+  ('call:call', 's70-80', 'tmid', '0.05-0.1')    n    133 ( 0.022/match)  equity each  -6.945 +-2.148  per match -0.1540   points each  -6.98 +-1.96
+  ('call:call', 's70-80', 'tmid', '0.1-0.2')     n    173 ( 0.029/match)  equity each  -6.479 +-2.100  per match -0.1868   points each  -5.12 +-1.85
+  ('call:call', 's70-80', 'tmid', '0.2-0.35')    n     89 ( 0.015/match)  equity each -12.589 +-2.734  per match -0.1867   points each -12.30 +-2.48
+  ('call:call', 's70-80', 'tmid', '0.35-0.5')    n     36 ( 0.006/match)  equity each -20.674 +-4.828  per match -0.1240   points each -17.78 +-3.75
+  ('call:call', 's70-80', 'tmid', '0.75+')       n     39 ( 0.006/match)  equity each -39.284 +-3.212  per match -0.2553   points each -34.08 +-2.03
+  ('call:call', 's80-86', 'thi', '0.1-0.2')      n     28 ( 0.005/match)  equity each -10.481 +-8.498  per match -0.0489   points each  -8.75 +-5.01
+  ('call:call', 's80-86', 'tlo', '0.02-0.05')    n     44 ( 0.007/match)  equity each  -2.448 +-1.500  per match -0.0180   points each  -1.30 +-3.04
+  ('call:call', 's80-86', 'tlo', '0.05-0.1')     n     71 ( 0.012/match)  equity each  -2.550 +-1.379  per match -0.0302   points each  -1.66 +-2.69
+  ('call:call', 's80-86', 'tlo', '0.1-0.2')      n    101 ( 0.017/match)  equity each  -5.578 +-1.443  per match -0.0939   points each  -2.83 +-2.36
+  ('call:call', 's80-86', 'tlo', '0.2-0.35')     n     53 ( 0.009/match)  equity each  -7.634 +-2.132  per match -0.0674   points each -15.77 +-2.96
+  ('call:call', 's80-86', 'tmid', '0.02-0.05')   n     26 ( 0.004/match)  equity each  -0.651 +-6.354  per match -0.0028   points each  +5.69 +-4.61
+  ('call:call', 's80-86', 'tmid', '0.05-0.1')    n     60 ( 0.010/match)  equity each  -4.318 +-3.648  per match -0.0432   points each  +0.07 +-3.24
+  ('call:call', 's80-86', 'tmid', '0.1-0.2')     n     87 ( 0.015/match)  equity each -15.527 +-2.608  per match -0.2251   points each -13.30 +-2.69
+  ('call:call', 's80-86', 'tmid', '0.2-0.35')    n     51 ( 0.009/match)  equity each -23.006 +-3.141  per match -0.1956   points each -26.94 +-3.13
+  ('call:call', 's86-93', 'tlo', '0.02-0.05')    n     60 ( 0.010/match)  equity each  -8.278 +-2.304  per match -0.0828   points each  +2.62 +-2.72
+  ('call:call', 's86-93', 'tlo', '0.05-0.1')     n     92 ( 0.015/match)  equity each  -8.513 +-1.925  per match -0.1305   points each  -1.57 +-2.28
+  ('call:call', 's86-93', 'tlo', '0.1-0.2')      n    109 ( 0.018/match)  equity each -11.085 +-1.824  per match -0.2014   points each  -4.39 +-2.46
+  ('call:call', 's86-93', 'tlo', '0.2-0.35')     n     63 ( 0.011/match)  equity each -13.011 +-2.372  per match -0.1366   points each -11.57 +-3.15
+  ('call:call', 's86-93', 'tlo', '0.75+')        n     44 ( 0.007/match)  equity each -16.104 +-3.005  per match -0.1181   points each -28.73 +-0.62
+  ('call:call', 's86-93', 'tmid', '0.02-0.05')   n     35 ( 0.006/match)  equity each -17.367 +-5.191  per match -0.1013   points each  -3.40 +-3.75
+  ('call:call', 's86-93', 'tmid', '0.05-0.1')    n     62 ( 0.010/match)  equity each  -6.669 +-3.464  per match -0.0689   points each  +1.89 +-2.96
+  ('call:call', 's86-93', 'tmid', '0.1-0.2')     n     73 ( 0.012/match)  equity each -11.945 +-3.447  per match -0.1453   points each  -3.78 +-2.83
+  ('call:call', 's86-93', 'tmid', '0.2-0.35')    n     49 ( 0.008/match)  equity each -18.838 +-3.608  per match -0.1538   points each -11.29 +-3.53
+  ('call:call', 's93+', 'thi', '0.02-0.05')      n     25 ( 0.004/match)  equity each  +4.238 +-10.177  per match +0.0177   points each  -5.24 +-4.91
+  ('call:call', 's93+', 'thi', '0.05-0.1')       n     48 ( 0.008/match)  equity each +23.883 +-6.805  per match +0.1911   points each  +3.17 +-2.64
+  ('call:call', 's93+', 'thi', '0.1-0.2')        n     39 ( 0.006/match)  equity each  -3.329 +-9.017  per match -0.0216   points each -10.28 +-3.94
+  ('call:call', 's93+', 'tlo', '0.02-0.05')      n     80 ( 0.013/match)  equity each  -4.323 +-1.660  per match -0.0576   points each  -2.89 +-2.63
+  ('call:call', 's93+', 'tlo', '0.05-0.1')       n    138 ( 0.023/match)  equity each  -3.521 +-1.160  per match -0.0810   points each  -3.89 +-1.84
+  ('call:call', 's93+', 'tlo', '0.1-0.2')        n    128 ( 0.021/match)  equity each  -2.117 +-0.962  per match -0.0452   points each  -5.01 +-2.03
+  ('call:call', 's93+', 'tlo', '0.2-0.35')       n    103 ( 0.017/match)  equity each  -3.160 +-1.083  per match -0.0542   points each -18.75 +-2.46
+  ('call:call', 's93+', 'tlo', '0.35-0.5')       n     47 ( 0.008/match)  equity each  -6.945 +-2.295  per match -0.0544   points each -14.83 +-3.42
+  ('call:call', 's93+', 'tlo', '0.75+')          n     63 ( 0.011/match)  equity each -13.093 +-2.833  per match -0.1375   points each -32.71 +-1.02
+  ('call:call', 's93+', 'tmid', '0.02-0.05')     n     49 ( 0.008/match)  equity each  -4.011 +-3.105  per match -0.0328   points each  -6.45 +-3.52
+  ('call:call', 's93+', 'tmid', '0.05-0.1')      n     90 ( 0.015/match)  equity each  -5.888 +-2.822  per match -0.0883   points each  -3.93 +-2.29
+  ('call:call', 's93+', 'tmid', '0.1-0.2')       n     99 ( 0.017/match)  equity each  -0.420 +-2.371  per match -0.0069   points each  -2.91 +-2.15
+  ('call:call', 's93+', 'tmid', '0.2-0.35')      n     50 ( 0.008/match)  equity each  -7.140 +-2.962  per match -0.0595   points each -18.50 +-2.70
+  ('call:call', 's93+', 'tmid', '0.75+')         n     29 ( 0.005/match)  equity each -25.852 +-5.493  per match -0.1250   points each -31.41 +-0.82
+  ('call:call', 's<40', 'thi', '0.02-0.05')      n    162 ( 0.027/match)  equity each  +1.368 +-1.257  per match +0.0369   points each  +1.46 +-1.51
+  ('call:call', 's<40', 'thi', '0.05-0.1')       n    247 ( 0.041/match)  equity each  +0.382 +-0.996  per match +0.0157   points each  -2.78 +-1.35
+  ('call:call', 's<40', 'thi', '0.1-0.2')        n    253 ( 0.042/match)  equity each  -0.477 +-0.855  per match -0.0201   points each  -7.45 +-1.52
+  ('call:call', 's<40', 'thi', '0.2-0.35')       n    160 ( 0.027/match)  equity each  -4.266 +-1.166  per match -0.1138   points each -13.24 +-1.87
+  ('call:call', 's<40', 'thi', '0.35-0.5')       n     57 ( 0.009/match)  equity each  -1.354 +-1.788  per match -0.0129   points each -18.44 +-3.05
+  ('call:call', 's<40', 'thi', '0.5-0.75')       n     25 ( 0.004/match)  equity each  -5.423 +-3.473  per match -0.0226   points each  -7.28 +-5.28
+  ('call:call', 's<40', 'thi', '0.75+')          n     74 ( 0.012/match)  equity each  -9.831 +-1.010  per match -0.1213   points each -33.08 +-1.11
+  ('call:call', 's<40', 'tlo', '0.02-0.05')      n   1782 ( 0.297/match)  equity each  -0.370 +-0.368  per match -0.1099   points each  -0.62 +-0.54
+  ('call:call', 's<40', 'tlo', '0.05-0.1')       n   3089 ( 0.515/match)  equity each  -1.618 +-0.258  per match -0.8330   points each  -2.46 +-0.39
+  ('call:call', 's<40', 'tlo', '0.1-0.2')        n   3359 ( 0.560/match)  equity each  -4.117 +-0.272  per match -2.3051   points each  -5.80 +-0.42
+  ('call:call', 's<40', 'tlo', '0.2-0.35')       n   2321 ( 0.387/match)  equity each -11.278 +-0.308  per match -4.3627   points each -17.14 +-0.49
+  ('call:call', 's<40', 'tlo', '0.35-0.5')       n    835 ( 0.139/match)  equity each -11.342 +-0.532  per match -1.5785   points each -17.21 +-0.86
+  ('call:call', 's<40', 'tlo', '0.5-0.75')       n    280 ( 0.047/match)  equity each -10.727 +-0.994  per match -0.5006   points each -14.29 +-1.49
+  ('call:call', 's<40', 'tlo', '0.75+')          n   1026 ( 0.171/match)  equity each -21.375 +-0.230  per match -3.6551   points each -33.55 +-0.33
+  ('call:call', 's<40', 'tmid', '0.02-0.05')     n    473 ( 0.079/match)  equity each  +0.041 +-0.763  per match +0.0032   points each  -0.29 +-1.08
+  ('call:call', 's<40', 'tmid', '0.05-0.1')      n    810 ( 0.135/match)  equity each  -0.872 +-0.518  per match -0.1177   points each  -2.21 +-0.77
+  ('call:call', 's<40', 'tmid', '0.1-0.2')       n    909 ( 0.151/match)  equity each  -4.490 +-0.576  per match -0.6802   points each  -7.42 +-0.85
+  ('call:call', 's<40', 'tmid', '0.2-0.35')      n    554 ( 0.092/match)  equity each -10.362 +-0.684  per match -0.9568   points each -17.69 +-0.99
+  ('call:call', 's<40', 'tmid', '0.35-0.5')      n    236 ( 0.039/match)  equity each  -8.542 +-1.084  per match -0.3360   points each -16.28 +-1.64
+  ('call:call', 's<40', 'tmid', '0.5-0.75')      n     84 ( 0.014/match)  equity each  -8.934 +-1.651  per match -0.1251   points each -11.55 +-2.85
+  ('call:call', 's<40', 'tmid', '0.75+')         n    287 ( 0.048/match)  equity each -20.688 +-0.610  per match -0.9896   points each -33.86 +-0.62
+  ('call:skip', 's40-63', 'thi', '0.02-0.05')    n    118 ( 0.020/match)  equity each  -5.731 +-2.626  per match -0.1127   points each  -3.53 +-1.87
+  ('call:skip', 's40-63', 'thi', '<0.02')        n   1083 ( 0.180/match)  equity each  -1.458 +-0.882  per match -0.2632   points each  -4.94 +-0.45
+  ('call:skip', 's40-63', 'tlo', '0.02-0.05')    n    741 ( 0.123/match)  equity each  -1.434 +-0.608  per match -0.1771   points each  -1.91 +-0.75
+  ('call:skip', 's40-63', 'tlo', '0.05-0.1')     n     57 ( 0.009/match)  equity each  -4.122 +-1.887  per match -0.0392   points each  -1.61 +-2.02
+  ('call:skip', 's40-63', 'tlo', '<0.02')        n   4909 ( 0.818/match)  equity each  -3.063 +-0.229  per match -2.5059   points each  -5.94 +-0.24
+  ('call:skip', 's40-63', 'tmid', '0.02-0.05')   n    346 ( 0.058/match)  equity each  -2.285 +-1.128  per match -0.1317   points each  -1.58 +-1.14
+  ('call:skip', 's40-63', 'tmid', '0.05-0.1')    n     36 ( 0.006/match)  equity each  +1.139 +-3.570  per match +0.0068   points each  -1.69 +-2.43
+  ('call:skip', 's40-63', 'tmid', '<0.02')       n   2279 ( 0.380/match)  equity each  -5.561 +-0.427  per match -2.1122   points each  -6.49 +-0.37
+  ('call:skip', 's63-70', 'thi', '0.02-0.05')    n     47 ( 0.008/match)  equity each  -1.974 +-4.711  per match -0.0155   points each  -0.94 +-3.50
+  ('call:skip', 's63-70', 'thi', '<0.02')        n    329 ( 0.055/match)  equity each  -6.442 +-1.825  per match -0.3532   points each  -6.79 +-0.86
+  ('call:skip', 's63-70', 'tlo', '0.02-0.05')    n    222 ( 0.037/match)  equity each  -1.329 +-1.042  per match -0.0492   points each  -0.75 +-1.54
+  ('call:skip', 's63-70', 'tlo', '0.05-0.1')     n     36 ( 0.006/match)  equity each  -5.266 +-3.065  per match -0.0316   points each  -1.11 +-4.79
+  ('call:skip', 's63-70', 'tlo', '0.1-0.2')      n     27 ( 0.004/match)  equity each -11.207 +-2.645  per match -0.0504   points each  +5.59 +-4.26
+  ('call:skip', 's63-70', 'tlo', '0.2-0.35')     n     25 ( 0.004/match)  equity each -14.986 +-2.889  per match -0.0624   points each +10.28 +-4.89
+  ('call:skip', 's63-70', 'tlo', '<0.02')        n   1230 ( 0.205/match)  equity each  -1.830 +-0.353  per match -0.3752   points each  -6.55 +-0.50
+  ('call:skip', 's63-70', 'tmid', '0.02-0.05')   n    113 ( 0.019/match)  equity each  -1.079 +-1.727  per match -0.0203   points each  -0.63 +-1.98
+  ('call:skip', 's63-70', 'tmid', '<0.02')       n    664 ( 0.111/match)  equity each  -5.186 +-0.884  per match -0.5740   points each  -6.03 +-0.72
+  ('call:skip', 's70-80', 'thi', '0.02-0.05')    n     48 ( 0.008/match)  equity each  +5.831 +-5.891  per match +0.0466   points each  +0.69 +-2.69
+  ('call:skip', 's70-80', 'thi', '<0.02')        n    410 ( 0.068/match)  equity each  -6.423 +-1.962  per match -0.4389   points each  -5.80 +-0.69
+  ('call:skip', 's70-80', 'tlo', '0.02-0.05')    n    195 ( 0.033/match)  equity each  +0.227 +-0.840  per match +0.0074   points each  +0.94 +-1.53
+  ('call:skip', 's70-80', 'tlo', '<0.02')        n   1430 ( 0.238/match)  equity each  -2.453 +-0.257  per match -0.5847   points each  -6.12 +-0.43
+  ('call:skip', 's70-80', 'tmid', '0.02-0.05')   n    123 ( 0.021/match)  equity each  -2.459 +-2.467  per match -0.0504   points each  -1.42 +-2.01
+  ('call:skip', 's70-80', 'tmid', '<0.02')       n    845 ( 0.141/match)  equity each  -6.508 +-0.770  per match -0.9166   points each  -7.38 +-0.56
+  ('call:skip', 's80-86', 'thi', '0.02-0.05')    n     35 ( 0.006/match)  equity each -13.407 +-6.952  per match -0.0782   points each  -4.89 +-3.61
+  ('call:skip', 's80-86', 'thi', '<0.02')        n    179 ( 0.030/match)  equity each  -9.325 +-2.912  per match -0.2782   points each  -8.02 +-1.31
+  ('call:skip', 's80-86', 'tlo', '0.02-0.05')    n     67 ( 0.011/match)  equity each  +2.599 +-1.586  per match +0.0290   points each  -4.07 +-2.75
+  ('call:skip', 's80-86', 'tlo', '<0.02')        n    642 ( 0.107/match)  equity each  -0.423 +-0.404  per match -0.0453   points each  -7.90 +-0.64
+  ('call:skip', 's80-86', 'tmid', '0.02-0.05')   n     62 ( 0.010/match)  equity each  +2.669 +-3.306  per match +0.0276   points each  -1.65 +-3.13
+  ('call:skip', 's80-86', 'tmid', '<0.02')       n    360 ( 0.060/match)  equity each  -3.265 +-1.176  per match -0.1959   points each  -7.07 +-0.98
+  ('call:skip', 's86-93', 'thi', '0.02-0.05')    n     32 ( 0.005/match)  equity each -12.609 +-7.183  per match -0.0672   points each  -7.56 +-2.95
+  ('call:skip', 's86-93', 'thi', '<0.02')        n    187 ( 0.031/match)  equity each  -5.387 +-3.209  per match -0.1679   points each  -5.59 +-1.08
+  ('call:skip', 's86-93', 'tlo', '0.02-0.05')    n     82 ( 0.014/match)  equity each  +4.394 +-1.690  per match +0.0601   points each  -5.34 +-2.07
+  ('call:skip', 's86-93', 'tlo', '<0.02')        n    640 ( 0.107/match)  equity each  +2.098 +-0.542  per match +0.2237   points each  -7.42 +-0.69
+  ('call:skip', 's86-93', 'tmid', '0.02-0.05')   n     64 ( 0.011/match)  equity each  +3.830 +-3.162  per match +0.0409   points each  -8.75 +-2.17
+  ('call:skip', 's86-93', 'tmid', '<0.02')       n    365 ( 0.061/match)  equity each  -0.586 +-1.318  per match -0.0356   points each  -6.07 +-0.95
+  ('call:skip', 's93+', 'thi', '0.02-0.05')      n     32 ( 0.005/match)  equity each -25.461 +-7.049  per match -0.1358   points each  -5.81 +-2.33
+  ('call:skip', 's93+', 'thi', '<0.02')          n    238 ( 0.040/match)  equity each -16.099 +-3.295  per match -0.6386   points each  -4.05 +-0.92
+  ('call:skip', 's93+', 'tlo', '0.02-0.05')      n    102 ( 0.017/match)  equity each  -0.149 +-0.848  per match -0.0025   points each  -0.98 +-1.79
+  ('call:skip', 's93+', 'tlo', '<0.02')          n    708 ( 0.118/match)  equity each  +0.538 +-0.352  per match +0.0635   points each  -6.13 +-0.66
+  ('call:skip', 's93+', 'tmid', '0.02-0.05')     n     58 ( 0.010/match)  equity each  -0.091 +-2.660  per match -0.0009   points each  -2.31 +-2.43
+  ('call:skip', 's93+', 'tmid', '<0.02')         n    457 ( 0.076/match)  equity each  -4.158 +-0.987  per match -0.3167   points each  -6.90 +-0.82
+  ('call:skip', 's<40', 'thi', '0.02-0.05')      n    232 ( 0.039/match)  equity each  -3.362 +-1.156  per match -0.1300   points each  -2.38 +-1.32
+  ('call:skip', 's<40', 'thi', '0.05-0.1')       n     26 ( 0.004/match)  equity each  -2.062 +-4.503  per match -0.0089   points each  -0.96 +-2.93
+  ('call:skip', 's<40', 'thi', '<0.02')          n   1840 ( 0.307/match)  equity each  -0.327 +-0.486  per match -0.1003   points each  -5.79 +-0.36
+  ('call:skip', 's<40', 'tlo', '0.02-0.05')      n   2765 ( 0.461/match)  equity each  -1.619 +-0.273  per match -0.7463   points each  -2.13 +-0.41
+  ('call:skip', 's<40', 'tlo', '0.05-0.1')       n    321 ( 0.053/match)  equity each  -1.769 +-0.686  per match -0.0946   points each  -2.14 +-1.02
+  ('call:skip', 's<40', 'tlo', '0.1-0.2')        n     75 ( 0.013/match)  equity each  -3.724 +-1.024  per match -0.0466   points each  +5.28 +-3.57
+  ('call:skip', 's<40', 'tlo', '0.2-0.35')       n     49 ( 0.008/match)  equity each  -2.491 +-1.492  per match -0.0203   points each  +9.57 +-4.30
+  ('call:skip', 's<40', 'tlo', '<0.02')          n  18294 ( 3.049/match)  equity each  -2.993 +-0.101  per match -9.1269   points each  -6.33 +-0.13
+  ('call:skip', 's<40', 'tmid', '0.02-0.05')     n    692 ( 0.115/match)  equity each  -2.730 +-0.496  per match -0.3149   points each  -2.90 +-0.78
+  ('call:skip', 's<40', 'tmid', '0.05-0.1')      n     77 ( 0.013/match)  equity each  -0.671 +-1.160  per match -0.0086   points each  +0.36 +-2.47
+  ('call:skip', 's<40', 'tmid', '<0.02')         n   4510 ( 0.752/match)  equity each  -3.379 +-0.217  per match -2.5400   points each  -7.27 +-0.26
+-- call by fatal class x assaf
+  ('call:call', 'bust', '0.02-0.05')             n     94 ( 0.016/match)  equity each  +0.783 +-1.766  per match +0.0123   points each  -3.27 +-2.27
+  ('call:call', 'bust', '0.05-0.1')              n    158 ( 0.026/match)  equity each  +3.677 +-1.933  per match +0.0968   points each  -1.51 +-1.65
+  ('call:call', 'bust', '0.1-0.2')               n    162 ( 0.027/match)  equity each  +2.319 +-1.762  per match +0.0626   points each  -6.29 +-1.90
+  ('call:call', 'bust', '0.2-0.35')              n    116 ( 0.019/match)  equity each  -2.886 +-1.588  per match -0.0558   points each -19.97 +-1.97
+  ('call:call', 'bust', '0.35-0.5')              n     48 ( 0.008/match)  equity each  -0.798 +-3.099  per match -0.0064   points each -14.10 +-3.51
+  ('call:call', 'bust', '0.75+')                 n     54 ( 0.009/match)  equity each  -5.515 +-1.840  per match -0.0496   points each -32.74 +-0.97
+  ('call:call', 'caughtfatal', '0.02-0.05')      n    670 ( 0.112/match)  equity each  -2.480 +-1.037  per match -0.2769   points each  -1.33 +-0.88
+  ('call:call', 'caughtfatal', '0.05-0.1')       n   1057 ( 0.176/match)  equity each  -4.362 +-0.781  per match -0.7684   points each  -3.23 +-0.70
+  ('call:call', 'caughtfatal', '0.1-0.2')        n   1280 ( 0.213/match)  equity each  -7.425 +-0.744  per match -1.5839   points each  -5.56 +-0.70
+  ('call:call', 'caughtfatal', '0.2-0.35')       n    751 ( 0.125/match)  equity each -13.215 +-0.878  per match -1.6541   points each -15.19 +-0.88
+  ('call:call', 'caughtfatal', '0.35-0.5')       n    304 ( 0.051/match)  equity each -17.105 +-1.497  per match -0.8666   points each -17.50 +-1.33
+  ('call:call', 'caughtfatal', '0.5-0.75')       n    113 ( 0.019/match)  equity each -13.239 +-2.600  per match -0.2493   points each -13.32 +-2.48
+  ('call:call', 'caughtfatal', '0.75+')          n    344 ( 0.057/match)  equity each -28.411 +-1.353  per match -1.6289   points each -31.81 +-0.56
+  ('call:call', 'safe', '0.02-0.05')             n   3380 ( 0.563/match)  equity each  -0.163 +-0.310  per match -0.0918   points each  -0.85 +-0.40
+  ('call:call', 'safe', '0.05-0.1')              n   5844 ( 0.974/match)  equity each  -1.487 +-0.222  per match -1.4485   points each  -2.54 +-0.28
+  ('call:call', 'safe', '0.1-0.2')               n   6186 ( 1.031/match)  equity each  -4.022 +-0.224  per match -4.1463   points each  -6.23 +-0.31
+  ('call:call', 'safe', '0.2-0.35')              n   4332 ( 0.722/match)  equity each -11.292 +-0.264  per match -8.1525   points each -17.17 +-0.36
+  ('call:call', 'safe', '0.35-0.5')              n   1609 ( 0.268/match)  equity each -11.425 +-0.463  per match -3.0637   points each -17.76 +-0.61
+  ('call:call', 'safe', '0.5-0.75')              n    574 ( 0.096/match)  equity each -11.164 +-0.810  per match -1.0680   points each -13.99 +-1.05
+  ('call:call', 'safe', '0.75+')                 n   1910 ( 0.318/match)  equity each -22.272 +-0.250  per match -7.0898   points each -33.59 +-0.24
+  ('call:skip', 'bust', '0.02-0.05')             n    108 ( 0.018/match)  equity each  -6.316 +-2.179  per match -0.1137   points each  -0.52 +-1.69
+  ('call:skip', 'bust', '<0.02')                 n    736 ( 0.123/match)  equity each  -6.041 +-0.911  per match -0.7410   points each  -6.29 +-0.64
+  ('call:skip', 'caughtfatal', '0.02-0.05')      n    972 ( 0.162/match)  equity each  -0.049 +-0.771  per match -0.0079   points each  -2.25 +-0.69
+  ('call:skip', 'caughtfatal', '0.05-0.1')       n     87 ( 0.015/match)  equity each  -0.885 +-2.650  per match -0.0128   points each  -3.74 +-1.80
+  ('call:skip', 'caughtfatal', '<0.02')          n   6800 ( 1.133/match)  equity each  -2.970 +-0.273  per match -3.3666   points each  -6.55 +-0.20
+  ('call:skip', 's+p+30=cut', '0.02-0.05')       n    257 ( 0.043/match)  equity each  -5.985 +-0.949  per match -0.2564   points each  -1.65 +-1.46
+  ('call:skip', 's+p+30=cut', '0.05-0.1')        n    144 ( 0.024/match)  equity each  -5.598 +-1.164  per match -0.1344   points each  -0.87 +-2.05
+  ('call:skip', 's+p+30=cut', '0.1-0.2')         n    148 ( 0.025/match)  equity each  -5.721 +-1.096  per match -0.1411   points each  +3.05 +-2.37
+  ('call:skip', 's+p+30=cut', '0.2-0.35')        n     95 ( 0.016/match)  equity each  -7.929 +-1.510  per match -0.1255   points each +10.80 +-2.77
+  ('call:skip', 's+p+30=cut', '0.35-0.5')        n     43 ( 0.007/match)  equity each -12.093 +-2.005  per match -0.0867   points each +11.93 +-4.39
+  ('call:skip', 's+p+30=cut', '0.75+')           n     41 ( 0.007/match)  equity each -13.723 +-1.616  per match -0.0938   points each +30.71 +-2.01
+  ('call:skip', 's+p+30=cut', '<0.02')           n    980 ( 0.163/match)  equity each  -3.151 +-0.511  per match -0.5147   points each  -5.61 +-0.53
+  ('call:skip', 'safe', '0.02-0.05')             n   4839 ( 0.806/match)  equity each  -1.790 +-0.228  per match -1.4433   points each  -2.19 +-0.30
+  ('call:skip', 'safe', '0.05-0.1')              n    439 ( 0.073/match)  equity each  -1.305 +-0.710  per match -0.0954   points each  -1.69 +-0.83
+  ('call:skip', 'safe', '<0.02')                 n  33083 ( 5.514/match)  equity each  -3.021 +-0.088  per match -16.6600   points each  -6.38 +-0.09
+-- nobust by opp cards
+  ('nobust', 'oc', 2)                            n     69 ( 0.011/match)  equity each  +2.358 +-3.969  per match +0.0271   points each  +1.26 +-1.18
+  ('nobust', 'oc', 3)                            n    320 ( 0.053/match)  equity each  -2.503 +-1.654  per match -0.1335   points each  -2.09 +-0.94
+  ('nobust', 'oc', 4)                            n    824 ( 0.137/match)  equity each  +1.110 +-0.902  per match +0.1524   points each  -4.20 +-0.67
+  ('nobust', 'oc', 5)                            n   1037 ( 0.173/match)  equity each  -1.236 +-0.724  per match -0.2137   points each  -4.02 +-0.59
+-- nobust by opp est
+  ('nobust', 'est', '12-15')                     n    247 ( 0.041/match)  equity each  +2.433 +-1.892  per match +0.1002   points each  -3.51 +-1.10
+  ('nobust', 'est', '15-20')                     n    459 ( 0.076/match)  equity each  -0.158 +-1.246  per match -0.0121   points each  -3.37 +-0.89
+  ('nobust', 'est', '20+')                       n   1266 ( 0.211/match)  equity each  -1.035 +-0.649  per match -0.2184   points each  -4.47 +-0.55
+  ('nobust', 'est', '9-12')                      n    162 ( 0.027/match)  equity each  -1.622 +-2.320  per match -0.0438   points each  -0.74 +-1.33
+  ('nobust', 'est', '<9')                        n    134 ( 0.022/match)  equity each  +0.865 +-2.515  per match +0.0193   points each  -0.04 +-1.06
+-- nobust by opp score
+  ('nobust', 'thi')                              n    313 ( 0.052/match)  equity each  -0.523 +-2.205  per match -0.0273   points each  -4.66 +-1.00
+  ('nobust', 'tlo')                              n   1233 ( 0.205/match)  equity each  +0.479 +-0.503  per match +0.0984   points each  -3.59 +-0.52
+  ('nobust', 'tmid')                             n    722 ( 0.120/match)  equity each  -1.877 +-1.086  per match -0.2259   points each  -3.20 +-0.72
+-- minhold
+  ('minhold', 's40-63', '', '')                  n   4497 ( 0.750/match)  equity each  -1.888 +-0.264  per match -1.4148   points each  -2.25 +-0.29
+  ('minhold', 's40-63', 'chbust', '')            n     36 ( 0.006/match)  equity each  -3.485 +-2.661  per match -0.0209   points each  -3.58 +-3.50
+  ('minhold', 's63-70', '', '')                  n  10021 ( 1.670/match)  equity each  -1.807 +-0.192  per match -3.0173   points each  -2.20 +-0.20
+  ('minhold', 's63-70', 'chbust', '')            n    266 ( 0.044/match)  equity each  -2.024 +-1.485  per match -0.0897   points each  -4.71 +-1.35
+  ('minhold', 's63-70', 'chbust', 'altbust')     n    255 ( 0.043/match)  equity each  -2.235 +-1.364  per match -0.0950   points each  -5.32 +-1.36
+  ('minhold', 's70-80', '', '')                  n  11705 ( 1.951/match)  equity each  -2.804 +-0.214  per match -5.4692   points each  -0.83 +-0.17
+  ('minhold', 's70-80', 'chbust', '')            n    954 ( 0.159/match)  equity each  -0.319 +-0.791  per match -0.0508   points each  -4.67 +-0.61
+  ('minhold', 's70-80', 'chbust', 'altbust')     n   2070 ( 0.345/match)  equity each  -0.254 +-0.570  per match -0.0876   points each  -2.97 +-0.44
+  ('minhold', 's80-86', '', '')                  n   4781 ( 0.797/match)  equity each  -4.590 +-0.417  per match -3.6579   points each  +0.76 +-0.26
+  ('minhold', 's80-86', 'chbust', '')            n    599 ( 0.100/match)  equity each  +0.595 +-1.058  per match +0.0594   points each  -3.58 +-0.72
+  ('minhold', 's80-86', 'chbust', 'altbust')     n   2639 ( 0.440/match)  equity each  -1.516 +-0.569  per match -0.6670   points each  -3.47 +-0.37
+  ('minhold', 's86-93', '', '')                  n   2075 ( 0.346/match)  equity each  -6.051 +-0.668  per match -2.0925   points each  +1.77 +-0.37
+  ('minhold', 's86-93', 'chbust', '')            n    417 ( 0.070/match)  equity each  -0.746 +-1.461  per match -0.0518   points each  -2.46 +-0.84
+  ('minhold', 's86-93', 'chbust', 'altbust')     n   4309 ( 0.718/match)  equity each  -1.170 +-0.447  per match -0.8403   points each  -1.95 +-0.28
+  ('minhold', 's93+', '', '')                    n     60 ( 0.010/match)  equity each  -6.204 +-3.732  per match -0.0620   points each  -0.25 +-1.63
+  ('minhold', 's93+', 'chbust', '')              n     31 ( 0.005/match)  equity each  -2.529 +-4.548  per match -0.0131   points each  +0.84 +-3.43
+  ('minhold', 's93+', 'chbust', 'altbust')       n   6120 ( 1.020/match)  equity each  -2.230 +-0.336  per match -2.2744   points each  -2.43 +-0.24
+-- minhold by s, oc
+  ('minhold', 's40-63', 'oc', 2)                 n    437 ( 0.073/match)  equity each  -1.813 +-0.715  per match -0.1321   points each  -1.64 +-0.76
+  ('minhold', 's40-63', 'oc', 3)                 n   1036 ( 0.173/match)  equity each  -1.007 +-0.524  per match -0.1739   points each  -1.27 +-0.58
+  ('minhold', 's40-63', 'oc', 4)                 n   1611 ( 0.269/match)  equity each  -2.154 +-0.456  per match -0.5784   points each  -2.80 +-0.49
+  ('minhold', 's40-63', 'oc', 5)                 n   1461 ( 0.243/match)  equity each  -2.340 +-0.480  per match -0.5698   points each  -2.55 +-0.52
+  ('minhold', 's63-70', 'oc', 2)                 n   1017 ( 0.170/match)  equity each  -1.908 +-0.511  per match -0.3235   points each  -1.58 +-0.55
+  ('minhold', 's63-70', 'oc', 3)                 n   2307 ( 0.385/match)  equity each  -1.576 +-0.380  per match -0.6058   points each  -1.30 +-0.42
+  ('minhold', 's63-70', 'oc', 4)                 n   3848 ( 0.641/match)  equity each  -1.924 +-0.316  per match -1.2338   points each  -2.61 +-0.33
+  ('minhold', 's63-70', 'oc', 5)                 n   3370 ( 0.562/match)  equity each  -1.850 +-0.360  per match -1.0389   points each  -2.97 +-0.35
+  ('minhold', 's70-80', 'oc', 2)                 n   1709 ( 0.285/match)  equity each  -5.573 +-0.554  per match -1.5873   points each  +1.98 +-0.34
+  ('minhold', 's70-80', 'oc', 3)                 n   3588 ( 0.598/match)  equity each  -3.699 +-0.413  per match -2.2121   points each  +0.39 +-0.30
+  ('minhold', 's70-80', 'oc', 4)                 n   4867 ( 0.811/match)  equity each  -1.191 +-0.334  per match -0.9657   points each  -2.61 +-0.28
+  ('minhold', 's70-80', 'oc', 5)                 n   4565 ( 0.761/match)  equity each  -1.107 +-0.343  per match -0.8423   points each  -2.73 +-0.30
+  ('minhold', 's80-86', 'oc', 2)                 n    937 ( 0.156/match)  equity each  -9.896 +-0.957  per match -1.5454   points each  +2.43 +-0.44
+  ('minhold', 's80-86', 'oc', 3)                 n   2212 ( 0.369/match)  equity each  -4.986 +-0.639  per match -1.8383   points each  +1.46 +-0.35
+  ('minhold', 's80-86', 'oc', 4)                 n   2589 ( 0.431/match)  equity each  -1.074 +-0.564  per match -0.4635   points each  -2.65 +-0.37
+  ('minhold', 's80-86', 'oc', 5)                 n   2281 ( 0.380/match)  equity each  -1.100 +-0.562  per match -0.4182   points each  -2.77 +-0.42
+  ('minhold', 's86-93', 'oc', 2)                 n    786 ( 0.131/match)  equity each  -8.507 +-1.117  per match -1.1144   points each  +2.99 +-0.52
+  ('minhold', 's86-93', 'oc', 3)                 n   1664 ( 0.277/match)  equity each  -3.486 +-0.784  per match -0.9668   points each  -0.29 +-0.40
+  ('minhold', 's86-93', 'oc', 4)                 n   2330 ( 0.388/match)  equity each  -1.826 +-0.604  per match -0.7090   points each  -1.27 +-0.38
+  ('minhold', 's86-93', 'oc', 5)                 n   2021 ( 0.337/match)  equity each  -0.577 +-0.616  per match -0.1945   points each  -2.30 +-0.43
+  ('minhold', 's93+', 'oc', 2)                   n    594 ( 0.099/match)  equity each  -4.052 +-1.073  per match -0.4012   points each  -0.97 +-0.61
+  ('minhold', 's93+', 'oc', 3)                   n   1348 ( 0.225/match)  equity each  -2.234 +-0.708  per match -0.5020   points each  -0.91 +-0.51
+  ('minhold', 's93+', 'oc', 4)                   n   2191 ( 0.365/match)  equity each  -2.034 +-0.576  per match -0.7427   points each  -2.53 +-0.41
+  ('minhold', 's93+', 'oc', 5)                   n   2078 ( 0.346/match)  equity each  -2.032 +-0.568  per match -0.7037   points each  -3.60 +-0.42
+-- cut alternatives by opp est
+  ('cutdeck10_100', '12-15')                     n   1457 ( 0.243/match)  equity each  +3.529 +-0.651  per match +0.8571   points each -10.42 +-0.50
+  ('cutdeck10_100', '15-20')                     n   2897 ( 0.483/match)  equity each  +1.291 +-0.442  per match +0.6232   points each  -7.14 +-0.36
+  ('cutdeck10_100', '20+')                       n   5333 ( 0.889/match)  equity each  -0.781 +-0.284  per match -0.6941   points each  -4.23 +-0.29
+  ('cutdeck10_100', '9-12')                      n    718 ( 0.120/match)  equity each  +3.864 +-0.945  per match +0.4624   points each -11.55 +-0.61
+  ('cutdeck10_100', '<9')                        n    522 ( 0.087/match)  equity each  +5.715 +-1.102  per match +0.4972   points each  -9.58 +-0.63
+  ('cutdeck10_50', '12-15')                      n   2317 ( 0.386/match)  equity each  +0.404 +-0.327  per match +0.1561   points each  -9.77 +-0.40
+  ('cutdeck10_50', '15-20')                      n   4892 ( 0.815/match)  equity each  -0.251 +-0.222  per match -0.2045   points each  -7.50 +-0.28
+  ('cutdeck10_50', '20+')                        n   9313 ( 1.552/match)  equity each  -1.458 +-0.151  per match -2.2634   points each  -4.81 +-0.21
+  ('cutdeck10_50', '9-12')                       n   1175 ( 0.196/match)  equity each  +1.537 +-0.479  per match +0.3010   points each -11.17 +-0.53
+  ('cutdeck10_50', '<9')                         n    988 ( 0.165/match)  equity each  +3.858 +-0.493  per match +0.6353   points each -10.45 +-0.46
+  ('cutkeep100', '12-15')                        n    624 ( 0.104/match)  equity each  -2.486 +-1.198  per match -0.2585   points each  -4.56 +-0.69
+  ('cutkeep100', '15-20')                        n   1209 ( 0.202/match)  equity each  +0.057 +-0.746  per match +0.0114   points each  -4.68 +-0.55
+  ('cutkeep100', '20+')                          n   1749 ( 0.291/match)  equity each  -1.400 +-0.563  per match -0.4081   points each  -3.82 +-0.50
+  ('cutkeep100', '9-12')                         n    840 ( 0.140/match)  equity each  -3.827 +-0.985  per match -0.5358   points each  -2.50 +-0.52
+  ('cutkeep100', '<9')                           n   1244 ( 0.207/match)  equity each  -9.369 +-0.810  per match -1.9426   points each  -3.30 +-0.34
+  ('cutkeep50', '12-15')                         n   1077 ( 0.179/match)  equity each  -1.092 +-0.505  per match -0.1961   points each  -3.99 +-0.55
+  ('cutkeep50', '15-20')                         n   1971 ( 0.329/match)  equity each  -1.133 +-0.361  per match -0.3723   points each  -4.32 +-0.42
+  ('cutkeep50', '20+')                           n   3033 ( 0.505/match)  equity each  -1.286 +-0.278  per match -0.6500   points each  -4.15 +-0.36
+  ('cutkeep50', '9-12')                          n   1527 ( 0.255/match)  equity each  -2.835 +-0.426  per match -0.7216   points each  -3.18 +-0.39
+  ('cutkeep50', '<9')                            n   2186 ( 0.364/match)  equity each  -5.706 +-0.346  per match -2.0788   points each  -3.24 +-0.27
+  ('cutopen100', '12-15')                        n    999 ( 0.167/match)  equity each  +3.250 +-0.921  per match +0.5411   points each -12.53 +-0.62
+  ('cutopen100', '15-20')                        n   2914 ( 0.486/match)  equity each  +1.487 +-0.490  per match +0.7221   points each  -8.17 +-0.37
+  ('cutopen100', '20+')                          n   4996 ( 0.833/match)  equity each  -1.789 +-0.329  per match -1.4897   points each  -5.78 +-0.30
+  ('cutopen100', '9-12')                         n    125 ( 0.021/match)  equity each  +5.111 +-2.406  per match +0.1065   points each -14.50 +-1.63
+  ('cutopen100', '<9')                           n     24 ( 0.004/match)  equity each +22.563 +-4.822  per match +0.0903   points each -22.96 +-2.90
+  ('cutopen50', '12-15')                         n   1636 ( 0.273/match)  equity each  +1.322 +-0.439  per match +0.3605   points each -11.95 +-0.46
+  ('cutopen50', '15-20')                         n   4899 ( 0.817/match)  equity each  -0.559 +-0.241  per match -0.4560   points each  -8.31 +-0.29
+  ('cutopen50', '20+')                           n   8665 ( 1.444/match)  equity each  -1.772 +-0.164  per match -2.5588   points each  -6.20 +-0.22
+  ('cutopen50', '9-12')                          n    255 ( 0.043/match)  equity each  +0.388 +-1.116  per match +0.0165   points each -17.13 +-1.22
+  ('cutopen50', '<9')                            n     41 ( 0.007/match)  equity each  +8.893 +-2.764  per match +0.0608   points each -15.07 +-1.93
+-- cut alternatives by opp cards
+  ('cutdeck10_100', 'oc', 1)                     n     46 ( 0.008/match)  equity each  +6.885 +-3.655  per match +0.0528   points each  -6.35 +-1.39
+  ('cutdeck10_100', 'oc', 2)                     n    364 ( 0.061/match)  equity each  +6.394 +-1.307  per match +0.3879   points each  -9.22 +-0.67
+  ('cutdeck10_100', 'oc', 3)                     n   1760 ( 0.293/match)  equity each  +5.286 +-0.611  per match +1.5505   points each -10.73 +-0.41
+  ('cutdeck10_100', 'oc', 4)                     n   4582 ( 0.764/match)  equity each  +1.131 +-0.338  per match +0.8637   points each  -7.37 +-0.30
+  ('cutdeck10_100', 'oc', 5)                     n   4175 ( 0.696/match)  equity each  -1.594 +-0.320  per match -1.1092   points each  -3.68 +-0.32
+  ('cutdeck10_50', 'oc', 1)                      n     87 ( 0.015/match)  equity each  +5.871 +-1.519  per match +0.0851   points each  -7.78 +-1.05
+  ('cutdeck10_50', 'oc', 2)                      n    689 ( 0.115/match)  equity each  +4.174 +-0.596  per match +0.4793   points each -10.26 +-0.55
+  ('cutdeck10_50', 'oc', 3)                      n   2881 ( 0.480/match)  equity each  +1.741 +-0.291  per match +0.8361   points each -10.72 +-0.33
+  ('cutdeck10_50', 'oc', 4)                      n   7646 ( 1.274/match)  equity each  -0.478 +-0.173  per match -0.6087   points each  -7.30 +-0.23
+  ('cutdeck10_50', 'oc', 5)                      n   7382 ( 1.230/match)  equity each  -1.762 +-0.172  per match -2.1673   points each  -4.49 +-0.24
+  ('cutkeep100', 'oc', 1)                        n     83 ( 0.014/match)  equity each  -9.092 +-2.912  per match -0.1258   points each  -3.07 +-0.49
+  ('cutkeep100', 'oc', 2)                        n    660 ( 0.110/match)  equity each  -9.694 +-1.172  per match -1.0663   points each  -2.62 +-0.46
+  ('cutkeep100', 'oc', 3)                        n   1556 ( 0.259/match)  equity each  -4.750 +-0.729  per match -1.2317   points each  -3.18 +-0.37
+  ('cutkeep100', 'oc', 4)                        n   1945 ( 0.324/match)  equity each  -0.570 +-0.590  per match -0.1848   points each  -4.37 +-0.43
+  ('cutkeep100', 'oc', 5)                        n   1422 ( 0.237/match)  equity each  -2.215 +-0.628  per match -0.5250   points each  -4.20 +-0.55
+  ('cutkeep50', 'oc', 1)                         n    159 ( 0.026/match)  equity each  -9.474 +-1.075  per match -0.2511   points each  -4.15 +-0.70
+  ('cutkeep50', 'oc', 2)                         n   1180 ( 0.197/match)  equity each  -5.906 +-0.474  per match -1.1616   points each  -3.12 +-0.33
+  ('cutkeep50', 'oc', 3)                         n   2699 ( 0.450/match)  equity each  -2.990 +-0.317  per match -1.3449   points each  -3.03 +-0.28
+  ('cutkeep50', 'oc', 4)                         n   3305 ( 0.551/match)  equity each  -1.168 +-0.276  per match -0.6436   points each  -4.68 +-0.33
+  ('cutkeep50', 'oc', 5)                         n   2451 ( 0.408/match)  equity each  -1.512 +-0.317  per match -0.6177   points each  -3.82 +-0.41
+  ('cutopen100', 'oc', 2)                        n     33 ( 0.005/match)  equity each +17.473 +-4.624  per match +0.0961   points each -13.67 +-3.46
+  ('cutopen100', 'oc', 3)                        n    883 ( 0.147/match)  equity each  +4.557 +-0.973  per match +0.6706   points each -10.93 +-0.60
+  ('cutopen100', 'oc', 4)                        n   4189 ( 0.698/match)  equity each  +0.834 +-0.398  per match +0.5821   points each  -8.47 +-0.32
+  ('cutopen100', 'oc', 5)                        n   3949 ( 0.658/match)  equity each  -2.128 +-0.370  per match -1.4004   points each  -5.53 +-0.34
+  ('cutopen50', 'oc', 2)                         n     64 ( 0.011/match)  equity each +10.626 +-2.029  per match +0.1133   points each -13.33 +-1.51
+  ('cutopen50', 'oc', 3)                         n   1534 ( 0.256/match)  equity each  +0.693 +-0.434  per match +0.1772   points each -11.21 +-0.45
+  ('cutopen50', 'oc', 4)                         n   7077 ( 1.179/match)  equity each  -0.689 +-0.195  per match -0.8132   points each  -8.87 +-0.24
+  ('cutopen50', 'oc', 5)                         n   6816 ( 1.136/match)  equity each  -1.813 +-0.189  per match -2.0594   points each  -5.59 +-0.26

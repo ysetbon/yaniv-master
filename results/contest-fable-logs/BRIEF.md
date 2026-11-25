@@ -61,3 +61,11 @@ against handmade5-like nets is what counts most; margin a round against the coun
 - Your final answer to the lead: (1) the rule(s) in one paragraph each, (2) the paired numbers per opponent,
   (3) the duel numbers of your best design against hm5 / counter / trained with seeds, (4) the exact player
   string that builds your best design and its hidden-unit count, (5) what failed, (6) anything surprising.
+
+## Added after the restart (read this)
+- Fairness: main now holds the other team's finished entry and the unseen judging opponent. Do NOT open, read,
+  import, load or play against any of: `training/yaniv/contest_opus*.py`, `public/model/yaniv-net-contest-opus.json`,
+  `results/contest-opus.md`, `results/contest-opus-logs/`, `training/yaniv/heuristic2.py`, `results/counter2.md`,
+  `results/counter2-logs/`, `bot_spec("counter2")`. Do not grep or list inside them either.
+- Usage is limited: finish narrowly. Write your result to your log as soon as you have it (the log must stand on
+  its own if you are cut off), do not start new lines of exploration, and report.
