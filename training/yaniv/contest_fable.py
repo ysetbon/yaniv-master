@@ -519,7 +519,7 @@ MATCH = {
 }
 
 
-def build(yaniv: str = "new", triple: bool = True, catch_gate: bool = True, match: bool = True, **over):
+def build(yaniv: str = "new", triple: bool = True, catch_gate: bool = True, match=True, **over):
     """The contest net:
       add_throw_units       handmade5's valuation of a throw (tables by the opponent's card count)
       fix_catch             ... with the catch bonus paid only when I keep 2+ cards (contest_fable_reads.py)
@@ -527,7 +527,8 @@ def build(yaniv: str = "new", triple: bool = True, catch_gate: bool = True, matc
       add_yaniv_units       this net's Yaniv rule (swap veto, threshold by the opponent's card count)
       match-score units     landing on my own cut, not handing the opponent its cut, calling when a lost round
                             ends the match anyway (contest_fable_match.py)
-    Each argument switches one piece off to rebuild an earlier variant; all four off (yaniv="hm5", triple=False,
+    Each argument switches one piece off to rebuild an earlier variant (`match` may also be a dict of overrides
+    of MATCH); all four off (yaniv="hm5", triple=False,
     catch_gate=False, match=False) is handmade5 exactly. `over` are table overrides (see `config`)."""
     from training.yaniv import contest_fable_match as cm          # helpers of this net (they import this module)
     from training.yaniv import contest_fable_reads as cr
@@ -541,9 +542,16 @@ def build(yaniv: str = "new", triple: bool = True, catch_gate: bool = True, matc
         add_triple_units(kit, TRIP, TRIP_MIN, TRIP_OPP, TRIP_MIN5)
     reasons = add_yaniv_units(kit) if yaniv == "new" else add_yaniv_units_hm5(kit)
     if match:
-        reasons += cm.add_score_units(kit, MATCH["OPEN"], MATCH["DECK"], MATCH["THI"])
-        reasons += cm.add_match_units(kit, MATCH["BUSTCALL"], None, None, None)
-        reasons += cm.add_deny_units(kit, MATCH["DENY"])
+        m = dict(MATCH)
+        if isinstance(match, dict):          # a variant: overrides of MATCH (JSON: cut keys as strings, null = off)
+            for k, v in match.items():
+                m[k] = {int(c): tuple(x) if isinstance(x, list) else x for c, x in v.items()} \
+                    if isinstance(v, dict) else tuple(v) if isinstance(v, list) else v
+        reasons += cm.add_score_units(kit, m["OPEN"], m["DECK"], m["THI"])
+        if m["BUSTCALL"] is not None:
+            reasons += cm.add_match_units(kit, m["BUSTCALL"], None, None, None)
+        if m["DENY"] is not None:
+            reasons += cm.add_deny_units(kit, m["DENY"])
     else:
         reasons += add_score_units(kit)
     finish_yaniv(kit, reasons)
