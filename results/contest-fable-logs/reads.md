@@ -364,3 +364,65 @@ vs trained
 | counter | 1.00 | 1.00 | 1.00 | 0.92 | 0.60 | 0.20 | 0.14 | 0.12 | 0.10 | 0.09 |
 | hm5 | 1.00 | 1.00 | 0.77 | 0.36 | 0.22 | 0.19 | 0.17 | 0.15 | 0.14 | 0.11 |
 | trained | 0.50 | 0.96 | 0.80 | 0.43 | 0.23 | 0.17 | 0.16 | 0.13 | 0.13 | 0.10 |
+
+## 2. Designs and paired tests
+
+Module `training/yaniv/contest_fable_reads.py`, `build(**kw)`. Paired runner: `contest_fable_reads_run.py`
+(hero = the design, alternative = hm5's move where it differs; **gain NEGATIVE = the design's move is better**).
+Kit.trace check (300 rounds, 4,016 decisions, scratch chk.py): `build(KSLOPE=0, OPEN_LOW=0)` makes hm5's move
+every time; the est_eff steps match `est + 3.75 relu(2.4 - kept) + 4.5 [open A/2/joker]` to 2e-4.
+
+### 2a. Design K: P(call) read through an effective estimate (FAILED)
+
+est_eff = opp_est + 3.75 x relu(2.4 - cards kept) + 4.5 x [open card A / 2 / joker], read by BOTH the plan term
+and the catch term (551 units, 7 fewer than hm5). `python -m training.yaniv.contest_fable_reads_run
+'py:contest_fable_reads.build' OPP 20000 71`:
+
+| opp | moves changed a round | each (hm5's move minus mine) | a round |
+|---|---|---|---|
+| hm5 | 0.046 | +0.63 +-0.53 | +0.029 (worse) |
+| trained | 0.051 | +0.48 +-0.52 | +0.025 (worse) |
+
+By kind against hm5: I keep a pair where hm5 throws it (86 cases) +3.99 +-0.67 (bad: a lower P(call) raises the
+plan's weight on G); "same throw, I draw from the deck" (514) -1.12 +-0.70 (good); other throw with lower points
+(165) +2.82 +-1.25 (bad). Against trained everything within +-1 se. Verdict: the better P(call) read in the
+plan term does not help; it changes 1 move in 20 rounds and those are neutral to bad.
+
+### 2b. Where is hm5's valuation wrong? Its own second choice, played out
+
+`python -m training.yaniv.contest_fable_reads_run2 {hm5,trained} 12000 81` (hm5 hero; alternative = its second
+choice at every throw; 78,143 / 79,689 records). Second choice minus first, by score gap: <1: -0.42 +-0.10 /
+-0.42 +-0.10; 1-3: -1.52 / -1.59; 3+: -4.22 / -4.10. hm5's ranking is right in every class I grouped by
+(kind of change x regime x my cards after x open low x open <= 4 against 5 cards) EXCEPT one family:
+"hm5 takes the open card, the same throw with a deck draw is second, and I end with <= 2 cards":
+
+| class (all score gaps) | vs hm5: n, deck minus open | vs trained |
+|---|---|---|
+| 2 cards after, the open card pairs nothing | 1,716, +1.19 +-0.38 | 1,780, +0.69 +-0.37 |
+| 1 card after | 580, +0.59 +-0.54 | 805, +0.95 +-0.45 |
+| 2 cards after, the open card pairs my kept card | 425, -1.69 +-0.88 | 426, -0.71 +-0.86 |
+| by my total after the take: 5 | 898, +2.37 +-0.53 | 846, +1.92 +-0.54 |
+| ... 4 | 673, +1.46 +-0.53 | 686, +0.36 +-0.59 |
+| ... 3 | 445, -0.69 +-0.67 | 594, +0.81 +-0.54 |
+| ... 2 | 183, -1.50 +-1.03 | 350, -0.53 +-0.65 |
+| by regime: 1-2 cards | 1,386, +0.84 +-0.29 | 1,577, +0.96 +-0.29 |
+| ... 3 cards | 756, +1.03 +-0.67 | 840, +0.72 +-0.63 |
+| ... 4 cards | 514, -0.31 +-0.90 | 533, -0.71 +-0.83 |
+
+This is the catch bonus (table E): an open take that leaves me at <= 5 gets CATCH x PI ~ +10, and the event it
+pays for has probability 0.00.
+
+### 2c. Catch bonus variants (paired, seed 72, 20,000 rounds; KSLOPE=0, OPEN_LOW=0)
+
+| variant | opp | changed a round | each | a round |
+|---|---|---|---|---|
+| CATCH_MODE=off (513 units) | hm5 | 0.119 | -0.38 +-0.35 | -0.045 (better) |
+| | trained | 0.142 | -0.44 +-0.32 | -0.062 |
+| CATCH_MODE=k4 (bonus only if I keep >= 3 cards; 562 units) | hm5 | 0.113 | -0.38 +-0.36 | -0.043 |
+| | trained | 0.136 | -0.63 +-0.32 | -0.085 |
+
+By my cards after (k4, hm5 / trained): 1 card -1.67 +-0.80 / -1.88 +-0.66; 2 cards -1.00 +-0.47 / -0.78 +-0.48;
+**3 cards +1.79 +-0.80 / +0.63 +-0.59 (worse)**. By kind: same throw, I draw from the deck -1.07 +-0.47 / -1.28
++-0.40 (0.07-0.09 a round); same throw, I take the open card +1.86 +-1.05 / +1.13 +-0.84 (0.02 a round).
+So removing the bonus at 1-2 cards is right and removing it at 3 cards is not (table E: at 3 cards after a deck
+draw the catch happens 0.08-0.30 of the time). Next variant: "k3" = bonus only if I keep >= 2 cards.

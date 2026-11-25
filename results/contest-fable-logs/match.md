@@ -142,3 +142,26 @@ hm5 sits on its cut on purpose (its own cut units), the trained net does not. Wi
 - cut| (assaf < 0.02):   v hm5: <1: +2.60 +-0.59 (0.31 a match, 46% really on the cut), 1-2: +0.63 +-0.65 (39%),
 2-3: -0.40, 3-5: -1.5, 5-8: -2.5, 8+: -4.0.   v trained: <1: -3.9 +-0.6, 1-2: -5.0: it only costs there.
 => worth a dedicated probe with what is KNOWN of the opponent's hand (probe_deny, section 2.5).
+
+### 2.4 hero hm5 v counter, 3,000 matches, seed 13
+`python -m training.yaniv.contest_fable_match_probe hm5 counter 3000 13` (39,774 rounds), match_rep_counter_3000_13.txt.
+(*.pkl record files are git-ignored; the .txt reports are the summaries.)
+
+  Calls: calling when hm5 does not -3.3 +-0.5 (assaf 0.02-0.05), -3.5, -5.8, -12.5 ...; not calling when it does -3.06
+  +-0.11 (<0.02), -0.08 +-0.39 (0.02-0.05). "Out if I lose", call at assaf 0.05-0.1: +11 +-6.5 (n 33), 0.1-0.2: -1.6
+  +-3.9, 0.2-0.35: -15 +-5.6 (n 28). s 86-93 / opp < 50 / do not call: +1.47 +-0.95 (0.066 a match).
+  nobust -0.54 +-0.93, minhold negative everywhere.
+
+    by opponent's estimate        <9             9-12           12-15          15-20          20+
+    cutopen100  (1.11 a match)    (n<15)        +7.1 +-4.2     +4.57 +-1.54   -1.48 +-0.87   -2.41 +-0.53
+    cutdeck10_100 (1.35)         +4.9 +-2.4    +2.8 +-1.7     +0.89 +-1.16   -0.80 +-0.82   -2.34 +-0.48
+    cutopen50   (2.28)            (n<15)        +1.8 +-1.5     -1.09 +-0.60   -1.07 +-0.33   -1.18 +-0.21
+    cutdeck10_50 (2.62)          +2.2 +-0.8    +0.74 +-0.66   -0.76 +-0.48   -1.15 +-0.31   -1.42 +-0.20
+
+### Summary of section 2 (three opponents)
+- Yaniv threshold by score band: no lever (<= ~0.2 a match in any class; hm5's threshold is right in every band).
+- Safer throws / bust avoidance at high scores: nothing (nobust -0.4 / -0.05 / -0.5; minhold negative).
+- Cut landing: under-weighted in hm5. Positive against all three: deck draw needing a ten at est < 12 (both cuts,
+  +2..+6 each) and the 100 cut at est 12-15 (open +3.3 / +1.0 / +4.6, deck +3.5 / +2.6 / +0.9). At est 15-20 only
+  against hm5 (+1.3..+1.5); against trained / counter 0 or negative. Staying near a cut (cutkeep) loses.
+- The opponent's cut: big against hm5 only (section 2.3, 2.5).

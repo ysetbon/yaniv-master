@@ -72,3 +72,80 @@ At every hero decision in the situation of section 0, every 'throw the other hig
 out to the end on the same hidden cards (hero's own policy afterwards). gain = alternative - played, in points of
 margin. Notation: the net PLAYED rank c; the alternative throws rank a and KEEPS c. dp = points(a) - points(c),
 du = unseen(a) - unseen(c). 'clean' = the open card is neither rank.
+
+Runs: vs hm5 30,000 rounds, vs trained 20,000, vs counter 16,000 (seed 11 each; a first batch was stopped by a
+30-minute job limit and re-run with these sizes). About 2.9 alternatives a round. Combined table (made from the
+saved records, also in twin_which_combined.txt); gain per occurrence +- standard error (occurrences a round):
+
+| class (a priori) | vs hm5 | vs trained | vs counter |
+|---|---|---|---|
+| **opponent on 5 cards** | | | |
+| all alternatives | -0.46 +-0.08 (1.58) | -0.65 +-0.09 (1.59) | -0.58 +-0.10 (1.86) |
+| T1 THE IDEA, plain: keep the HIGHER single, throw the lower; equal unseen | -0.28 +-0.09 (1.10) | -0.37 +-0.12 (1.11) | -0.26 +-0.12 (1.27) |
+| T1 at ply 0-1 | -0.02 +-0.13 (0.64) | +0.00 +-0.15 (0.65) | -0.02 +-0.17 (0.69) |
+| T1 at ply 2-3 | -0.53 +-0.18 (0.30) | -0.72 +-0.22 (0.30) | -0.45 +-0.23 (0.36) |
+| T1 at ply 4+ | -0.84 +-0.24 (0.17) | -1.21 +-0.29 (0.16) | -0.69 +-0.28 (0.22) |
+| T1 keep a ten-card, throw an 8-9 | -0.35 +-0.16 (0.31) | -0.35 +-0.20 (0.32) | -0.54 +-0.22 (0.36) |
+| T1 keep a ten-card, throw a 5-7 | -0.20 +-0.14 (0.51) | -0.46 +-0.18 (0.51) | -0.24 +-0.19 (0.58) |
+| T1 keep an 8-9, throw a lower one | -0.48 +-0.22 (0.21) | -0.14 +-0.26 (0.21) | +0.08 +-0.28 (0.25) |
+| T2 keep the higher AND more live single (net threw it anyway) | -4.2 +-1.7 (0.004) | -5.3 +-1.7 (0.004) | -6.9 +-1.4 (0.012) |
+| T3 keep the higher but LESS live single | -1.87 +-0.25 (0.16) | -2.29 +-0.29 (0.16) | -1.94 +-0.29 (0.22) |
+| E1 equal points, equal unseen (coin flip, control) | -0.14 +-0.18 (0.23) | -0.28 +-0.22 (0.23) | -0.35 +-0.23 (0.25) |
+| E3 equal points: keep the LESS live one (undo LIVE) | -0.22 +-0.47 (0.03) | -1.03 +-0.56 (0.03) | -1.74 +-0.55 (0.03) |
+| L1 the net kept the HIGHER single because it is more live; undo that | -0.99 +-0.40 (0.05) | -1.38 +-0.49 (0.05) | -0.62 +-0.45 (0.06) |
+| K1 throw a rank the opponent is KNOWN to hold | -3.0 +-1.0 (0.013) | -6.5 +-1.1 (0.014) | -6.6 +-1.0 (0.023) |
+| **opponent on 4 cards** | | | |
+| all alternatives | -0.69 +-0.08 (1.29) | -0.71 +-0.10 (1.25) | -1.00 +-0.12 (1.10) |
+| T1 keep the higher, equal unseen | -0.47 +-0.10 (0.81) | -0.40 +-0.12 (0.78) | -0.70 +-0.17 (0.66) |
+| T1 at ply 0-1 / 2-3 / 4+ | -0.36 / -0.30 / -0.65 | +0.22 / -0.12 / -0.86 | -0.16 / -0.60 / -0.92 |
+| T3 keep higher but less live | -1.57 +-0.16 (0.27) | -1.64 +-0.20 (0.26) | -2.07 +-0.24 (0.27) |
+| E1 coin flip (control) | -0.02 +-0.25 (0.10) | -0.06 +-0.32 (0.10) | +0.50 +-0.41 (0.08) |
+| E3 equal points: keep the less live | -1.04 +-0.37 (0.03) | -1.17 +-0.46 (0.03) | -1.09 +-0.58 (0.03) |
+| L1 undo 'kept the higher because more live' | -0.44 +-0.34 (0.06) | -1.06 +-0.43 (0.06) | +0.23 +-0.52 (0.05) |
+| K1 throw a rank the opponent is known to hold | -3.4 +-1.1 (0.009) | -6.6 +-1.2 (0.009) | -7.2 +-1.1 (0.016) |
+
+Other a priori splits (per opponent, in twin_which_OPP.txt): by exact (dp, unseen kept, unseen thrown), by copies
+gone, by the kept rank's points; none has a positive cell beyond 2 standard errors that repeats for a second
+opponent (best single cell vs hm5: equal points, equal unseen, ply 4-5: +1.15 +-0.58, n 531, a coin-flip class).
+
+What the net really does in this situation (vs hm5, share of the alternatives' records): equal unseen -> throws
+the higher single 99.9%; equal points, different unseen -> throws the LESS live rank 92%; the higher single is
+also the more live one -> keeps the higher 88% (3,070 records vs 438), about 0.10 decisions a round.
+
+Reading:
+1. The plain idea (T1: keep the higher single hoping for its twin, throw a lower high single first) LOSES against
+   all three opponents: about -0.3 a time against 5 cards and -0.4 to -0.7 against 4, 0.8-1.3 times a round. The
+   only place it is free is the very first turn against 5 cards (ply 0-1: -0.02 / 0.00 / -0.02, +-0.15): there
+   the order of two high singles does not matter at all, in either direction; from ply 2 it costs 0.5-1.2.
+2. The part of the idea that is true is the part the net already has: unseen copies. Undoing the net's LIVE
+   choice loses in 11 of 12 cells (E3, L1: -0.2 to -1.7; pooled over the three opponents and both card counts
+   about -0.9 +-0.15), and throwing a rank the opponent is known to hold (K1) loses 3-7 points.
+3. Going further than LIVE = 1 (T2: keep the higher, more live single where the net threw it) loses 1-7 points
+   in the few cases it changes (0.004-0.014 a round): the net throws such a card only when the points gap is
+   large.
+
+## 3. The open card IS my single's twin: take it or draw from the deck (`contest_fable_twin take`)
+
+Command: `python -m training.yaniv.contest_fable_twin take hm5 OPP --rounds 20000 --seed 12 --workers 2`
+(`probe_take`: the open card has the rank of a single I keep this turn; alternative = the same throw with the
+other draw; tables twin_take_OPP.txt). hm5 takes the twin in every recorded case with 30+ samples (the 'played
+deck' classes are empty), so the gain below is 'deck instead of take':
+
+| twin's points | vs hm5 | vs trained | vs counter |
+|---|---|---|---|
+| ten-card, opp 5 cards | -4.81 +-0.33 (0.18 a round) | -4.39 +-0.32 (0.19) | -4.23 +-0.29 (0.22) |
+| 8-9, opp 5 cards | -4.36 +-0.53 (0.08) | -3.98 +-0.50 (0.08) | -4.03 +-0.43 (0.10) |
+| 5-7, opp 5 cards | -3.98 +-0.48 (0.09) | -4.37 +-0.46 (0.09) | -4.81 +-0.40 (0.12) |
+| ten-card, opp 4 cards | -4.94 +-0.43 (0.10) | -4.82 +-0.45 (0.09) | -4.85 +-0.48 (0.09) |
+| 8-9, opp 4 cards | -5.03 +-0.52 (0.07) | -4.69 +-0.51 (0.07) | -4.96 +-0.54 (0.07) |
+| 5-7, opp 4 cards | -5.11 +-0.39 (0.12) | -4.95 +-0.37 (0.13) | -5.29 +-0.38 (0.13) |
+
+So taking the twin is worth 4-5 points each time whatever its points (also for twins worth 1-4: -3.2 to -6.2),
+which is the net's PAIR_OPEN = 5, and the net already always does it. By ply for twins >= 8, single thrown: ply < 4
+-4.0 to -4.8, ply 4-7 -4.4 to -5.4, ply 8+ -2.4 to -3.5. And the pair does get thrown: section 1 (97-99.5% on the
+very next turn against 5 cards, 90-96% against 4).
+
+Value check of the whole idea from these two numbers: a twin taken is worth ~4.5 points; keeping single X instead
+of single Y changes the chance the twin comes by at most ~8 points of a percent per unseen copy (and by ~1-4
+points of a percent between point classes), i.e. ~0.35 points a copy and 0.05-0.2 points between point classes.
+That is what the played-out numbers show: nothing to gain from points, and the copies are already charged.

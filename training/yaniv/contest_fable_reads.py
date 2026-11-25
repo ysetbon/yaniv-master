@@ -104,6 +104,7 @@ def fix_catch(kit: Kit, mode: str, k3: float = 0.0) -> None:
     and calls only when sure), 0.01-0.04 after a deck draw to 2 cards, 0.08-0.18 to 3 cards, 0.24-0.30 to 4.
       mode "off":  no catch bonus at all (the units are removed)
       mode "k4":   only when I keep >= 3 cards (4-5 after the draw)
+      mode "k3":   only when I keep >= 2 cards (3-5 after the draw)
       k3 > 0:      (with "k4") also x k3 for a DECK draw to exactly 3 cards
     """
     catch = [n for layer in kit.layers for n in layer if n.startswith("catch_c")]
@@ -113,8 +114,9 @@ def fix_catch(kit: Kit, mode: str, k3: float = 0.0) -> None:
             out.pop(n, None)
         _drop_unused(kit, ("catch_c", "low_", "kept_le", "held_le"))
         return
-    kit.unit(1, "nk3_a", {"n_kept": 50.0}, bias=-24.0, note="[cards kept >= 3] (ramp)")
-    kit.unit(1, "nk3_b", {"n_kept": 50.0}, bias=-25.0, note="[cards kept >= 3] (ramp shifted)")
+    need = {"k4": 3, "k3": 2}[mode]                      # cards kept needed for the bonus
+    kit.unit(1, "nk3_a", {"n_kept": 50.0}, bias=-10.0 * need + 6.0, note=f"[cards kept >= {need}] (ramp)")
+    kit.unit(1, "nk3_b", {"n_kept": 50.0}, bias=-10.0 * need + 5.0, note=f"[cards kept >= {need}] (ramp shifted)")
     if k3:
         kit.unit(1, "nk2_a", {"n_kept": 50.0}, bias=-14.0, note="[cards kept >= 2] (ramp)")
         kit.unit(1, "nk2_b", {"n_kept": 50.0}, bias=-15.0, note="[cards kept >= 2] (ramp shifted)")
@@ -127,7 +129,7 @@ def fix_catch(kit: Kit, mode: str, k3: float = 0.0) -> None:
                      {**deck, "nk2_a": 1.0, "nk2_b": -1.0, "nk3_a": -1.0, "nk3_b": 1.0}, bias=bias - 1.0,
                      note=note + f", deck draw to exactly 3 cards (x {k3:g})")
             out[n.replace("catch_c", "catch3_c")] = out[n]
-        layer[n] = ({**weights, "nk3_a": 1.0, "nk3_b": -1.0}, bias - 1.0, note + ", and I keep >= 3 cards")
+        layer[n] = ({**weights, "nk3_a": 1.0, "nk3_b": -1.0}, bias - 1.0, note + f", and I keep >= {need} cards")
 
 
 def build(KSLOPE: float = KSLOPE, KKNEE: float = KKNEE, OPEN_LOW: float = OPEN_LOW, FEW_ALPHA: float = 1.0,
