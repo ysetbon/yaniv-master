@@ -159,7 +159,10 @@ export function Game() {
                 `--hand ${wanted.hand} --yaniv-at ${wanted.yanivAt} --value-net --export`,
             );
           }),
-          fetch(`/model/training-report${suffix}.json`).then((response) => (response.ok ? response.json() : null)),
+          // A hand-written net has no training report: do not ask for one.
+          wanted.net
+            ? null
+            : fetch(`/model/training-report${suffix}.json`).then((response) => (response.ok ? response.json() : null)),
         ]);
         if (cancel) return;
         setNet(model);
@@ -371,7 +374,7 @@ export function Game() {
             {gameById(game).net === "-handmade"
               ? "You against a neural net whose weights were written by hand, not trained."
               : "You against a neural net that learned the game."}{" "}
-            {small ? `Small game: ${HAND_SIZE} cards, Yaniv at ${YANIV_LIMIT}.` : null}
+            {rulesSuffix() ? `Small game: ${HAND_SIZE} cards, Yaniv at ${YANIV_LIMIT}.` : null}
           </p>
         </div>
         <div className="flex items-center gap-2">
