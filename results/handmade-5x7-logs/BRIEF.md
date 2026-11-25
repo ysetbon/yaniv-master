@@ -89,3 +89,11 @@ that is a legitimate finding too, but try to beat it.
 - `results/handmade-5x7-logs/measure.md` is being written by the measuring agent (tables of real-game
   statistics). Check whether it exists when you start and again later; use it, and measure anything else
   you need yourself.
+
+## Baselines on the working test (--work: 6,000 rounds seed 61000; 1,500 matches seed 61001)
+```
+public/model/yaniv-net-4cards-yaniv7-handmade.json: margin +1.49 a round, rounds won 3315/6000 (55.2%), Yaniv calls 3184 of which caught 142 (4.5%); matches 1029-471 (68.6%, 95% range 66.2%-70.9%)  [235s]
+public/model/yaniv-net.json: margin +1.92 a round, rounds won 3345/6000 (55.8%), Yaniv calls 3160 of which caught 124 (3.9%); matches 948-552 (63.2%, 95% range 60.7%-65.6%)  [421s]
+switch:public/model/yaniv-net.json:public/model/yaniv-net-4cards-yaniv7-handmade.json: margin +1.69 a round, rounds won 3355/6000 (55.9%), Yaniv calls 3227 of which caught 140 (4.3%); matches 1014-486 (67.6%, 95% range 65.2%-69.9%)  [605s]
+```
+The first line (the 4-card hand-written net playing the whole game) is the bar.

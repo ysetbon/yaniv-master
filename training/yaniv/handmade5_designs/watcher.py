@@ -48,6 +48,8 @@ TWO_LIGHT = hm.TWO_LIGHT   # 0.5: a 2 counts as half a heavy card ... (bar)
 TWO_FULL = 1.0             # ... but as a whole one while both players hold 5 cards (RULE 1: on every position
                            # with 22 + a single worth 5+, throwing the 22 was worth +4.7 points at 5 v 5,
                            # +0.5 at 5 v 4, 0 at 4 v 5, -3 at 5 v 3; the trained net does it 90% / 55% / 60% / 15%)
+BIG_OPP = (5,)             # RULE 1 holds while I hold 5 cards and the opponent holds one of these counts
+LIGHT_PAIR_FIRST = 0.0     # bonus at 5 v 5 for throwing a set while keeping a pair (two pairs: the lighter goes first)
 CARD_5V5 = 8.0             # charge per heavy card while both hold 5 cards (the bar's CARD is 5 everywhere)
 FEED5 = hm.FEED         # (flat, per point) for leaving face up a rank the opponent is known to hold: only
                            # a tie-break between equal cards (RULE 2; the bar's is (1.0, 0.5) = 6 for a ten)
@@ -77,7 +79,7 @@ def add_throw_units(kit: Kit) -> None:
     # RULE 1: while both players hold 5 cards (nobody is near calling) a 2 is a heavy card like any other, and
     # every heavy card is charged CARD_5V5 instead of CARD.
     # (my_cards is cards / 5, so 6 opp_has_5 + 30 my_cards - 36 is 0 at 5 v 5 and -6 or less otherwise)
-    both5 = {"opp_has_5": 6.0, "my_cards": 30.0}
+    both5 = {**{f"opp_has_{n}": 6.0 for n in BIG_OPP}, "my_cards": 30.0}
     kit.unit(2, "twos_5v5", {"hand_2": 4.0, "twos_thrown": -1.0, "took_two_open": 1.0, **both5}, bias=-36.0,
              note="2s in my hand after the move, only while both players hold 5 cards")
     out["twos_5v5"] = -CARD * (TWO_FULL - TWO_LIGHT)     # the rest of a heavy card's charge
@@ -90,6 +92,10 @@ def add_throw_units(kit: Kit) -> None:
                  note="heavy cards after the move (2s whole, a paired open card not counted), only at 5 v 5")
         out["heavy_5v5"] = -(CARD_5V5 - CARD)
 
+    if LIGHT_PAIR_FIRST:
+        kit.unit(1, "set_keeps_pair_5v5", {"is_set": 1.0, "keeps_pair": 1.0, "opp_has_5": 1.0, "my_cards": 5.0},
+                 bias=-7.0, note="at 5 v 5: throws a set and still keeps a pair")
+        out["set_keeps_pair_5v5"] = LIGHT_PAIR_FIRST
     kit.unit(1, "open_tell", {"open_pts": 10.0, "take_open": 10.0, "pairs_open": -10.0}, bias=-13.0,
              note="points above 3 of an open card taken that pairs nothing")
     kit.unit(1, "callable_vs4", {"callable_next": 1.0, "opp_has_4": 1.0}, bias=-1.0,
