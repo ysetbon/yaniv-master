@@ -6,12 +6,41 @@ A hand-written net for the real game (5 cards each, Yaniv at 7). It is meant to 
 holds 5 cards (the 4-card net, training/yaniv/handmade.py, takes over once both hands hold 4 or fewer), but it
 scores every legal move in every position. Nothing is trained, fitted or searched.
 
-It is the 4-card net (same units: held points, the one-step plan, the heavy-card charge, the catch bonus, the
-open-card habits, the feeding penalty, the Yaniv reasons, the match-score units) plus the rules below. Each
-rule was found by one of the four designers and re-measured here one at a time by paired playouts (where the
-net with the rule plays a different move from the net without it, both moves are played to the end of the
-round on the same hidden cards): results/handmade-5x7-logs/merge.md has every variant.
-The constants in CFG are the final net; `NAME=value` on the command line builds a variant by hand.
+THE NET is the 4-card net, unit for unit (held points, the one-step plan, the heavy-card charge, the catch
+bonus, the open-card habits, the feeding penalty, the Yaniv reasons, the match-score units), plus two rules
+that hold while the OPPONENT still has 5 cards. A 5-card hand almost never calls (0.6% a turn), so until the
+opponent sheds a card the points I hold cost nearly nothing; what counts is how fast my own hand shrinks.
+
+  RULE 1 (twos_whole, 1 unit): a 2 I keep is charged as a whole heavy card, not half of one. A pair of 2s
+     then leaves before a high single, instead of being kept to the end as two "low" cards (a 5-card hand
+     holding 2-2 cannot reach 7 points anyway). All four designers found this one.
+  RULE 2 (live_*, 12 units): throwing a single card costs LIVE x its points / 10 for every copy of its rank
+     that is still unseen: a high single I keep is paired from the open pile one turn in eight against the
+     counter (it throws its high cards first; port's measurement), and a pair leaves in one throw. It decides
+     which single goes (the rank that can no longer be paired) and tips a low set ahead of a live high single.
+
+Paired playouts against the 4-card net (where the two nets play a different move, both moves are played to
+the end of the round on the same hidden cards): rule 1 +0.15 +- 0.04 points a round, rule 2 another
++0.14 +- 0.03 (+0.07 +- 0.025 on a second base), the two together +0.26 +- 0.05 and +0.43 +- 0.05 on two
+samples of 20,000 rounds; nearly all of it while both players hold 5 cards.
+
+WHAT THE MERGE LEFT OUT, each measured on top of the two rules (results/handmade-5x7-logs/merge.md has every
+variant; the constants are kept in CFG at their "off" value so a variant can be rebuilt by hand):
+  - watcher's heavy-card charge of 8 against 5 cards (and the measurer's 7.5 / 5.5): +0.07 on rule 1 alone,
+    +0.00 once rule 2 is in. The same decisions (a low set before a high single), bought once already.
+  - shaper's +2 for any set at 5 v 5: -0.02 +- 0.01 on top.
+  - counts' ALPHA (heavy points outside my best group weigh 0.15 against 5 cards): at 5 v 5 it throws the
+    pair of 2s by another route (0.0 +- 0.05 on top of rule 1), and with rule 1 it loses 0.2 a round when I
+    hold 3-4 cards against 5 (2s become dearer to keep than kings). Against 4 / 3 cards: +0.00 +- 0.03.
+  - counts' form of rule 2 (1 point a copy whatever the card, sets too, also against 4 and 3 cards):
+    +0.01 +- 0.02 where port's form gives +0.07; against 4 cards -0.03, port's form there +0.02 +- 0.01.
+  - gating rule 1 on my own card count (5 v 5 only: shaper; I hold 5 and the opponent 4-5: watcher):
+    5 v 4 adds +0.00 +- 0.03; dropping the rule when I hold 4 or fewer loses 0.015 +- 0.014. "The opponent
+    holds 5" is the plainest gate that is level with the others.
+  - anything for the cells where I hold 4 or fewer against 5: no variant, nor the trained net's or the
+    counter's moves, gains there (all within +-0.03).
+
+ONE FIX to the 4-card net's Yaniv threshold (cap_high_call): it changes no move, see there.
 """
 
 from __future__ import annotations
@@ -28,24 +57,24 @@ from training.yaniv.network import save_net
 SCRATCH = Path("/tmp/claude-0/-home-user-yaniv-master/a532e2e0-83d9-59dd-8a1a-414723f6a44f/scratchpad/merge")
 
 CFG = dict(
-    # ---- RULE 1 (port, watcher, shaper): a 2 is a whole heavy card while the opponent holds many cards.
-    # The 4-card net counts a 2 as half a heavy card and keeps a pair of 2s behind a high single.
-    TWO_OPP=(5,),          # opponent card counts where a 2 counts whole
-    TWO_ME5=False,         # ... only while I hold 5 cards myself
-    # ---- the heavy-card charge in RULE 1's phase (watcher: 8 instead of the 4-card net's 5)
-    CARD_BIG=5.0,
-    # ---- RULE 2 (port's "rank can still be paired", counts' LIVE): a charge for throwing a card per unseen
-    # copy of its rank, by the opponent's card count
-    LIVE={5: 0.5},         # points per unseen copy
-    LIVE_BY_POINTS=True,   # x the card's points / 10 (port) or flat (counts)
-    LIVE_SINGLES=True,     # single throws only (port) or sets too (counts)
-    # ---- counts' ALPHA: weight of the heavy points held outside my best group, by the opponent's card count
-    # (1 = the 4-card net: every held point counts in full)
-    ALPHA={},
-    # ---- shaper's bonuses while both hold 5 cards
-    TWOS55=0.0,            # for throwing a set of 2s
-    SET55=0.0,             # for throwing any set
-    # ---- a fix to the 4-card net's Yaniv threshold, see cap_high_call
+    # ---- RULE 1: a 2 counts as a whole heavy card (the 4-card net: half) while the opponent holds one of
+    # these card counts. (5,): +0.15 +- 0.04 a round over the 4-card net. (4, 5) with TWO_ME5: nothing at 5 v 4.
+    TWO_OPP=(5,),
+    TWO_ME5=False,         # True: only while I hold 5 cards myself (shaper, watcher). -0.015 +- 0.014: not used
+    # ---- RULE 2: charge for throwing a card, per unseen copy of its rank, by the opponent's card count.
+    # 0.5 x points / 10 is port's number: a kept 10 is paired by the next open card 12.7% of the time against
+    # 5 cards (6-9 points: 7.4%, 3-5: 3.7%), a pair leaving together is worth about a card (~8 points), so
+    # 0.13 x 8 = 1 point for a 10 with three copies unseen, 0.4 a copy; 0.5 written. Not re-tuned here.
+    LIVE={5: 0.5},
+    LIVE_BY_POINTS=True,   # x the card's points / 10. False (counts: flat): +0.01 +- 0.02, not used
+    LIVE_SINGLES=True,     # single throws only. False (counts: sets too): -0.01 +- 0.01, not used
+    # ---- measured and left out (see the module note); each is built only when it differs from this value
+    CARD_BIG=5.0,          # heavy-card charge in RULE 1's phase (watcher: 8). +0.00 on top of rule 2
+    ALPHA={},              # counts: weight of the heavy points held outside my best group, by the opponent's
+                           # card count ({5: 0.15, 4: 0.35, 3: 0.6, 2: 0.85, 1: 0.85}). 0 to -0.2 on top
+    TWOS55=0.0,            # shaper: bonus for throwing a set of 2s while both hold 5 cards (6) = rule 1
+    SET55=0.0,             # shaper: bonus for throwing any set while both hold 5 cards (2). -0.02 on top
+    # ---- the fix to the 4-card net's Yaniv threshold, see cap_high_call
     CAP_HIGH_CALL=True,
 )
 
