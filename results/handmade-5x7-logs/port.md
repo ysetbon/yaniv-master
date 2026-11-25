@@ -21,10 +21,14 @@ worth about +0.2 points a round by paired playouts, which is at the edge of what
 | the bar: 4-card net, whole game | +1.49 | 55.2% | 4.5% | 1029-471 (68.6%) |
 | `j`: TWO_EXTRA only, switch | +1.52 | 55.6% | 4.5% | 1039-461 (69.3%) |
 | `j`: TWO_EXTRA only, alone | +1.54 | 55.6% | 4.5% | 1033-467 (68.9%) |
-| **port (final), switch** | FINAL_SWITCH |
-| **port (final), alone** | FINAL_ALONE |
+| **port (final), switch** | **+1.65** | **55.9%** | 4.3% | **1062-438 (70.8%, 68.4%-73.0%)** |
+| **port (final), alone** | +1.66 | 55.9% | 4.3% | 1057-443 (70.5%, 68.1%-72.7%) |
+| port against the 4-card net, head to head (6,000 rounds, no matches) | +0.07 | 50.4% | 7.0% | - |
 
-Noise on this test is about +-0.2 margin and +-2.5 points of matches, so every row above is level with the bar.
+Noise on this test is about +-0.2 margin and +-2.5 points of matches. The final net is +0.16 margin, +0.7 points
+of rounds and +2.2 points of matches above the bar: the right sign and the size the paired playouts predict
+(+0.25 a round), but still inside the noise of this test. Head to head against the 4-card net it is level
+(+0.07): both changes lean on how the counter plays (it cannot call with 5 cards; it throws high cards first).
 The switch player and the net alone are nearly the same player by construction: port differs from the 4-card
 net only when the opponent holds 5 cards, and that is always before the handover.
 
@@ -120,7 +124,10 @@ Base `j` = v0 + TWO_EXTRA[5] = 0.5.
 | p | j + LIVE 1.0 a copy | | paired vs j: +0.16 +- 0.08, +0.07 +- 0.05 | no: no better than o |
 | t | j + LIVE[5] = 0.5 a copy (5-card opponent only) | the gain was only against 5 cards | paired vs j: +0.06 +- 0.03 (582 / 42,840), +0.08 +- 0.03 (581 / 41,989) | superseded by u |
 | u | j + LIVE[5] = 0.5 x points / 10 a copy | measurement 5: twins come for high singles, not low ones | paired vs j: **+0.10 +- 0.04** (981 / 41,989, 12,000 r) | **yes = port** |
-| - | port (= u) | | work: FINAL_BOTH | final |
+| e2 | port + CALLABLE against 5 cards (3), second sample | e's +0.05 was 1.3 errors: replicate | paired vs port: -0.02 +- 0.02 (173 / 42,230, 12,000 r) | no |
+| g2 | port + LOW_TOP_BY[5] = 0, second sample | g's +0.04 was 1.1 errors: replicate | paired vs port: +0.03 +- 0.02 (150 / 42,230); both samples together about +0.035 +- 0.015 | no: 0.03 a round at 2 errors is not worth a constant |
+| - | port (= u) | | work: switch +1.65, 55.9%, 70.8%; alone +1.66, 55.9%, 70.5%; head to head against the 4-card net +0.07, 50.4% of rounds | **final** |
+| - | trained net's moves against port's (diagnostic) | is anything left to read off the trained net? | paired vs port: -0.14 +- 0.10 (5,105 / 42,230); at (5, 5) -0.16 +- 0.07 | port's 5-card phase is no worse than the trained net's |
 
 Not measured on the working test: a to i, k to t (their paired gains are far under its +-0.2).
 
@@ -141,8 +148,9 @@ Not measured on the working test: a to i, k to t (their paired gains are far und
   measured. The Yaniv thresholds need no change either: in the 5-card phase nearly every call is against
   5 cards, is caught 1-2% of the time, and is already made.
 - **Taking anything from the counter's play** in this phase: its different moves are worse.
-- On the working test even the two kept changes are inside the noise (+0.03 to +0.05 margin, +0.3 to +0.7
-  points of matches for `j`). The honest claim is "not worse than the bar, probably +0.1 to +0.2 a round".
+- On the working test the two kept changes together are +0.16 margin and +2.2 points of matches over the
+  bar (`j` alone: +0.03 and +0.7), inside its noise. The honest claim is "not worse than the bar, probably
+  +0.15 to +0.25 a round against the counter, nothing against the 4-card net itself".
 
 ## What I would try next
 
