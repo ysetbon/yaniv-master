@@ -153,7 +153,7 @@ export function Game() {
       try {
         const [model, dossier] = await Promise.all([
           loadNet(`/model/yaniv-net${suffix}.json`).catch((cause) => {
-            if (wanted.id === "standard" || wanted.net) throw cause;
+            if (!rulesSuffix() || wanted.net) throw cause;
             throw new Error(
               `No net for ${wanted.hand} cards with Yaniv at ${wanted.yanivAt} yet. Train one with: python main.py ` +
                 `--hand ${wanted.hand} --yaniv-at ${wanted.yanivAt} --value-net --export`,
@@ -371,7 +371,7 @@ export function Game() {
             Yaniv <span className="text-[#f2c75c]">יניב</span>
           </h1>
           <p className="mt-1 text-sm text-[#e7d7b8]/75">
-            {gameById(game).net === "-handmade"
+            {gameById(game).net
               ? "You against a neural net whose weights were written by hand, not trained."
               : "You against a neural net that learned the game."}{" "}
             {rulesSuffix() ? `Small game: ${HAND_SIZE} cards, Yaniv at ${YANIV_LIMIT}.` : null}
@@ -573,7 +573,7 @@ export function Game() {
 
         <aside className="flex flex-col gap-3">
           <RoundLog log={log} />
-          <Dossier report={report} />
+          <Dossier report={report} handmade={Boolean(gameById(game).net)} />
         </aside>
       </div>
 
@@ -823,7 +823,7 @@ function MatchSheet({ scores, onRestart }: { scores: [number, number]; onRestart
   );
 }
 
-function Dossier({ report }: { report: Report | null }) {
+function Dossier({ report, handmade = false }: { report: Report | null; handmade?: boolean }) {
   const body = report ? (
     <div className="space-y-3 text-sm leading-relaxed text-[#f6edd9]/90">
       {report.config?.copy_from && !report.self_play_iterations ? (
@@ -885,6 +885,10 @@ function Dossier({ report }: { report: Report | null }) {
           : `The network is ${report.layers.join(" → ")}.`} {report.seconds ? `The training run took ${Math.round(report.seconds / 60)} minutes.` : ""}
       </p>
     </div>
+  ) : handmade ? (
+    <p className="text-sm text-[#f6edd9]/80">
+      This net was not trained: every weight was written by hand, unit by unit, from what each unit should detect.
+    </p>
   ) : (
     <p className="text-sm text-[#f6edd9]/80">The training notes are not in this build.</p>
   );

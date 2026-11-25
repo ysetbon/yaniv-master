@@ -13,6 +13,8 @@ npm run dev
 
 The trained weights already live in `public/model`, so you can play without training again. Open the app and deal a match. Select cards, then choose whether the next card comes from the deck or from the open pile. "Ask the net" shows the throw the network would make in your seat.
 
+The standard game (http://localhost:3457/) plays team fable's contest net, a net for the real game whose weights were written by hand rather than trained (`training/yaniv/contest_fable.py`, results in `results/contest-fable.md`). It beats the trained net and the earlier hand-written net in matches. "Standard: trained net" (http://localhost:3457/?game=trained) plays the trained net described below, and "Standard: earlier hand-written net" (http://localhost:3457/?game=5x7-handmade) the hand-written net before it.
+
 The menu at the top switches games. "4 cards, Yaniv 7: hand-written net" (http://localhost:3457/?game=4x7-handmade) plays the 4-card game against a net whose weights were written by hand rather than trained (`training/yaniv/handmade.py`, results in `results/handmade-4x7.md`).
 
 ## The network
