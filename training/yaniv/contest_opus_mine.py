@@ -197,10 +197,11 @@ def add_mine_units(kit, bonus: float = TRIPLE_BONUS) -> None:
     light = {f"throw_{x}": -4.0 for x in ("A", "2", "3", "JOKER")}   # the card thrown now must be worth 4+
     out = {}
     for r in TRIPLE_RANKS:
-        # take_open + open_R + (R's in my hand: 2 -> 2) - 4 x [R thrown] - 4 x [light rank thrown] - 3:
-        # 1 when all hold (2 if I hold three R's), else 0. Light ranks: A, 2, 3, joker (a joker is 0 points).
-        u = kit.unit(1, f"mine_triple_{r}", {"take_open": 1.0, f"open_{r}": 1.0, f"hand_{r}": 4.0,
-                                             f"throw_{r}": -4.0, **light}, bias=-3.0,
+        # 4 take_open + 4 open_R + (R's in my hand) - 4 [R thrown] - 4 [light rank thrown] - 9: 1 when all hold
+        # with two R's in hand, 2 with three (the open card is then the fourth: a quad, also worth taking),
+        # 0 otherwise (one R in hand, no take, an R thrown, or a light card thrown).
+        u = kit.unit(1, f"mine_triple_{r}", {"take_open": 4.0, f"open_{r}": 4.0, f"hand_{r}": 4.0,
+                                             f"throw_{r}": -4.0, **{k: v for k, v in light.items()}}, bias=-9.0,
                      note=f"takes an open {r} onto my two+ {r}s (kept), throwing a 4+ card of another rank")
         out[u] = bonus
     kit.out(out)

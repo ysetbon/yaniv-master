@@ -348,6 +348,37 @@ def alt_steer(view, actions, a, ctx):
     return ctx["hero"](view, land, None), f"take cut{cut} {thr}"
 
 
+def alt_cutopp_d3(view, actions, a, ctx):
+    """Probe: as alt_cutopp_d for exactly 3 hidden opponent cards (d in steps of 4)."""
+    if a.kind != "yaniv":
+        return None
+    from .engine import POINTS_OF, cards_from_mask, mask_points
+    known = cards_from_mask(view.opp_known)
+    h = view.opp_size - len(known)
+    if h != 3:
+        return None
+    cut = _cut_target(view)
+    d = cut - view.opp_score - sum(POINTS_OF[c] for c in known)
+    if d < 0 or d > 30 or cut - view.opp_score <= mask_points(view.my_hand):
+        return None
+    return _best_throw(view, actions, ctx), f"h3 d{4 * (d // 4):02d}"
+
+
+def alt_cutopp_h2k(view, actions, a, ctx):
+    """Probe: the h = 2, d in 0..11 veto, tagged by how many of the opponent's cards are known (k)."""
+    if a.kind != "yaniv":
+        return None
+    from .engine import POINTS_OF, cards_from_mask, mask_points
+    known = cards_from_mask(view.opp_known)
+    if view.opp_size - len(known) != 2:
+        return None
+    cut = _cut_target(view)
+    d = cut - view.opp_score - sum(POINTS_OF[c] for c in known)
+    if d < 0 or d > 11 or cut - view.opp_score <= mask_points(view.my_hand):
+        return None
+    return _best_throw(view, actions, ctx), f"h2 k{len(known)} cut{cut}"
+
+
 # ---------------------------------------------------------------- the block
 VETO = 2000.0       # = 2 YBIG: takes a called Yaniv row (+YBIG) down to -YBIG, under every throw
 H2_RANGE = None     # (lo, hi) of d for the 2-hidden-card case, or None (set after the probe; see match.md)

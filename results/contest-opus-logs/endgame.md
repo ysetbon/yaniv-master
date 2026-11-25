@@ -101,3 +101,66 @@ row then wins). Build check (`check.py`, 4,000 rounds vs counter): v1 plays exac
 at all 27,623 decisions (rule fired 48 times); v2 (save_min = 1) 27,669 decisions, fired 118, 0 mismatches.
 (First build had a 0.0005-wide assaf ramp: 1 mismatch at assaf 0.00474; ramp narrowed.)
 
+### Other call groupings (alt_call, seed 7101): nothing else to fix
+
+- hm5's calls at assaf >= 0.005 (eg) against its best non-call, by my points 1..7, by opp_min - my points, by
+  known opponent cards (0/1/2), by ply (0-5 ... 24+), by opp_est - my points: every group negative or within
+  noise for both opponents (counter -1.20 each overall, trained -3.27). Only opp_est - my points < 3 is positive
+  (+2.4 n=8, +2.6 n=49): 0.002 a round, not pursued.
+- hm5's legal non-calls (eg) against calling, by assaf (< 0.06, 0.06-0.1, 0.1-0.2, higher) and opponent cards:
+  every cell negative for both opponents (best: -0.10 +- 1.48 vs trained, opponent 2 cards, assaf < 0.06).
+  hm5 should not call more.
+
+### 4. Hint "leave an open 4-5 late" (probe `alt_leave`, seed 7103, 24,000 rounds per opponent)
+
+Where hm5 (eg) takes an open card worth 3-6: the same throw with a deck draw instead.
+
+| cell | vs counter: n, each | vs trained: n, each |
+|---|---|---|
+| open card pairs a kept card (any value, any ply) | 4,980; -2.5 to -5.0 each in every cell | 4,989; -1.9 to -4.7 (one cell +0.5, n=38) |
+| unpaired 3, ply < 9 / 9-15 / 16+ | 550 -2.21 / 1090 -1.65 / 915 -0.09 | 772 -1.60 / 1245 -0.01 / 2251 +0.47 +- 0.32 |
+| unpaired 4, ply < 9 / 9-15 / 16+ | 226 -2.05 / 810 -0.57 / 601 +0.93 +- 0.64 | 166 -2.30 / 669 -0.24 / 607 +1.04 +- 0.61 |
+| unpaired 5, ply 9-15 / 16+ | 134 +0.27 / 96 +0.88 +- 1.38 | 109 -3.44 / 186 +0.26 +- 0.88 |
+
+Unpaired 4-5 at ply 16+: +0.027 +- 0.017 (counter), +0.028 +- 0.017 (trained) a round. About 1.5 errors each:
+the hint replicates in sign but not clearly; not built (the brief asks for groups clearly positive for both).
+
+### 5. Whole-game test, seed 7200 (4,000 rounds + 800 matches, --workers 2), v1 = hm5 + rule S, v2 = rule S with sv >= 1
+
+| net | vs counter: margin, matches | vs trained: margin, matches | vs hm5: margin, matches |
+|---|---|---|---|
+| hm5 | +1.61, 587-213 (73.4%) | +0.31, 486-314 (60.8%) | 0.00, 400-400 |
+| v1 (12 units) | +1.66, 589-211 (73.6%) | +0.35, 491-309 (61.4%) | +0.04, 403-397 (50.4%) |
+| v2 (12 units) | +1.65, 590-210 (73.8%) | +0.31, 498-302 (62.3%) | +0.07, 398-402 (49.8%) |
+
+Both are +0.00 to +0.07 a round over hm5 on the same deals, as the play-outs predict (+0.03 to +0.07); far inside
+the test's noise (+-0.2, mirrored pairs tighter). Matches: no visible effect either way.
+
+### 6. Variant play-out check, seed 7104 (40,000 rounds per opponent; hero = the variant, alternative = hm5's move where it differs)
+
+gain < 0 means the variant's own move was better than hm5's.
+
+| variant, changed decisions | vs counter: per round, each, a round | vs trained: per round, each, a round |
+|---|---|---|
+| v1: every change is rule S's swap (sv >= 2) | 0.0066, -5.30 +- 1.21, -0.035 +- 0.008 | 0.0062, -3.49 +- 1.35, -0.022 +- 0.008 |
+| v2: the sv >= 2 swaps | 0.0067, -5.38 +- 1.19 | 0.0063, -3.60 +- 1.35 |
+| v2: the sv = 1 swaps | 0.0130, -3.22 +- 0.95 | 0.0168, **+0.57 +- 0.83** |
+
+v1's changes pay against both opponents on a third seed: **+5.3 +- 1.2 (counter) and +3.5 +- 1.4 (trained) each,
+0.006-0.007 times a round, +0.02 to +0.035 a round.** v2's extra sv = 1 swaps pay against the counter only
+(+3.2) and not against the trained net (-0.6 +- 0.8): dropped.
+
+## Conclusion
+
+- hm5's Yaniv decision is already right almost everywhere: calling instead of its non-calls, or playing on
+  instead of its calls, loses in every group by my points, assaf, opp_min, opponent card count, known cards,
+  ply and estimate, against both opponents. The hm4 endgame gap to the trained net (handover.md) is mostly gone
+  in hm5: the trained net's moves after both hands <= 4 are worth +0.09 +- 0.08 (counter) and -0.07 +- 0.08
+  (trained) a round to hm5.
+- The one class that pays: **rule S** (swap instead of a catchable call when the open card is 2+ points under my
+  top card, opponent 3-4 cards, assaf >= 0.005). Three seeds, both opponents, +3.5 to +8.9 each, 0.006-0.0075 a
+  round. Kept as `add_endgame_units(kit)` (defaults = rule S), 11 authored units (12 hidden units in the built
+  net, one a carry). Built variant: `/tmp/claude-0/-home-user-yaniv-master/3c7d4d81-ef83-553b-adc8-6a5382f1abf0/scratchpad/endgame/v1.json`
+  (570 hidden units). Whole game it is worth about +0.03 a round, below what a 4,000-round test can show.
+- Not checked: matches near 50/100 (rule S also overrides the score units' "assaf on cut" call reason, which is
+  rare); a swap that throws a set rather than a single.

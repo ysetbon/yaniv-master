@@ -52,10 +52,50 @@ rounds vs counter, 167 positions): median 3.3, 90% 4.75, 97% 5.2: a bonus of one
 
 ## 5. The draw decision alone: same throw, the other draw (8,000 rounds, seed 5400)
 
-0.6 flips a round... every class by open-card points x does it pair a kept card: hm5's draw is right in every
+6.3 flips a round (every decision). By by open-card points x does it pair a kept card: hm5's draw is right in every
 class with n > 100 on both opponents; the best are flat (deck->open 3: +0.10 (0.82) / +0.42 (0.64); open->deck
 4 unpaired: +0.22 (0.75) / +0.48 (0.80)). Split further by my / its card count: no cell positive on both beyond
 noise. Taking a card that pairs a kept card is right by -3 to -6 points a time (hm5 always does).
 Trained net's draw-only disagreements (seed 5500): open->deck when the open card would make me callable
 (held <= 7, open 3-5): +1.5 (1.2) / +2.0 (0.7), +1.1 (1.6) / +3.7 (1.1) - that is the Yaniv/endgame area of
 another designer, and not significant vs counter; not pursued.
+
+## 6. Block `add_mine_units` (TRIPLE), 10 units, layer 1
+
+One unit per rank R in 4..K: relu(take_open + open_R + 4 hand_R - 4 throw_R - 4 [throw is A/2/3/joker] - 3),
+output +5 (one card charge: the third R leaves with the pair next turn, so the extra card costs no turn).
+Built: [125, 228, 98, ...], 568 hidden (hm5 558 + 10). An earlier draft with a layer-2 points step cost 42
+units (inputs carried to layer 2): replaced by the thrown-rank test in layer 1.
+
+Variant `mine_triple5` (bonus 5): play-out of the changed decisions (hero hm5, B = the variant's move, seed 5600,
+10,000 rounds each):
+| changed decisions | vs counter | vs trained |
+|---|---|---|
+| all (TRIPLE: 0.048 / 0.043 a round; other: 1 in each run) | +3.40 (0.85) | +2.90 (0.89) |
+| p5, opp 5 | +4.09 (0.98), 0.032/rd | +4.10 (1.15), 0.025/rd |
+| p5, opp 4 | +0.33 (2.78) | +0.75 (2.25) |
+| end (both <= 4), opp 4 | +1.49 (2.44) | +0.46 (2.08) |
+=> about +0.15 / +0.12 a round.
+
+Whole game, contest_opus_eval seed 310 (4,000 rounds, 800 matches, same seed for both):
+| opponent | hm5 | mine_triple5 |
+|---|---|---|
+| counter | +1.78, 56.6%, matches 73.0% | +1.89, 57.0%, 75.1% |
+| trained | +0.08, 51.4%, 65.5% | +0.24, 52.1%, 65.2% |
+| hm5 | 0.00, 50.0% | +0.15, 50.5%, 51.1% |
+
+Variant bonus 8 (hand-picked second value, to flip the ~5% of positions with a gap above 5): differs from
+bonus 5 in 0.002 decisions a round (seed 5900): no change worth having. Kept 5.
+
+## 7. Other rules tested (all failures)
+
+- DENY (seed 5700, 8,000 rounds): hm5 leaves face up a rank the opponent is known to hold (despite its FEED
+  charge); B = hm5's best move that does not. 0.035 / 0.024 a round; -5.3 (1.2) / -4.0 (1.2) end,
+  -3.5 (1.8) / +1.8 (3.2) p5. hm5 is right (those are cheap cards it must shed).
+- KEEPLIGHT (seed 5700): hm5 throws an A / 2 / joker while holding 4+ cards; B = hm5's best move keeping them.
+  0.12 a round; -2.5 (0.6) / -1.6 (0.6) (mostly a pair of 2s: the known "shrink first" rule holds). A single 2:
+  +0.8 (2.5) / +2.9 (1.7), n 70: noise.
+- Trained net's finer tags with mine_triple5 as hero (seed 5800): no class beyond 1.5 se on both opponents.
+  Best: both take the open R for a triple but throw different singles, +1.75 (1.44) / +1.53 (1.72), n ~ 50.
+- Inference from the opponent's draws (it passed an open X, so it likely holds no X): not in the 125 inputs
+  (no draw history beyond known_), so it cannot be a rule of this net.

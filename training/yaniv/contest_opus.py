@@ -37,7 +37,13 @@ def build(extras=(), **over):
     return net, kit
 
 
-EXTRAS: list = []   # the blocks kept in the shipped net (filled in as they pass their tests)
+from training.yaniv.contest_opus_endgame import add_endgame_units  # noqa: E402
+
+# The blocks kept in the shipped net, each passed by play-outs against two opponents (results/contest-opus.md):
+#  - add_endgame_units: rule S, the swap. Yaniv legal, the opponent holds 3-4 cards, catch chance >= 0.005 and the
+#    open card 2+ points under my highest card: throw that card and take the open card instead of calling.
+#    +4.8 to +5.3 a time against the counter, +3.5 to +8.9 against the trained net, ~0.007 times a round. 12 units.
+EXTRAS: list = [add_endgame_units]
 
 
 def main(path: Path = MODEL_PATH) -> None:
