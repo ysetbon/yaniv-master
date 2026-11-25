@@ -107,6 +107,9 @@ function mulberry32(seed: number) {
 }
 
 /** Load the page again for another game: the rules are set once, when the page boots. */
+/** Where the model files are served: /model, under the site's sub-path on GitHub Pages (next.config.ts). */
+const MODEL_DIR = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/model`;
+
 function reloadAs(id: string): void {
   const url = new URL(window.location.href);
   if (id === "standard") url.searchParams.delete("game");
@@ -152,7 +155,7 @@ export function Game() {
       const suffix = rulesSuffix() + wanted.net;
       try {
         const [model, dossier] = await Promise.all([
-          loadNet(`/model/yaniv-net${suffix}.json`).catch((cause) => {
+          loadNet(`${MODEL_DIR}/yaniv-net${suffix}.json`).catch((cause) => {
             if (!rulesSuffix() || wanted.net) throw cause;
             throw new Error(
               `No net for ${wanted.hand} cards with Yaniv at ${wanted.yanivAt} yet. Train one with: python main.py ` +
@@ -162,7 +165,7 @@ export function Game() {
           // A hand-written net has no training report: do not ask for one.
           wanted.net
             ? null
-            : fetch(`/model/training-report${suffix}.json`).then((response) => (response.ok ? response.json() : null)),
+            : fetch(`${MODEL_DIR}/training-report${suffix}.json`).then((response) => (response.ok ? response.json() : null)),
         ]);
         if (cancel) return;
         setNet(model);

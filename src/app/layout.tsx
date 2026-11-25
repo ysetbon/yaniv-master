@@ -15,7 +15,7 @@ const fraunces = Fraunces({
 
 export const metadata: Metadata = {
   title: "Yaniv",
-  description: "Play Yaniv against a neural network trained by self-play.",
+  description: "Play Yaniv against a neural network whose weights were written by hand.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

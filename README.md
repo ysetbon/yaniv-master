@@ -1,5 +1,7 @@
 # Yaniv
 
+**Play it in your browser: https://ysetbon.github.io/yaniv-master/**
+
 A two-player game of Yaniv. You sit across from a neural network that learned the table by copying a card counter and then playing thousands of games against itself.
 
 A hand is five cards from a 54-card deck with two jokers. Ace is 1, number cards are their pips, 10, jack, queen, and king are 10, and a joker is 0. Throw a single card or a set of one rank (the two jokers pair with each other; there are no runs), then draw the previous open card or a blind card from the deck. With 7 points or fewer you may call Yaniv. If the other hand is the same or lower, the call is Assaf and costs your points plus 30. A score that lands exactly on 50 or 100 is cut by 50. The match ends when a score reaches 100. The lower score wins.
@@ -11,7 +13,7 @@ npm install
 npm run dev
 ```
 
-The trained weights already live in `public/model`, so you can play without training again. Open the app and deal a match. Select cards, then choose whether the next card comes from the deck or from the open pile. "Ask the net" shows the throw the network would make in your seat.
+The trained weights already live in `public/model`, so you can play without training again. The same game is published on every push to `main` by `.github/workflows/pages.yml` (a static export under `/yaniv-master`; it needs Settings > Pages > Source: "GitHub Actions" once). Open the app and deal a match. Select cards, then choose whether the next card comes from the deck or from the open pile. "Ask the net" shows the throw the network would make in your seat.
 
 The standard game (http://localhost:3457/) plays team fable's contest net, a net for the real game whose weights were written by hand rather than trained (`training/yaniv/contest_fable.py`, results in `results/contest-fable.md`). It beats the trained net and the earlier hand-written net in matches. "Standard: trained net" (http://localhost:3457/?game=trained) plays the trained net described below, and "Standard: earlier hand-written net" (http://localhost:3457/?game=5x7-handmade) the hand-written net before it.
 
