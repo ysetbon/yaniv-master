@@ -15,9 +15,8 @@ npm run dev
 
 The trained weights already live in `public/model`, so you can play without training again. The same game is published on every push to `main` by `.github/workflows/pages.yml` (a static export under `/yaniv-master`; it needs Settings > Pages > Source: "GitHub Actions" once). Open the app and deal a match. Select cards, then choose whether the next card comes from the deck or from the open pile. "Ask the net" shows the throw the network would make in your seat.
 
-The standard game (http://localhost:3457/) plays team fable's contest net, a net for the real game whose weights were written by hand rather than trained (`training/yaniv/contest_fable.py`, results in `results/contest-fable.md`). It beats the trained net and the earlier hand-written net in matches. "Standard: trained net" (http://localhost:3457/?game=trained) plays the trained net described below, and "Standard: earlier hand-written net" (http://localhost:3457/?game=5x7-handmade) the hand-written net before it.
+The game plays the latest net, team fable's contest net: a net for the real game whose weights were written by hand rather than trained (`training/yaniv/contest_fable.py`, results in `results/contest-fable.md`). It beats the trained net and the earlier hand-written net in matches. The other nets stay in `public/model` for the training tools.
 
-The menu at the top switches games. "4 cards, Yaniv 7: hand-written net" (http://localhost:3457/?game=4x7-handmade) plays the 4-card game against a net whose weights were written by hand rather than trained (`training/yaniv/handmade.py`, results in `results/handmade-4x7.md`).
 
 ## The network
 
@@ -154,7 +153,7 @@ The log and the summary show how much of how rounds ended the value net explains
 
 ### A smaller game that learns faster (`--hand`, `--yaniv-at`)
 
-`--hand 4 --yaniv-at 9` plays 4 cards each with Yaniv at 9 or less. Rounds are about a third shorter (9 throws instead of 12 between two card counters), and each decision has fewer moves to choose from, so every pass is quicker. Its net ships to `public/model/yaniv-net-4cards-yaniv9.json` (with `--export`), never over the standard one, and the game plays it at `/?game=small` (pick the game in the header):
+`--hand 4 --yaniv-at 9` plays 4 cards each with Yaniv at 9 or less. Rounds are about a third shorter (9 throws instead of 12 between two card counters), and each decision has fewer moves to choose from, so every pass is quicker. Its net ships to `public/model/yaniv-net-4cards-yaniv9.json` (with `--export`), never over the standard one:
 
 ```bash
 python main.py --hand 4 --yaniv-at 9 --value-net --effort 0.7 --generations 40 --search-samples 192 --export
@@ -171,7 +170,7 @@ python main.py --hand 4 --yaniv-at 7 --value-net --value-rounds 4000 --effort 0.
 python -m training.yaniv.hybrid --endgame public/model/yaniv-net-4cards-yaniv7.json
 ```
 
-It prints both players' results against the counter (4,000 rounds, 1,000 matches) and the switch player against the main net alone. The game plays the 4-card net itself at `/?game=4x7`.
+It prints both players' results against the counter (4,000 rounds, 1,000 matches) and the switch player against the main net alone.
 
 ### Is the teacher stronger than the net? (`training/yaniv/teacher_test.py`)
 
