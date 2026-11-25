@@ -17,7 +17,7 @@ from .features import action_key
 ROOT = Path(__file__).resolve().parents[2]
 _C: dict = {}
 # the frozen baseline (opus v3 = hm5 + endgame + mine + match blocks), so the shipped file cannot change mid-run
-HERO = os.environ.get("RACE_HERO", "/tmp/claude-0/-home-user-yaniv-master/3c7d4d81-ef83-553b-adc8-6a5382f1abf0/scratchpad/opus-v3.json")
+HERO = os.environ.get("RACE_HERO", str(ROOT / "public/model/yaniv-net-contest-opus.json"))
 
 
 def _chooser(name: str):

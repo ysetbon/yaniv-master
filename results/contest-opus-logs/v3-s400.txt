@@ -1,0 +1,6 @@
+vs hm5      opus-v3: margin +0.18 a round, rounds won 4045/8000 (50.6%), Yaniv calls 4019 of which caught 256 (6.4%); matches 939-661 (58.7%, 95% range 56.3%-61.1%)  [63s]
+vs hm5      hm5: margin +0.00 a round, rounds won 4000/8000 (50.0%), Yaniv calls 3984 of which caught 265 (6.7%); matches 800-800 (50.0%, 95% range 47.6%-52.4%)  [123s]
+vs trained  opus-v3: margin +0.29 a round, rounds won 4138/8000 (51.7%), Yaniv calls 4220 of which caught 298 (7.1%); matches 995-605 (62.2%, 95% range 59.8%-64.5%)  [188s]
+vs trained  hm5: margin +0.11 a round, rounds won 4088/8000 (51.1%), Yaniv calls 4174 of which caught 303 (7.3%); matches 1013-587 (63.3%, 95% range 60.9%-65.6%)  [253s]
+vs counter  opus-v3: margin +1.81 a round, rounds won 4534/8000 (56.7%), Yaniv calls 4377 of which caught 192 (4.4%); matches 1148-452 (71.8%, 95% range 69.5%-73.9%)  [398s]
+vs counter  hm5: margin +1.69 a round, rounds won 4488/8000 (56.1%), Yaniv calls 4325 of which caught 195 (4.5%); matches 1147-453 (71.7%, 95% range 69.4%-73.8%)  [519s]

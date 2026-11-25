@@ -16,6 +16,7 @@ Tools (tests, nothing here fits or searches weights):
 
 from __future__ import annotations
 
+import os
 import math
 import random
 import sys
@@ -24,7 +25,7 @@ from pathlib import Path
 
 import numpy as np
 
-SCRATCH = Path("/tmp/claude-0/-home-user-yaniv-master/3c7d4d81-ef83-553b-adc8-6a5382f1abf0/scratchpad/match")
+SCRATCH = Path(os.environ.get("OPUS_SCRATCH", "/tmp/opus-match"))
 TABLE = SCRATCH / "win_table_hm5.npy"
 
 
