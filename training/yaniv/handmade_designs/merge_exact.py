@@ -12,10 +12,15 @@ Base (copied from clone.py BEST, see its docstring for the derivations). A throw
   * catch bonus: 30 * P(opponent calls next) * P(my hand after the draw <= its likely total): an Assaf for it;
   * feeding penalty: leaving face up a rank the opponent is known to hold gives it a set.
 
-Additions in this file (each a reasoned change, measured on the dev test; see the constants below):
-  add_throw_units  heavy-card charge (reader), open-card tell (reader), callable-next vs a 4-card opponent (reader)
-  add_yaniv_units  the call rule (clone's / reader's / caller's C1 / a blend)
-  add_score_units  scorer.py's match-score units (copied), plus score-aware terms of my own
+Additions in this file (each a reasoned change, measured on the dev test; BEST = what helped):
+  add_throw_units  heavy-card charge 3 x (1 - w) per heavy card held (reader)          dev margin +0.89 -> +1.18  [BEST]
+                   open-card tell, callable-next vs a 4-card opponent (reader)         off: no gain / -0.10
+  add_yaniv_units  caller's C1 margin rule, needing 2.3 points of margin (not 1.3):
+                   calls with less margin are caught ~14% and playing on (the catch
+                   bonus's Assaf trap) is worth as much                               +1.18 -> +1.26 -> +1.30  [BEST]
+                   clone's / reader's / reader-AND-C1 rules kept as options            +1.18 / +1.26 / +1.24
+  add_score_units  scorer.py's match-score units (copied)                              matches 60.0% -> 68.3%   [BEST]
+Dev test: 12,000 rounds seed 52000, 3,000 matches seed 52001; trained net +1.39, matches 60.5% there.
 
     python -m training.yaniv.handmade_designs.merge_exact      # writes SCRATCH/nets/merge_exact.json
 """
@@ -64,10 +69,11 @@ DEFAULT = dict(
     callable_vs4=0.0,   # bonus for a move that makes Yaniv sure next turn while the opponent holds 4 cards
     # ---- Yaniv
     call="clone",       # "clone" | "reader" | "c1" | "blend"
+    c1_bias=1.3,        # C1: call when opp_est - 1.4 my_pts - 10 assaf >= c1_bias (points)
     # ---- score
     score=False,
 )
-BEST = dict(DEFAULT)
+BEST = dict(DEFAULT, heavy=3.0, call="c1", c1_bias=2.3, score=True)  # see the log: dev +1.30, matches with score units
 
 
 # ================================================================== shared helper units
@@ -308,19 +314,27 @@ def add_yaniv_units(kit: Kit, v: dict) -> None:
         kit.unit(1, "gap_cap", {"opp_est": 40.0, "my_pts": -40.0}, -15.0, "gap above 15")
         rw = {"early": 1.0, "gap": 0.002, "gap_cap": -0.002, "pr5": 0.005, "assaf": -1.0}
         rd = _step(kit, 2, "rd", rw, 0.015 - 0.002 * 5)
-        kit.unit(3, "cR", rd, 0.0, "reader's threshold")
+        if rule == "reader":
+            kit.unit(3, "cR", rd, 0.0, "reader's threshold")
         reader_terms = {"cR": 1.0}
     if rule == "clone":
         terms = clone_terms
     elif rule == "reader":
         terms = reader_terms
-    elif rule == "c1":
+    if rule in ("c1", "blend"):
         # caller C1: opp_est - my_pts > 0.4 my_pts + 1.3 (+ a small assaf guard)
-        c1 = _step(kit, 2, "c1", {"opp_est": 40.0, "my_pts": -40.0 * 1.4, "assaf": -10.0}, -1.3, k=4.0)
+        c1 = _step(kit, 2, "c1", {"opp_est": 40.0, "my_pts": -40.0 * 1.4, "assaf": -10.0}, -v["c1_bias"], k=4.0)
+    if rule == "c1":
         kit.unit(3, "cC1", c1, 0.0, "caller's margin rule")
         terms = {"cC1": 1.0}
     elif rule == "blend":
-        raise NotImplementedError
+        # call only when BOTH reader's (ply-falling assaf threshold) and caller's C1 (margin over opp_est) agree.
+        # Measured on h3_c1's own Yaniv-legal turns (calldiag + rules.py): where only C1 calls the true catch
+        # rate is 13% and playing on (with the catch bonus keeping my hand low, the "Assaf trap") averaged
+        # +4.8 vs +4.1 for calling; where only reader calls it is 21%, about break-even. Each rule screens out
+        # the other's riskiest calls.
+        kit.unit(3, "cRC", {**rd, **c1}, -1.0, "reader's AND caller's rule")
+        terms = {"cRC": 1.0}
     s = {**terms, "sure_yaniv": 1.0}
     kit.unit(4, "ysum", {**s, "yaniv": 4.0}, -4.0, "number of reasons to call, Yaniv row only")
     kit.unit(4, "ysum1", {**s, "yaniv": 4.0}, -5.0, "same minus 1")
