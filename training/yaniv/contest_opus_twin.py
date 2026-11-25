@@ -4,8 +4,9 @@ The owner's idea: early in a round both players throw their large cards. If I ho
 keep the one whose twin (same rank) is most likely still to come, take that twin from the open pile when the
 opponent throws it, and throw the pair next turn - instead of always throwing my highest single (or hm5's move).
 
-This file holds the play-out rules (alt functions for contest_opus_playout) and, only if a version pays,
-add_twin_units(kit). Results: results/contest-opus-logs/twin.md. Nothing is trained, fitted or searched.
+This file holds the play-out rules (alt functions for contest_opus_playout). RESULT: hm5 already plays the whole
+plan (LIVE charge picks the single, PAIR_OPEN takes the twin, then it throws the pair) and no deviation tested here
+paid against both the counter and the trained net, so there is NO add_twin_units block. Results: results/contest-opus-logs/twin.md. Nothing is trained, fitted or searched.
 
 Situation ("early, >= 2 high singles"): I hold 5 cards, the opponent holds >= 4, the open card pairs none
 of my cards, and I hold at least two ranks
@@ -163,6 +164,37 @@ def alt_highest8(view, actions, a, ctx):
 
 def alt_highest7(view, actions, a, ctx):
     return _choice_highest(view, actions, a, ctx, 7)
+
+
+# ------------------------------------------------------------------ (e) keep the HIGHEST, throw a lower high single
+def _keep_high(view, actions, a, ctx, hi):
+    """The opponent throws its highest cards first, so the twin of my 10 is likelier to show up soon than the twin
+    of my 8. When hm5 throws a top-value high single, B throws the highest high single worth LESS (keeping the
+    top), only when its unseen copies are >= the top's (so LIVE does not argue the other way)."""
+    if not early(view):
+        return None
+    hs = high_singles(view, hi)
+    if len(hs) < 2:
+        return None
+    a_rank = _single_of(a)
+    top = max(_pts(r) for r, _ in hs)
+    if a_rank is None or _pts(a_rank) != top:
+        return None
+    uns = _unseen(view)
+    lower = [rc for rc in hs if _pts(rc[0]) < top and uns.get(rc[0], 0) <= uns.get(a_rank, 0)]
+    if not lower:
+        return None
+    r, c = max(lower, key=lambda rc: (_pts(rc[0]), rc[0]))
+    b = throw_card(view, actions, ctx, c)
+    return None if b is None else (b, _tag(view, a_rank, r, uns))
+
+
+def alt_keephigh8(view, actions, a, ctx):
+    return _keep_high(view, actions, a, ctx, 8)
+
+
+def alt_keephigh7(view, actions, a, ctx):
+    return _keep_high(view, actions, a, ctx, 7)
 
 
 # ------------------------------------------------------------------ what does hm5 do here? (no alternative)

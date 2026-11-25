@@ -321,6 +321,89 @@ def alt_cutopp_d(view, actions, a, ctx):
                                                                  "p": p_exact(view, cut - view.opp_score)}
 
 
+def _lands(view, act) -> bool:
+    """An open-card take that leaves my score + held points exactly on 50 or 100."""
+    from .engine import POINTS_OF
+    if act.kind == "yaniv" or act.draw != "open":
+        return False
+    return view.my_score + _kept(view, act) + POINTS_OF[view.discard[-1]] in (50, 100)
+
+
+def alt_steer(view, actions, a, ctx):
+    """Probe of hm5's own cut steering (OPEN_CUT): if the hero's move lands on a cut, B = its best move that does
+    not; if it does not but a landing open take exists, B = the best landing take. Tag: direction, cut, threat."""
+    if a.kind == "yaniv":
+        return None
+    throws = [x for x in actions if x.kind != "yaniv"]
+    land = [x for x in throws if _lands(view, x)]
+    if not land:
+        return None
+    i = _info(view)
+    thr = "t1" if i["opp_est"] <= 9 else "t0" if i["opp_est"] >= 15 else "tm"
+    from .engine import POINTS_OF
+    cut = view.my_score + _kept(view, land[0]) + POINTS_OF[view.discard[-1]]
+    if _lands(view, a):
+        rest = [x for x in throws if not _lands(view, x)]
+        return ctx["hero"](view, rest, None), f"drop cut{cut} {thr}"
+    return ctx["hero"](view, land, None), f"take cut{cut} {thr}"
+
+
+# ---------------------------------------------------------------- the block
+VETO = 2000.0       # = 2 YBIG: takes a called Yaniv row (+YBIG) down to -YBIG, under every throw
+H2_RANGE = None     # (lo, hi) of d for the 2-hidden-card case, or None (set after the probe; see match.md)
+
+
+def add_match_units(kit, h2_range=None) -> None:
+    """Do not call Yaniv when the call would drop the opponent's score exactly on a cut (50 -> 0, 100 -> 50).
+
+    The opponent's total is known up to its h hidden cards: known points K, d = cut - opp_score - K is what the
+    hidden cards must make for the landing. Veto the call (Yaniv row only) when, for the next cut (50 or 100):
+      h = 0 and d == 0 (the landing is certain), or
+      h = 1 and 0 <= d <= 10 (one hidden card can make it; hm5-like opponents steer their hand onto the cut),
+      [h = 2 and lo <= d <= hi, if h2_range]
+    and the opponent's total (cut - opp_score) is above my points (else the call is caught and the opponent adds 0).
+    Inputs: opp_score/120, known_pts/40, opp_cards/5, known_n/5, my_pts/40 - all integers after scaling, so every
+    step below is exact (ramps one point wide)."""
+    h2 = h2_range if h2_range is not None else H2_RANGE
+    hv = {"opp_cards": 5.0, "known_n": -5.0}                       # h = hidden cards, 0..5
+    kit.unit(1, "mt_h1", {k: -v for k, v in hv.items()}, bias=1.0, note="relu(1 - h): [h == 0]")
+    kit.unit(1, "mt_h2", {k: -v for k, v in hv.items()}, bias=2.0, note="relu(2 - h)")
+    is_h = {0: {"mt_h1": 1.0}, 1: {"mt_h2": 1.0, "mt_h1": -2.0}}
+    if h2:
+        kit.unit(1, "mt_h3", {k: -v for k, v in hv.items()}, bias=3.0, note="relu(3 - h)")
+        is_h[2] = {"mt_h3": 1.0, "mt_h2": -2.0, "mt_h1": 1.0}
+    for cut in (50, 100):
+        d = {"opp_score": -120.0, "known_pts": -40.0}               # d = cut - opp_score - K
+        kit.unit(1, f"mt{cut}_dp1", d, bias=cut + 1.0, note=f"relu(d + 1), d = {cut} - opp_score - known points")
+        kit.unit(1, f"mt{cut}_d0", d, bias=float(cut), note="relu(d)")
+        kit.unit(1, f"mt{cut}_dm1", d, bias=cut - 1.0, note="relu(d - 1)")
+        kit.unit(1, f"mt{cut}_hi_a", {k: -v for k, v in d.items()}, bias=11.0 - cut, note="relu(11 - d)")
+        kit.unit(1, f"mt{cut}_hi_b", {k: -v for k, v in d.items()}, bias=10.0 - cut, note="relu(10 - d)")
+        e = {"opp_score": -120.0, "my_pts": -40.0}                  # e = cut - opp_score - my points
+        kit.unit(1, f"mt{cut}_e_a", e, bias=float(cut), note=f"relu(e), e = {cut} - opp_score - my points")
+        kit.unit(1, f"mt{cut}_e_b", e, bias=cut - 1.0, note="relu(e - 1): [e >= 1] = e_a - e_b")
+        e_ok = {f"mt{cut}_e_a": 1.0, f"mt{cut}_e_b": -1.0}
+        d_zero = {f"mt{cut}_dp1": 1.0, f"mt{cut}_d0": -2.0, f"mt{cut}_dm1": 1.0}
+        d_in = {f"mt{cut}_dp1": 1.0, f"mt{cut}_d0": -1.0, f"mt{cut}_hi_a": 1.0, f"mt{cut}_hi_b": -1.0}
+        cases = [(0, d_zero, 1), (1, d_in, 2)]
+        if h2:
+            lo, hi = h2
+            kit.unit(1, f"mt{cut}_lo2_a", d, bias=cut - lo + 1.0, note=f"relu(d - {lo} + 1)")
+            kit.unit(1, f"mt{cut}_lo2_b", d, bias=float(cut - lo), note=f"relu(d - {lo})")
+            kit.unit(1, f"mt{cut}_hi2_a", {k: -v for k, v in d.items()}, bias=hi + 1.0 - cut, note=f"relu({hi} + 1 - d)")
+            kit.unit(1, f"mt{cut}_hi2_b", {k: -v for k, v in d.items()}, bias=float(hi - cut), note=f"relu({hi} - d)")
+            cases.append((2, {f"mt{cut}_lo2_a": 1.0, f"mt{cut}_lo2_b": -1.0,
+                              f"mt{cut}_hi2_a": 1.0, f"mt{cut}_hi2_b": -1.0}, 2))
+        for h, cond, n_ind in cases:
+            w = {"yaniv": 100.0}
+            for part in (is_h[h], cond, e_ok):
+                for k, v in part.items():
+                    w[k] = w.get(k, 0.0) + v
+            kit.unit(2, f"mt{cut}_veto_h{h}", w, bias=-(100.0 + n_ind + 1.0),
+                     note=f"Yaniv row, {h} hidden opponent cards, and they can land its score on {cut}: 1, else 0")
+            kit.out({f"mt{cut}_veto_h{h}": -VETO})
+
+
 def main(argv):
     cmd = argv[0]
     if cmd == "table":
