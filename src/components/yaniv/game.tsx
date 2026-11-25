@@ -149,11 +149,11 @@ export function Game() {
       const wanted = gameById(new URLSearchParams(window.location.search).get("game"));
       setRules(wanted.hand, wanted.yanivAt);
       setGame(wanted.id);
-      const suffix = rulesSuffix();
+      const suffix = rulesSuffix() + wanted.net;
       try {
         const [model, dossier] = await Promise.all([
           loadNet(`/model/yaniv-net${suffix}.json`).catch((cause) => {
-            if (wanted.id === "standard") throw cause;
+            if (wanted.id === "standard" || wanted.net) throw cause;
             throw new Error(
               `No net for ${wanted.hand} cards with Yaniv at ${wanted.yanivAt} yet. Train one with: python main.py ` +
                 `--hand ${wanted.hand} --yaniv-at ${wanted.yanivAt} --value-net --export`,
@@ -368,7 +368,9 @@ export function Game() {
             Yaniv <span className="text-[#f2c75c]">יניב</span>
           </h1>
           <p className="mt-1 text-sm text-[#e7d7b8]/75">
-            You against a neural net that learned the game.{" "}
+            {gameById(game).net === "-handmade"
+              ? "You against a neural net whose weights were written by hand, not trained."
+              : "You against a neural net that learned the game."}{" "}
             {small ? `Small game: ${HAND_SIZE} cards, Yaniv at ${YANIV_LIMIT}.` : null}
           </p>
         </div>
