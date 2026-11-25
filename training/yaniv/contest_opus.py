@@ -39,6 +39,7 @@ def build(extras=(), **over):
 
 from training.yaniv.contest_opus_endgame import add_endgame_units  # noqa: E402
 from training.yaniv.contest_opus_mine import add_mine_units  # noqa: E402
+from training.yaniv.contest_opus_match import add_match_units  # noqa: E402
 
 # The blocks kept in the shipped net, each passed by play-outs against two opponents (results/contest-opus.md):
 #  - add_endgame_units: rule S, the swap. Yaniv legal, the opponent holds 3-4 cards, catch chance >= 0.005 and the
@@ -47,7 +48,11 @@ from training.yaniv.contest_opus_mine import add_mine_units  # noqa: E402
 #  - add_mine_units: TRIPLE. I hold a pair of R (R worth 4+) and the open card is an R: keep the pair, throw another
 #    card worth 4+, take the open R and throw all three next turn (+5, one card charge, on that row). Changed
 #    decisions: +3.4 a time against the counter, +2.9 against the trained net, ~0.045 times a round. 10 units.
-EXTRAS: list = [add_endgame_units, add_mine_units]
+#  - add_match_units: the cut veto. Do not call Yaniv when the won call could drop the opponent's score exactly
+#    onto 50 or 100 (it then falls to 0 / 50): judged from its known cards and 0-2 hidden cards. hm5 steers its own
+#    score onto the cuts, so this fires often against an hm5-like player: +6.8 points of matches head to head with
+#    hm5 (3,200 matches), about -1 (noise level) against the trained net and the counter. 31 units.
+EXTRAS: list = [add_endgame_units, add_mine_units, add_match_units]
 
 
 def main(path: Path = MODEL_PATH) -> None:

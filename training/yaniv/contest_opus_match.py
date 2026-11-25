@@ -7,7 +7,8 @@ Tools (tests, nothing here fits or searches weights):
     proposes another move B, the round is played to its end both ways on the same hidden cards and the record keeps
     dwin = P(win | scores after B) - P(win | scores after A) (table units) and the round-margin difference.
   - alt_* : the probes / rules tested (see results/contest-opus-logs/match.md).
-  - add_match_units(kit): the block kept (if any) for contest_opus.build(extras=[...]).
+  - add_match_units(kit): the block kept: no Yaniv call that drops the opponent's score onto a cut (31 units);
+    add_match_units_h01(kit): its narrower form (20 units). Pass to contest_opus.build(extras=[...]).
 
     python -m training.yaniv.contest_opus_match table
     python -m training.yaniv.contest_opus_match probe hm5 alt_flip 400 7100
@@ -381,7 +382,12 @@ def alt_cutopp_h2k(view, actions, a, ctx):
 
 # ---------------------------------------------------------------- the block
 VETO = 2000.0       # = 2 YBIG: takes a called Yaniv row (+YBIG) down to -YBIG, under every throw
-H2_RANGE = None     # (lo, hi) of d for the 2-hidden-card case, or None (set after the probe; see match.md)
+H2_RANGE = (0, 11)  # d range for the 2-hidden-card case (two low hidden cards, average <= 5.5): probe P5 / match.md
+
+
+def add_match_units_h01(kit) -> None:
+    """The narrower block (v1, 20 units): only 0 or 1 hidden opponent card. Neutral against non-steering opponents."""
+    add_match_units(kit, h2_range=False)
 
 
 def add_match_units(kit, h2_range=None) -> None:
@@ -395,7 +401,7 @@ def add_match_units(kit, h2_range=None) -> None:
     and the opponent's total (cut - opp_score) is above my points (else the call is caught and the opponent adds 0).
     Inputs: opp_score/120, known_pts/40, opp_cards/5, known_n/5, my_pts/40 - all integers after scaling, so every
     step below is exact (ramps one point wide)."""
-    h2 = h2_range if h2_range is not None else H2_RANGE
+    h2 = H2_RANGE if h2_range is None else h2_range
     hv = {"opp_cards": 5.0, "known_n": -5.0}                       # h = hidden cards, 0..5
     kit.unit(1, "mt_h1", {k: -v for k, v in hv.items()}, bias=1.0, note="relu(1 - h): [h == 0]")
     kit.unit(1, "mt_h2", {k: -v for k, v in hv.items()}, bias=2.0, note="relu(2 - h)")

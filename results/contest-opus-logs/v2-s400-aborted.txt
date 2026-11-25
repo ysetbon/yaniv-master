@@ -1,0 +1,2 @@
+vs hm5      yaniv-net-contest-opus: margin +0.18 a round, rounds won 4045/8000 (50.6%), Yaniv calls 4019 of which caught 256 (6.4%); matches 823-777 (51.4%, 95% range 49.0%-53.9%)  [51s]
+vs hm5      hm5: margin +0.00 a round, rounds won 4000/8000 (50.0%), Yaniv calls 3984 of which caught 265 (6.7%); matches 800-800 (50.0%, 95% range 47.6%-52.4%)  [106s]
