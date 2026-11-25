@@ -48,7 +48,8 @@ TWO_LIGHT = hm.TWO_LIGHT   # 0.5: a 2 counts as half a heavy card ... (bar)
 TWO_FULL = 1.0             # ... but as a whole one while both players hold 5 cards (RULE 1: on every position
                            # with 22 + a single worth 5+, throwing the 22 was worth +4.7 points at 5 v 5,
                            # +0.5 at 5 v 4, 0 at 4 v 5, -3 at 5 v 3; the trained net does it 90% / 55% / 60% / 15%)
-FEED5 = (0.5, 0.0)         # (flat, per point) for leaving face up a rank the opponent is known to hold: only
+CARD_5V5 = 8.0             # charge per heavy card while both hold 5 cards (the bar's CARD is 5 everywhere)
+FEED5 = hm.FEED         # (flat, per point) for leaving face up a rank the opponent is known to hold: only
                            # a tie-break between equal cards (RULE 2; the bar's is (1.0, 0.5) = 6 for a ten)
 
 
@@ -73,12 +74,21 @@ def add_throw_units(kit: Kit) -> None:
     for s, w in heavy.items():
         out[s] = out.get(s, 0.0) - CARD * w
 
-    # RULE 1: the 2s I hold after the move, counted only while the opponent holds 4-5 cards
-    # (my_cards is cards / 5, so 30 my_cards - 24 is 6 with 5 cards and 0 or less with fewer)
-    kit.unit(2, "twos_5v5", {"hand_2": 4.0, "twos_thrown": -1.0, "took_two_open": 1.0,
-                             "opp_has_5": 6.0, "my_cards": 30.0}, bias=-36.0,
-             note="2s in my hand after the move, only while both players hold 5 cards (nobody is near calling)")
+    # RULE 1: while both players hold 5 cards (nobody is near calling) a 2 is a heavy card like any other, and
+    # every heavy card is charged CARD_5V5 instead of CARD.
+    # (my_cards is cards / 5, so 6 opp_has_5 + 30 my_cards - 36 is 0 at 5 v 5 and -6 or less otherwise)
+    both5 = {"opp_has_5": 6.0, "my_cards": 30.0}
+    kit.unit(2, "twos_5v5", {"hand_2": 4.0, "twos_thrown": -1.0, "took_two_open": 1.0, **both5}, bias=-36.0,
+             note="2s in my hand after the move, only while both players hold 5 cards")
     out["twos_5v5"] = -CARD * (TWO_FULL - TWO_LIGHT)     # the rest of a heavy card's charge
+    if CARD_5V5 != CARD:
+        # heavy cards after the move with the 2s counted whole; a card taken onto its twin is not counted (it
+        # leaves with the twin next turn: the bar's PAIR_OPEN = CARD says the same)
+        full = {"n_kept": 5.0, "hand_A": -4.0, "hand_JOKER": -4.0, "light_thrown": 1.0,
+                "take_open": 1.0, "took_light_open": -1.0, "deck_heavy": 1.0, "pairs_open": -1.0}
+        kit.unit(2, "heavy_5v5", {**full, **both5}, bias=-36.0,
+                 note="heavy cards after the move (2s whole, a paired open card not counted), only at 5 v 5")
+        out["heavy_5v5"] = -(CARD_5V5 - CARD)
 
     kit.unit(1, "open_tell", {"open_pts": 10.0, "take_open": 10.0, "pairs_open": -10.0}, bias=-13.0,
              note="points above 3 of an open card taken that pairs nothing")
