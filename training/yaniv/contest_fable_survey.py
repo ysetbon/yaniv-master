@@ -74,3 +74,79 @@ if __name__ == "__main__":
     p.add_argument("--workers", type=int, default=2)
     a = p.parse_args()
     collect(a.hero, a.opp, a.rounds, a.seed, a.out, a.workers)
+
+
+# ---------------------------------------------------------------- targeted probes (cheap: few alternatives)
+def _find(actions, rank, count, draw):
+    for a in actions:
+        if a.kind == "play" and a.draw == draw and popcount(a.discard_mask) == count \
+                and rank_of(cards_from_mask(a.discard_mask)[0]) == rank:
+            return a
+    return None
+
+
+def probe_cand(view, actions, chosen, state):
+    """The candidate classes of the first survey, for a fresh-seed check:
+    triple   I hold exactly two of the open card's rank and the net does not take it onto them: throw the group
+             worth most among the other ranks, take the open card
+    refuse   the net takes an unpaired open card worth 3 or 4: same throw, deck
+    """
+    if chosen.kind == "yaniv":
+        return []
+    hand = cards_from_mask(view.my_hand)
+    ranks = [rank_of(c) for c in hand]
+    o = rank_of(view.discard[-1])
+    op = POINTS_OF[view.discard[-1]]
+    cr = rank_of(cards_from_mask(chosen.discard_mask)[0])
+    cn = popcount(chosen.discard_mask)
+    info = {"mc": len(hand), "oc": view.opp_size, "ply": view.ply, "op": op, "est": float(state_features(view)[94]) * 40,
+            "pts": mask_points(view.my_hand), "cr": cr, "cn": cn}
+    out = []
+    if ranks.count(o) == 2 and not (chosen.draw == "open" and cr != o):
+        others = {}
+        for c in hand:
+            if rank_of(c) != o:
+                others[rank_of(c)] = others.get(rank_of(c), 0) + POINTS_OF[c]
+        if others:
+            best = max(others, key=lambda r: (others[r], r))
+            a = _find(actions, best, ranks.count(best), "open")
+            if a:
+                out.append(("triple", a, info))
+    if chosen.draw == "open" and op in (3, 4) and stock_ok(view):
+        kept = [rank_of(c) for c in cards_from_mask(view.my_hand & ~chosen.discard_mask)]
+        if o not in kept:
+            a = _find(actions, cr, cn, "stock")
+            if a:
+                out.append(("refuse", a, info))
+    return out
+
+
+def stock_ok(view):
+    return view.stock_size > 0
+
+
+def probe_trained(view, actions, chosen, state):
+    """The trained net's move where it differs from the hero's (a look at another player's choices; no weight is
+    copied, nothing fitted)."""
+    from .contest_fable_lab import player
+    from .features import action_key
+
+    alt = player("trained")(view, actions, None)
+    if action_key(alt) == action_key(chosen):
+        return []
+    hand = cards_from_mask(view.my_hand)
+    ranks = sorted(rank_of(c) for c in hand)
+    unseen = [0] * 14
+    for c in cards_from_mask(pool_mask(view)):
+        unseen[rank_of(c)] += 1
+
+    def mv(a):
+        if a.kind == "yaniv":
+            return ("yaniv", 0, "none")
+        return (rank_of(cards_from_mask(a.discard_mask)[0]), popcount(a.discard_mask), a.draw)
+
+    f = state_features(view)
+    return [("trained", alt, {"hand": tuple(ranks), "open": rank_of(view.discard[-1]), "oc": view.opp_size,
+                              "ply": view.ply, "unseen": tuple(unseen), "est": float(f[94]) * 40.0,
+                              "assaf": float(f[95]), "ch": mv(chosen), "alt": mv(alt),
+                              "known": tuple(sorted(rank_of(c) for c in cards_from_mask(view.opp_known)))})]

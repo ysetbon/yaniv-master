@@ -1,0 +1,118 @@
+## which: hero hm5 vs trained, 20000 rounds, seed 11
+hero margin +0.193 a round
+records 65749, clean (open card is neither rank) 56766
+A. all alternatives, by opp cards
+  oc4                                                          n  24970 (1.2485 a round)  each  -0.713 +-0.095  a round -0.8898
+  oc5                                                          n  31796 (1.5898 a round)  each  -0.649 +-0.093  a round -1.0317
+B. by (opp cards, points alt - points played, unseen alt - unseen played)  [alt throws a, keeps c]
+  oc4 dp+ du+1                                                 n    716 (0.0358 a round)  each  -1.341 +-0.538  a round -0.0480
+  oc4 dp+ du+2                                                 n    383 (0.0192 a round)  each  -0.687 +-0.745  a round -0.0132
+  oc4 dp+ du+3                                                 n     35 (0.0018 a round)  each  +0.629 +-2.308  a round +0.0011
+  oc4 dp+ du-1                                                 n     91 (0.0046 a round)  each  -5.989 +-1.638  a round -0.0272
+  oc4 dp- du+0                                                 n  15635 (0.7817 a round)  each  -0.396 +-0.124  a round -0.3092
+  oc4 dp- du+1                                                 n   3948 (0.1974 a round)  each  -1.450 +-0.236  a round -0.2863
+  oc4 dp- du+2                                                 n   1120 (0.0560 a round)  each  -2.196 +-0.387  a round -0.1230
+  oc4 dp- du+3                                                 n    107 (0.0053 a round)  each  -2.757 +-1.271  a round -0.0147
+  oc4 dp- du-1                                                 n    209 (0.0104 a round)  each  -1.211 +-1.086  a round -0.0126
+  oc4 dp0 du+0                                                 n   2046 (0.1023 a round)  each  -0.062 +-0.315  a round -0.0063
+  oc4 dp0 du+1                                                 n    514 (0.0257 a round)  each  -1.247 +-0.516  a round -0.0321
+  oc4 dp0 du+2                                                 n     98 (0.0049 a round)  each  -0.327 +-1.062  a round -0.0016
+  oc4 dp0 du-1                                                 n     44 (0.0022 a round)  each  -7.659 +-2.205  a round -0.0169
+  oc5 dp+ du+0                                                 n     38 (0.0019 a round)  each  -0.737 +-3.111  a round -0.0014
+  oc5 dp+ du+1                                                 n    867 (0.0433 a round)  each  -1.546 +-0.547  a round -0.0670
+  oc5 dp+ du+2                                                 n    146 (0.0073 a round)  each  -0.486 +-1.144  a round -0.0036
+  oc5 dp+ du-1                                                 n    108 (0.0054 a round)  each  -8.981 +-1.750  a round -0.0485
+  oc5 dp- du+0                                                 n  22110 (1.1055 a round)  each  -0.368 +-0.115  a round -0.4072
+  oc5 dp- du+1                                                 n   2708 (0.1354 a round)  each  -2.144 +-0.322  a round -0.2903
+  oc5 dp- du+2                                                 n    496 (0.0248 a round)  each  -3.010 +-0.752  a round -0.0746
+  oc5 dp- du+3                                                 n     39 (0.0019 a round)  each  -3.205 +-1.995  a round -0.0063
+  oc5 dp- du-1                                                 n     79 (0.0040 a round)  each  -4.924 +-1.838  a round -0.0194
+  oc5 dp0 du+0                                                 n   4557 (0.2278 a round)  each  -0.280 +-0.215  a round -0.0639
+  oc5 dp0 du+1                                                 n    490 (0.0245 a round)  each  -0.906 +-0.593  a round -0.0222
+  oc5 dp0 du+2                                                 n     60 (0.0030 a round)  each  -2.117 +-1.831  a round -0.0063
+  oc5 dp0 du-1                                                 n     66 (0.0033 a round)  each  -3.652 +-2.136  a round -0.0120
+C. equal points only (two ten-cards etc.): unseen alt - unseen played, opp cards
+  oc4 du+0                                                     n   2046 (0.1023 a round)  each  -0.062 +-0.315  a round -0.0063
+  oc4 du+1                                                     n    514 (0.0257 a round)  each  -1.247 +-0.516  a round -0.0321
+  oc4 du+2                                                     n     98 (0.0049 a round)  each  -0.327 +-1.062  a round -0.0016
+  oc4 du-1                                                     n     44 (0.0022 a round)  each  -7.659 +-2.205  a round -0.0169
+  oc5 du+0                                                     n   4557 (0.2278 a round)  each  -0.280 +-0.215  a round -0.0639
+  oc5 du+1                                                     n    490 (0.0245 a round)  each  -0.906 +-0.593  a round -0.0222
+  oc5 du+2                                                     n     60 (0.0030 a round)  each  -2.117 +-1.831  a round -0.0063
+  oc5 du-1                                                     n     66 (0.0033 a round)  each  -3.652 +-2.136  a round -0.0120
+D. THE IDEA: alt throws a LOWER single and keeps the played (higher) one, by exact (dp, uc, ua), oc 5
+  dp-1 keep u1 throw u3                                        n     90 (0.0045 a round)  each  -3.911 +-1.785  a round -0.0176
+  dp-1 keep u2 throw u3                                        n    482 (0.0241 a round)  each  -1.411 +-0.697  a round -0.0340
+  dp-1 keep u3 throw u3                                        n   5157 (0.2579 a round)  each  -0.333 +-0.224  a round -0.0858
+  dp-2 keep u1 throw u3                                        n     98 (0.0049 a round)  each  -3.653 +-1.400  a round -0.0179
+  dp-2 keep u2 throw u3                                        n    542 (0.0271 a round)  each  -1.522 +-0.630  a round -0.0413
+  dp-2 keep u3 throw u3                                        n   4888 (0.2444 a round)  each  -0.266 +-0.233  a round -0.0651
+  dp-3 keep u1 throw u3                                        n    102 (0.0051 a round)  each  -2.971 +-1.690  a round -0.0152
+  dp-3 keep u2 throw u3                                        n    594 (0.0297 a round)  each  -3.049 +-0.746  a round -0.0906
+  dp-3 keep u3 throw u3                                        n   4474 (0.2237 a round)  each  -0.197 +-0.259  a round -0.0442
+  dp-4 keep u1 throw u3                                        n    110 (0.0055 a round)  each  -2.118 +-1.717  a round -0.0117
+  dp-4 keep u2 throw u3                                        n    543 (0.0272 a round)  each  -2.576 +-0.749  a round -0.0699
+  dp-4 keep u3 throw u3                                        n   4035 (0.2018 a round)  each  -0.861 +-0.281  a round -0.1737
+  dp-5 keep u1 throw u3                                        n     96 (0.0048 a round)  each  -2.573 +-1.776  a round -0.0123
+  dp-5 keep u2 throw u3                                        n    543 (0.0272 a round)  each  -2.013 +-0.760  a round -0.0546
+  dp-5 keep u3 throw u3                                        n   3546 (0.1773 a round)  each  -0.203 +-0.313  a round -0.0360
+D4. same, oc 4
+  dp-1 keep u1 throw u3                                        n    207 (0.0103 a round)  each  -3.116 +-0.863  a round -0.0323
+  dp-1 keep u2 throw u3                                        n    694 (0.0347 a round)  each  -0.810 +-0.542  a round -0.0281
+  dp-1 keep u3 throw u3                                        n   3953 (0.1976 a round)  each  -0.153 +-0.239  a round -0.0301
+  dp-2 keep u1 throw u3                                        n    229 (0.0115 a round)  each  -2.362 +-0.757  a round -0.0271
+  dp-2 keep u2 throw u3                                        n    754 (0.0377 a round)  each  -1.899 +-0.529  a round -0.0716
+  dp-2 keep u3 throw u3                                        n   3603 (0.1802 a round)  each  -0.210 +-0.248  a round -0.0377
+  dp-3 keep u1 throw u3                                        n    217 (0.0109 a round)  each  -1.908 +-0.977  a round -0.0207
+  dp-3 keep u2 throw u3                                        n    820 (0.0410 a round)  each  -1.277 +-0.495  a round -0.0524
+  dp-3 keep u3 throw u2                                        n     48 (0.0024 a round)  each  +1.042 +-1.733  a round +0.0025
+  dp-3 keep u3 throw u3                                        n   3153 (0.1577 a round)  each  -0.608 +-0.282  a round -0.0959
+  dp-4 keep u1 throw u3                                        n    235 (0.0118 a round)  each  -2.298 +-0.763  a round -0.0270
+  dp-4 keep u2 throw u3                                        n    861 (0.0430 a round)  each  -1.246 +-0.539  a round -0.0537
+  dp-4 keep u3 throw u2                                        n     67 (0.0034 a round)  each  -1.194 +-1.996  a round -0.0040
+  dp-4 keep u3 throw u3                                        n   2709 (0.1354 a round)  each  -0.702 +-0.296  a round -0.0950
+  dp-5 keep u1 throw u3                                        n    231 (0.0115 a round)  each  -1.364 +-0.951  a round -0.0158
+  dp-5 keep u2 throw u3                                        n    810 (0.0405 a round)  each  -1.954 +-0.534  a round -0.0791
+  dp-5 keep u3 throw u2                                        n     83 (0.0042 a round)  each  -0.964 +-1.796  a round -0.0040
+  dp-5 keep u3 throw u3                                        n   2199 (0.1100 a round)  each  -0.447 +-0.360  a round -0.0491
+E. idea, alt keeps the HIGHER and MORE LIVE single (pa < pc, uc > ua), by kept points class, dp, ply
+  oc4 keep 10 dp-3 ply4-7                                      n     32 (0.0016 a round)  each  -2.906 +-2.508  a round -0.0046
+  oc4 keep 10 dp-3 ply<4                                       n    130 (0.0065 a round)  each  +0.092 +-1.418  a round +0.0006
+  oc5 keep 10 dp-3 ply<4                                       n     45 (0.0022 a round)  each  -5.311 +-2.771  a round -0.0120
+F. alt keeps the higher single, by unseen copies of the KEPT rank only (uc), oc, ply<6 / 6+
+  oc4 keep u0 late                                             n     89 (0.0044 a round)  each  -1.831 +-1.387  a round -0.0081
+  oc4 keep u1 early                                            n    359 (0.0180 a round)  each  -1.552 +-0.677  a round -0.0278
+  oc4 keep u1 late                                             n    771 (0.0386 a round)  each  -2.499 +-0.466  a round -0.0964
+  oc4 keep u2 early                                            n   1900 (0.0950 a round)  each  -1.152 +-0.356  a round -0.1095
+  oc4 keep u2 late                                             n   2055 (0.1027 a round)  each  -1.720 +-0.312  a round -0.1767
+  oc4 keep u3 early                                            n  12648 (0.6324 a round)  each  -0.304 +-0.139  a round -0.1925
+  oc4 keep u3 late                                             n   3186 (0.1593 a round)  each  -0.792 +-0.266  a round -0.1261
+  oc5 keep u1 early                                            n    191 (0.0095 a round)  each  -1.696 +-1.273  a round -0.0162
+  oc5 keep u1 late                                             n    309 (0.0155 a round)  each  -3.780 +-0.914  a round -0.0584
+  oc5 keep u2 early                                            n   1902 (0.0951 a round)  each  -1.928 +-0.403  a round -0.1834
+  oc5 keep u2 late                                             n    813 (0.0406 a round)  each  -2.691 +-0.517  a round -0.1094
+  oc5 keep u3 early                                            n  21100 (1.0550 a round)  each  -0.318 +-0.118  a round -0.3357
+  oc5 keep u3 late                                             n   1089 (0.0544 a round)  each  -1.706 +-0.511  a round -0.0929
+G. known: the opponent is KNOWN to hold the played rank (kc>0) or the alt rank (ka>0)
+  oc4 kc0 ka1 dp+                                              n     96 (0.0048 a round)  each  -5.479 +-1.588  a round -0.0263
+  oc4 kc0 ka1 dp-                                              n     36 (0.0018 a round)  each  -8.500 +-3.084  a round -0.0153
+  oc4 kc0 ka1 dp0                                              n     44 (0.0022 a round)  each  -7.659 +-2.205  a round -0.0169
+  oc5 kc0 ka1 dp+                                              n    115 (0.0057 a round)  each  -8.974 +-1.711  a round -0.0516
+  oc5 kc0 ka1 dp-                                              n     90 (0.0045 a round)  each  -5.289 +-1.650  a round -0.0238
+  oc5 kc0 ka1 dp0                                              n     70 (0.0035 a round)  each  -4.143 +-2.067  a round -0.0145
+H. gone: copies gone of the played / alt rank, equal points
+  oc4 gc0 ga0                                                  n   2090 (0.1045 a round)  each  -0.222 +-0.313  a round -0.0232
+  oc4 gc1 ga0                                                  n    514 (0.0257 a round)  each  -1.247 +-0.516  a round -0.0321
+  oc4 gc2 ga0                                                  n     98 (0.0049 a round)  each  -0.327 +-1.062  a round -0.0016
+  oc5 gc0 ga0                                                  n   4619 (0.2309 a round)  each  -0.331 +-0.214  a round -0.0764
+  oc5 gc1 ga0                                                  n    489 (0.0244 a round)  each  -0.908 +-0.595  a round -0.0222
+  oc5 gc2 ga0                                                  n     59 (0.0029 a round)  each  -2.153 +-1.862  a round -0.0063
+I. open card IS the alt's rank and it lies open (alt throws the open card's twin), by draw
+  oc4 draw open dp+                                            n   1467 (0.0733 a round)  each  -4.464 +-0.452  a round -0.3275
+  oc4 draw open dp-                                            n   2014 (0.1007 a round)  each  -6.468 +-0.368  a round -0.6513
+  oc4 draw open dp0                                            n    506 (0.0253 a round)  each  -5.502 +-0.743  a round -0.1392
+  oc5 draw open dp+                                            n   1636 (0.0818 a round)  each  -5.392 +-0.443  a round -0.4410
+  oc5 draw open dp-                                            n   1828 (0.0914 a round)  each  -5.346 +-0.416  a round -0.4886
+  oc5 draw open dp0                                            n   1530 (0.0765 a round)  each  -4.003 +-0.447  a round -0.3062
+J. open card is the PLAYED rank
+

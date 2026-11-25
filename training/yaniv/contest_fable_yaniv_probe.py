@@ -7,16 +7,17 @@ alternative moves; nothing is fitted here.
   - the hero plays on: alternative  call.
 Every record carries the position (std_info + extras) and whether a call would be caught (true hands).
 
-    python -m training.yaniv.contest_fable_yaniv_probe run OPP N SEED [HERO]   -> scratch pickle
+    python -m training.yaniv.contest_fable_yaniv_probe run OPP N SEED [TAG]   -> scratch pickle (hero: env FABLE_YANIV_HERO, default hm5)
 """
 
 from __future__ import annotations
 
+import os
 import pickle
 import sys
 from pathlib import Path
 
-HERO = "hm5"
+HERO = os.environ.get("FABLE_YANIV_HERO", "hm5")   # the net whose best throw `net_throw` names
 SCRATCH = Path("/tmp/claude-0/-home-user-yaniv-master/ca258bc3-d453-5237-b2d9-a66c415800ab/scratchpad")
 
 
@@ -107,9 +108,8 @@ if __name__ == "__main__":
     from .contest_fable_lab import paired
 
     opp, n, seed = sys.argv[2], int(sys.argv[3]), int(sys.argv[4])
-    hero = sys.argv[5] if len(sys.argv) > 5 else HERO
-    recs, stats = paired(hero, opp, "contest_fable_yaniv_probe:calls", n, seed, workers=2)
-    tag = hero if hero in ("hm5",) else "alt"
+    tag = sys.argv[5] if len(sys.argv) > 5 else "hm5"     # FABLE_YANIV_HERO=<player string> names another hero
+    recs, stats = paired(HERO, opp, "contest_fable_yaniv_probe:calls", n, seed, workers=2)
     path = SCRATCH / f"calls_{tag}_{opp}_{seed}.pkl"
     with open(path, "wb") as fh:
         pickle.dump((recs, stats), fh)

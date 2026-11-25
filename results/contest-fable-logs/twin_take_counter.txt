@@ -1,0 +1,31 @@
+## take: hero hm5 vs counter, 20000 rounds, seed 12
+hero margin +1.477 a round
+records 17066; gain = (the other draw) - (the played draw)
+by (opp cards, played draw, twin's points class)
+  oc4 played TAKE twin 10                                      n   1747 (0.0873 a round)  each  -4.853 +-0.475  a round -0.4239
+  oc4 played TAKE twin 5-7                                     n   2635 (0.1318 a round)  each  -5.288 +-0.382  a round -0.6967
+  oc4 played TAKE twin 8-9                                     n   1351 (0.0675 a round)  each  -4.963 +-0.541  a round -0.3352
+  oc4 played TAKE twin <5                                      n   1352 (0.0676 a round)  each  -3.234 +-0.550  a round -0.2187
+  oc5 played TAKE twin 10                                      n   4308 (0.2154 a round)  each  -4.228 +-0.294  a round -0.9107
+  oc5 played TAKE twin 5-7                                     n   2419 (0.1210 a round)  each  -4.809 +-0.397  a round -0.5817
+  oc5 played TAKE twin 8-9                                     n   2066 (0.1033 a round)  each  -4.033 +-0.426  a round -0.4166
+  oc5 played TAKE twin <5                                      n   1188 (0.0594 a round)  each  -4.811 +-0.574  a round -0.2858
+by exact points of the twin, played draw (oc 4-5)
+  played TAKE twin  1                                          n    181 (0.0091 a round)  each  -5.702 +-1.549  a round -0.0516
+  played TAKE twin  2                                          n    286 (0.0143 a round)  each  -1.913 +-1.198  a round -0.0273
+  played TAKE twin  3                                          n    638 (0.0319 a round)  each  -3.201 +-0.839  a round -0.1021
+  played TAKE twin  4                                          n   1435 (0.0717 a round)  each  -4.507 +-0.510  a round -0.3234
+  played TAKE twin  5                                          n   1682 (0.0841 a round)  each  -5.165 +-0.465  a round -0.4344
+  played TAKE twin  6                                          n   1748 (0.0874 a round)  each  -4.962 +-0.478  a round -0.4337
+  played TAKE twin  7                                          n   1624 (0.0812 a round)  each  -5.053 +-0.487  a round -0.4103
+  played TAKE twin  8                                          n   1734 (0.0867 a round)  each  -4.403 +-0.460  a round -0.3817
+  played TAKE twin  9                                          n   1683 (0.0842 a round)  each  -4.398 +-0.487  a round -0.3701
+  played TAKE twin 10                                          n   6055 (0.3028 a round)  each  -4.409 +-0.250  a round -1.3347
+high twins (>= 8), by what I throw this turn (single / set) and ply
+  played TAKE throw n1 ply4-7                                  n   2126 (0.1063 a round)  each  -4.444 +-0.416  a round -0.4724
+  played TAKE throw n1 ply8+                                   n    660 (0.0330 a round)  each  -2.986 +-0.756  a round -0.0985
+  played TAKE throw n1 ply<4                                   n   4499 (0.2250 a round)  each  -4.013 +-0.301  a round -0.9026
+  played TAKE throw n2 ply4-7                                  n    395 (0.0198 a round)  each  -6.263 +-0.899  a round -0.1237
+  played TAKE throw n2 ply8+                                   n     47 (0.0024 a round)  each  -7.830 +-2.560  a round -0.0184
+  played TAKE throw n2 ply<4                                   n   1698 (0.0849 a round)  each  -5.505 +-0.449  a round -0.4673
+  played TAKE throw n3 ply<4                                   n     42 (0.0021 a round)  each  -2.619 +-2.370  a round -0.0055
