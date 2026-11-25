@@ -133,7 +133,10 @@ def fix_catch(kit: Kit, mode: str, k3: float = 0.0) -> None:
 
 
 def build(KSLOPE: float = KSLOPE, KKNEE: float = KKNEE, OPEN_LOW: float = OPEN_LOW, FEW_ALPHA: float = 1.0,
-          PI_TABLE: str = "", CATCH_MODE: str = "", CATCH_K3: float = 0.0, **over):
+          PI_TABLE: str = "", CATCH_MODE: str = "", CATCH_K3: float = 0.0, yaniv: str = "hm5",
+          triple: bool = False, **over):
+    """`yaniv` / `triple` as in contest_fable.build (the lead's later additions); the defaults here are hm5's,
+    which is what every measurement in reads.md used."""
     if PI_TABLE == "avg":
         over = {"PI": {c: list(v) for c, v in PI_AVG.items()}, **over}
     cfg = cf.config(**over)
@@ -144,7 +147,10 @@ def build(KSLOPE: float = KSLOPE, KKNEE: float = KKNEE, OPEN_LOW: float = OPEN_L
         add_few_alpha(kit, cfg, FEW_ALPHA)
     if CATCH_MODE:
         fix_catch(kit, CATCH_MODE, CATCH_K3)
-    reasons = cf.add_yaniv_units(kit)
+    if triple:
+        cf.add_triple_units(kit, cf.TRIP, cf.TRIP_MIN, cf.TRIP_OPP, cf.TRIP_MIN5)
+    old = getattr(cf, "add_yaniv_units_hm5", None)
+    reasons = old(kit) if (yaniv == "hm5" and old) else cf.add_yaniv_units(kit)
     reasons += cf.add_score_units(kit)
     cf.finish_yaniv(kit, reasons)
     cf.fold_output(kit)
@@ -209,3 +215,9 @@ def probe_second(view, actions, chosen, state):
                 gap=float(scores[order[0]] - scores[order[1]]),
                 reg={5: "5", 4: "4", 3: "3"}.get(info["oc"], "12"), open_low=int(info["open"] <= 2 and view.ply > 0))
     return [("second", alt, info)]
+
+
+def best(**over):
+    """The thread's recommended design: hm5 with the catch bonus paid only when I keep >= 2 cards (562 units).
+    The est_eff read (design K) is off: it did not pay."""
+    return build(**{"KSLOPE": 0.0, "OPEN_LOW": 0.0, "CATCH_MODE": "k3", **over})

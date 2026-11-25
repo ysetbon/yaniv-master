@@ -448,3 +448,43 @@ By kind: same throw, I draw from the deck where hm5 takes the open card (1,286 /
 Kit.trace check of k3 (scratch chk2.py, 300 rounds, 4,200 decisions, 32,826 throw rows, 2,268 with kept <= 1):
 every catch unit is 0 on kept <= 1 rows and equal to hm5's on kept >= 2 rows (0 violations; output difference
 on kept >= 2 rows and net-against-trace < 3e-4); the best move differs from hm5's at 45 decisions.
+
+## 3. Duels of the best design (k3), seed 31, 20,000 rounds and 6,000 matches each (results in reads-duels.txt)
+
+`python -m training.yaniv.contest_fable_lab duel 'py:contest_fable_reads.build@{"KSLOPE":0,"OPEN_LOW":0,"CATCH_MODE":"k3"}' hm5 trained counter --rounds 20000 --matches 6000 --seed 31 --workers 2`
+(the same net: `py:contest_fable_reads.best`, 562 hidden units, layers [125, 220, 100, 66, 35, 33, 53, 29, 26, 1])
+
+| opp | margin a round | rounds won | caught | matches |
+|---|---|---|---|---|
+| hm5 (head to head) | +0.043 +-0.029 | 50.5% | 6.0% | 3020-2980 (50.3%, 95% 49.1-51.6) |
+| trained | +0.223 +-0.082 | 52.1% | 6.8% | 3741-2259 (62.4%, 95% 61.1-63.6) |
+| counter | +1.699 +-0.097 | 56.2% | 4.6% | 4223-1777 (70.4%, 95% 69.2-71.5) |
+
+hm5's own baselines (seed 1, 20,000 rounds / 4,000 matches, baselines.txt): trained -0.145 +-0.081, 61.5%;
+counter +1.616 +-0.097, 71.7%. Different seeds, so only the head-to-head line is a paired comparison.
+
+Reading: the paired test says +0.10 a round against hm5 and trained (2.9-3.1 se each on a fresh seed) and +0.04
+against the counter; the head-to-head duel shows +0.04 +-0.03 and no measurable match gain (50.3%). The gain is
+real but small: about 0.1 point a round at most, under 1 point of matches.
+
+## 4. Summary
+
+- Reads that exist (all three opponents): my own card count after the move (strongest), a low open card
+  (A/2/joker) just thrown, a low open card against 5 cards, and "it knows the card I took".
+- Feeding the better P(call) into the plan term does NOT improve throws (design K: neutral to worse).
+- The one place the read pays is the catch bonus, which hm5 pays in situations where the catch cannot happen
+  (I hold 1-2 cards, especially after taking the open card). Gating it on "I keep >= 2 cards" gains ~0.1 a round
+  in paired tests against hm5 and trained. Removing it altogether (saves 45 units) gains about half of that
+  (it is still worth something with 3+ cards).
+- Not built / not tested: the 5-card low-open-card signal (base rate too small to move a throw), per-opponent PI
+  rows (PI_TABLE="avg" exists in the module but was never run), FEW_ALPHA (exists, never run), CATCH_K3 (exists,
+  never run). Usage limit: stopped here on the lead's instruction.
+
+## 5. Note on the base net (added at the end)
+
+contest_fable.py changed while I worked (commit 4ee183e: new Yaniv rule, triple take, 574 units). Everything above
+was measured on the hm5-identical base. `contest_fable_reads.build` / `best` now take `yaniv="hm5"`,
+`triple=False` as defaults so that `py:contest_fable_reads.best` is still the measured net (562 units; checked:
+the neutral build makes hm5's move at 2,624 of 2,624 decisions). `best(yaniv="new", triple=True)` puts the catch
+gate on the lead's current net (578 units, +4 on 574); that combination has NOT been played.
+To merge by hand: call `contest_fable_reads.fix_catch(kit, "k3")` right after `add_throw_units(kit, cfg)`.

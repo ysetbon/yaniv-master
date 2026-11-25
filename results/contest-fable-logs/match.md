@@ -213,3 +213,8 @@ decisions of seat 0, FULL's move compared with hm5's, Kit.trace on the unexplain
 of them with the deny predicate true (the other 5 on the 0.5-point ramp at the edge), 2 predicate-true calls kept
 (edge). 158 throw -> other throw: 78 open takes landing on a cut, 80 deck draws that can land on a cut, 0 other.
 7 throw -> call, all 7 "out if I lose, assaf < 0.15". 4 of 5,988 decisions at low scores differ (deny).
+
+## 4. Duels (mirrored pairs, `contest_fable_lab duel ... --workers 2 --log match_duels.txt`, seed 31)
+
+    FULL v hm5:  rounds from 0-0 (20,000): margin +0.000 +-0.000, 50.0% (play from 0-0 is unchanged, as designed);
+                 matches 5647-4353 of 10,000 = 56.5% (95% 55.5-57.4)                      <- +6.5 points head to head
