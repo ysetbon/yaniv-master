@@ -1,0 +1,4 @@
+counter2 against counter: margin +1.54 ±0.34, rounds won 57.0% (55.8%-58.3%), my calls caught 120/3268 (3.7%), its calls caught 272/2731 (10.0%); matches 1052-448 (70.1%, 67.8%-72.4%)  [22s]
+counter against counter: margin +0.00 ±0.00, rounds won 50.0% (48.7%-51.2%), my calls caught 212/2992 (7.1%), its calls caught 212/2992 (7.1%); matches 750-750 (50.0%, 47.5%-52.5%)  [43s]
+public/model/yaniv-net.json against counter: margin +1.60 ±0.32, rounds won 55.0% (53.8%-56.3%), my calls caught 139/3089 (4.5%), its calls caught 351/2910 (12.1%); matches 929-571 (61.9%, 59.4%-64.4%)  [67s]
+public/model/yaniv-net-5cards-handmade.json against counter: margin +1.42 ±0.31, rounds won 55.2% (54.0%-56.5%), my calls caught 131/3167 (4.1%), its calls caught 273/2826 (9.7%); matches 1068-432 (71.2%, 68.9%-73.4%)  [89s]

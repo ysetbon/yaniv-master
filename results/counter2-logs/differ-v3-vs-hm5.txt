@@ -1,0 +1,133 @@
+counter2 against public/model/yaniv-net-5cards-handmade.json, 20000 rounds, 153321 decisions; the other player: public/model/yaniv-net-5cards-handmade.json
+gain = result with the other's move minus result with counter2's move, both played out by counter2
+| kind of difference | n | a round | mean gain | ±95% | gain a round |
+|---|---|---|---|---|---|
+| ALL | 29405 | 1.470 | -0.38 | 0.19 | -0.559 |
+| the other throws the higher single | 8898 | 0.445 | -0.53 | 0.36 | -0.235 |
+| the other throws the higher single | opp 5 cards | 8032 | 0.402 | -0.55 | 0.39 | -0.219 |
+| the other calls, counter2 throws | 6518 | 0.326 | -0.50 | 0.46 | -0.163 |
+| the other calls, counter2 throws | opp 3 cards | my cards 2 | 1611 | 0.081 | -1.91 | 0.94 | -0.154 |
+| the other calls, counter2 throws | opp 3 cards | my cards 1 | 1057 | 0.053 | -2.60 | 0.97 | -0.138 |
+| the other throws a set, not a single, other draw too | 708 | 0.035 | -3.69 | 1.33 | -0.131 |
+| same throw, the other takes the open card (3-5) | 1855 | 0.093 | -1.13 | 0.78 | -0.105 |
+| the other throws a set, not a single, other draw too | opp 5 cards | 404 | 0.020 | -4.66 | 1.84 | -0.094 |
+| the other calls, counter2 throws | my total 4 | risk 0.2-0.3 | 237 | 0.012 | -7.94 | 2.81 | -0.094 |
+| counter2 throws a set, not a single | 1482 | 0.074 | +1.26 | 0.89 | +0.093 |
+| the other calls, counter2 throws | opp 4 cards | my cards 2 | 832 | 0.042 | -2.23 | 1.30 | -0.093 |
+| the other calls, counter2 throws | my total 4 | risk 0.1-0.15 | 393 | 0.020 | -4.38 | 1.92 | -0.086 |
+| the other throws the higher single | mine 4x1 stock, other 10x1 stock | 1036 | 0.052 | -1.64 | 1.04 | -0.085 |
+| counter2 throws a set, not a single | opp 4 cards | 344 | 0.017 | +4.80 | 2.02 | +0.083 |
+| the other calls, counter2 throws | opp 3 cards | my cards 4 | 305 | 0.015 | +5.01 | 2.51 | +0.076 |
+| the other throws the higher single | mine 3x1 stock, other 10x1 stock | 1531 | 0.077 | -0.95 | 0.93 | -0.073 |
+| the other calls, counter2 throws | opp 3 cards | my cards 3 | 816 | 0.041 | +1.42 | 1.42 | +0.058 |
+| the other calls, counter2 throws | my total 4 | risk 0.06-0.1 | 169 | 0.008 | -6.21 | 2.92 | -0.052 |
+| the other calls, counter2 throws | my total 4 | risk 0.15-0.2 | 260 | 0.013 | -3.47 | 2.32 | -0.045 |
+| same throw, counter2 takes the open card (3-5) | 2311 | 0.116 | -0.38 | 0.68 | -0.044 |
+| same throw, the other takes the open card (3-5) | opp 3 cards | 502 | 0.025 | -1.60 | 1.49 | -0.040 |
+| the other throws a set, not a single, other draw too | opp 4 cards | 225 | 0.011 | -3.43 | 2.26 | -0.039 |
+| the other calls, counter2 throws | opp 2 cards | my cards 2 | 326 | 0.016 | +2.34 | 1.70 | +0.038 |
+| the other throws a set, not a single, other draw too | set of 10s, single 6-10 | 129 | 0.006 | -5.89 | 3.29 | -0.038 |
+| same throw, the other takes the open card (3-5) | opp 1 cards | 278 | 0.014 | -2.65 | 1.39 | -0.037 |
+| same throw, the other takes the open card (3-5) | mine 10x1 stock, other 10x1 open | 595 | 0.030 | -1.12 | 1.47 | -0.033 |
+| the other throws the higher set | opp 5 cards | 419 | 0.021 | -1.54 | 1.33 | -0.032 |
+| the other calls, counter2 throws | my total 6 | risk 0.1-0.15 | 261 | 0.013 | +2.43 | 2.57 | +0.032 |
+| the other calls, counter2 throws | my total 3 | risk 0.1-0.15 | 281 | 0.014 | -2.13 | 2.05 | -0.030 |
+| another rank of the same points | opp 5 cards | 1247 | 0.062 | +0.48 | 0.73 | +0.030 |
+| the other calls, counter2 throws | my total 7 | risk 0.1-0.15 | 245 | 0.012 | +2.32 | 2.56 | +0.028 |
+| same throw, counter2 takes the open card (3-5) | opp 4 cards | 304 | 0.015 | -1.82 | 1.86 | -0.028 |
+| the other throws the higher single | mine 5x1 open, other 10x1 open | 396 | 0.020 | -1.39 | 1.64 | -0.028 |
+| counter2 throws the higher single | 770 | 0.038 | +0.70 | 0.91 | +0.027 |
+| the other calls, counter2 throws | my total 6 | risk 0.2-0.3 | 249 | 0.012 | +2.12 | 2.77 | +0.026 |
+| the other calls, counter2 throws | my total 5 | risk 0.15-0.2 | 313 | 0.016 | -1.60 | 2.28 | -0.025 |
+| same throw, counter2 takes the open card (3-5) | opp 5 cards | 278 | 0.014 | -1.79 | 2.05 | -0.025 |
+| the other calls, counter2 throws | my total 5 | risk 0.2-0.3 | 290 | 0.015 | -1.71 | 2.59 | -0.025 |
+| the other throws a set, not a single | opp 4 cards | 665 | 0.033 | +0.74 | 1.27 | +0.025 |
+| another rank of the same points, other draw too | 209 | 0.010 | -2.35 | 2.89 | -0.025 |
+| the other calls, counter2 throws | my total 7 | risk 0.15-0.2 | 250 | 0.013 | +1.96 | 2.79 | +0.024 |
+| another rank of the same points, other draw too | mine 10x1 stock, other 10x1 open | 206 | 0.010 | -2.36 | 2.93 | -0.024 |
+| counter2 throws a set, not a single | set of 0s, single 10+ | 111 | 0.006 | +4.32 | 3.88 | +0.024 |
+| the other throws the higher set | 511 | 0.026 | -0.94 | 1.20 | -0.024 |
+| the other throws the higher single | mine 9x1 open, other 10x1 open | 115 | 0.006 | -4.12 | 2.82 | -0.024 |
+| another rank of the same points | opp 4 cards | 1864 | 0.093 | -0.25 | 0.60 | -0.023 |
+| the other throws the higher single | opp 4 cards | 525 | 0.026 | -0.88 | 1.23 | -0.023 |
+| same throw, the other takes the open card (3-5) | mine 10x2 stock, other 10x2 open | 232 | 0.012 | -1.88 | 2.48 | -0.022 |
+| the other calls, counter2 throws | opp 4 cards | my cards 3 | 390 | 0.019 | +1.08 | 2.21 | +0.021 |
+| same throw, counter2 takes the open card (3-5) | mine 8x1 open, other 8x1 stock | 140 | 0.007 | -2.95 | 2.76 | -0.021 |
+| the other calls, counter2 throws | my total 2 | risk 0.03-0.06 | 105 | 0.005 | +3.86 | 1.98 | +0.020 |
+| same throw, the other takes the open card (3-5) | opp 2 cards | 213 | 0.011 | -1.89 | 1.62 | -0.020 |
+| counter2 throws the higher single | opp 4 cards | 358 | 0.018 | +1.11 | 1.39 | +0.020 |
+| the other throws a set, not a single | 1362 | 0.068 | +0.29 | 0.87 | +0.020 |
+| the other throws a set, not a single | set of 3s, single 6-10 | 142 | 0.007 | +2.65 | 2.31 | +0.019 |
+| the other calls, counter2 throws | opp 4 cards | my cards 1 | 567 | 0.028 | -0.64 | 1.30 | -0.018 |
+| another rank of the same points | mine 10x1 open, other 10x1 open | 840 | 0.042 | +0.41 | 0.98 | +0.017 |
+| the other calls, counter2 throws | my total 2 | risk 0.1-0.15 | 186 | 0.009 | +1.81 | 1.87 | +0.017 |
+| the other calls, counter2 throws | my total 3 | risk 0.06-0.1 | 205 | 0.010 | -1.57 | 1.95 | -0.016 |
+| same throw, the other takes the open card (3-5) | mine 2x1 stock, other 2x1 open | 122 | 0.006 | -2.52 | 2.03 | -0.015 |
+| another rank of the same points | 3565 | 0.178 | +0.09 | 0.43 | +0.015 |
+| same throw, counter2 takes the open card (3-5) | mine 7x1 open, other 7x1 stock | 156 | 0.008 | -1.90 | 2.64 | -0.015 |
+| the other throws a set, not a single | opp 5 cards | 501 | 0.025 | -0.57 | 1.42 | -0.014 |
+| the other throws the higher single | mine 8x1 open, other 10x1 open | 150 | 0.007 | -1.85 | 2.85 | -0.014 |
+| another rank of the same points, other draw too | opp 4 cards | 174 | 0.009 | -1.59 | 3.17 | -0.014 |
+| same throw, counter2 takes the open card (3-5) | mine 6x1 open, other 6x1 stock | 166 | 0.008 | +1.63 | 2.62 | +0.013 |
+| the other throws the higher single | mine 4x1 open, other 10x1 open | 580 | 0.029 | -0.45 | 1.36 | -0.013 |
+| the other throws the higher single | mine 3x1 open, other 10x1 open | 696 | 0.035 | -0.36 | 1.31 | -0.013 |
+| the other calls, counter2 throws | my total 5 | risk 0.1-0.15 | 347 | 0.017 | -0.73 | 2.05 | -0.013 |
+| same throw, counter2 takes the open card (3-5) | opp 2 cards | 601 | 0.030 | +0.42 | 1.33 | +0.013 |
+| counter2 throws the higher single, other draw too | 383 | 0.019 | -0.65 | 1.53 | -0.012 |
+| counter2 throws a set, not a single | set of 1s, single 6-10 | 271 | 0.014 | +0.87 | 2.19 | +0.012 |
+| the other calls, counter2 throws | my total 2 | risk 0.15-0.2 | 100 | 0.005 | -2.34 | 3.42 | -0.012 |
+| the other throws a set, not a single | opp 3 cards | 170 | 0.009 | +1.36 | 2.40 | +0.012 |
+| same throw, counter2 takes the open card (3-5) | mine 10x1 open, other 10x1 stock | 623 | 0.031 | -0.36 | 1.32 | -0.011 |
+| the other throws the higher single | opp 3 cards | 195 | 0.010 | +1.14 | 1.56 | +0.011 |
+| the other throws the higher single | mine 7x1 open, other 10x1 open | 196 | 0.010 | +1.13 | 2.42 | +0.011 |
+| the other throws a set, not a single | set of 2s, single 10+ | 278 | 0.014 | -0.79 | 2.03 | -0.011 |
+| the other calls, counter2 throws | my total 3 | risk 0.03-0.06 | 110 | 0.005 | +1.97 | 2.10 | +0.011 |
+| the other throws the higher single | mine 3x1 stock, other 9x1 stock | 216 | 0.011 | +0.90 | 2.55 | +0.010 |
+| the other throws a set, not a single | set of 2s, single 6-10 | 387 | 0.019 | +0.50 | 1.75 | +0.010 |
+| the other calls, counter2 throws | my total 2 | risk 0.06-0.1 | 126 | 0.006 | +1.46 | 2.23 | +0.009 |
+| another rank of the same points | opp 3 cards | 399 | 0.020 | +0.46 | 1.27 | +0.009 |
+| the other calls, counter2 throws | my total 3 | risk <0.03 | 175 | 0.009 | +1.03 | 0.99 | +0.009 |
+| the other throws a set, not a single | set of 3s, single 10+ | 136 | 0.007 | +1.29 | 2.35 | +0.009 |
+| same throw, counter2 takes the open card (3-5) | mine 3x1 open, other 3x1 stock | 219 | 0.011 | +0.79 | 1.83 | +0.009 |
+| the other throws the higher single | mine 3x1 stock, other 8x1 stock | 130 | 0.006 | +1.33 | 3.05 | +0.009 |
+| the other throws the higher single | mine 5x1 stock, other 10x1 stock | 658 | 0.033 | -0.26 | 1.33 | -0.008 |
+| counter2 throws a set, not a single | set of 1s, single <3 | 197 | 0.010 | +0.83 | 1.82 | +0.008 |
+| counter2 throws a set, not a single | set of 1s, single 3-6 | 134 | 0.007 | +1.18 | 2.59 | +0.008 |
+| counter2 throws the higher single | opp 5 cards | 202 | 0.010 | +0.78 | 1.97 | +0.008 |
+| the other throws the higher single, other draw too | opp 5 cards | 120 | 0.006 | +1.29 | 3.49 | +0.008 |
+| the other calls, counter2 throws | opp 2 cards | my cards 3 | 141 | 0.007 | +1.09 | 3.17 | +0.008 |
+| the other calls, counter2 throws | my total 3 | risk 0.15-0.2 | 231 | 0.012 | -0.66 | 2.25 | -0.008 |
+| the other throws the higher single | mine 6x1 open, other 10x1 open | 289 | 0.014 | -0.49 | 1.91 | -0.007 |
+| the other throws the higher single | mine 3x1 stock, other 7x1 stock | 105 | 0.005 | -1.30 | 3.54 | -0.007 |
+| counter2 throws a set, not a single | opp 5 cards | 726 | 0.036 | +0.18 | 1.34 | +0.007 |
+| same throw, the other takes the open card (3-5) | opp 4 cards | 856 | 0.043 | -0.16 | 1.32 | -0.007 |
+| the other calls, counter2 throws | my total 5 | risk 0.06-0.1 | 113 | 0.006 | -1.13 | 3.33 | -0.006 |
+| the other throws the higher single | opp 2 cards | 133 | 0.007 | -0.95 | 1.81 | -0.006 |
+| same throw, counter2 takes the open card (6+) | 264 | 0.013 | +0.47 | 1.62 | +0.006 |
+| same throw, the other takes the open card (3-5) | mine 9x1 stock, other 9x1 open | 121 | 0.006 | -1.00 | 3.08 | -0.006 |
+| the other throws the higher single | mine 6x1 stock, other 10x1 stock | 470 | 0.024 | +0.25 | 1.56 | +0.006 |
+| counter2 throws a set, not a single | set of 2s, single 6-10 | 106 | 0.005 | -1.07 | 2.49 | -0.006 |
+| the other calls, counter2 throws | my total 6 | risk 0.15-0.2 | 246 | 0.012 | +0.46 | 2.49 | +0.006 |
+| the other throws the higher single | mine 4x1 stock, other 8x1 stock | 114 | 0.006 | -0.90 | 3.30 | -0.005 |
+| counter2 throws a set, not a single | opp 3 cards | 168 | 0.008 | -0.55 | 2.22 | -0.005 |
+| the other throws the higher single | mine 4x1 stock, other 9x1 stock | 108 | 0.005 | -0.81 | 3.37 | -0.004 |
+| counter2 throws the higher single, other draw too | opp 4 cards | 105 | 0.005 | +0.81 | 3.07 | +0.004 |
+| the other calls, counter2 throws | my total 7 | risk 0.2-0.3 | 273 | 0.014 | -0.30 | 2.64 | -0.004 |
+| another rank of the same points | mine 10x1 stock, other 10x1 stock | 2698 | 0.135 | -0.03 | 0.48 | -0.004 |
+| the other throws the higher single, other draw too | 224 | 0.011 | +0.33 | 2.34 | +0.004 |
+| the other calls, counter2 throws | opp 2 cards | my cards 1 | 245 | 0.012 | -0.29 | 1.82 | -0.004 |
+| the other throws the higher single | mine 9x1 stock, other 10x1 stock | 203 | 0.010 | -0.34 | 2.11 | -0.003 |
+| same throw, counter2 takes the open card (3-5) | opp 1 cards | 131 | 0.007 | -0.47 | 1.90 | -0.003 |
+| same throw, counter2 takes the open card (3-5) | mine 9x1 open, other 9x1 stock | 141 | 0.007 | -0.43 | 2.97 | -0.003 |
+| the other throws the higher single | mine 8x1 stock, other 10x1 stock | 188 | 0.009 | -0.31 | 2.27 | -0.003 |
+| same throw, counter2 takes the open card (3-5) | mine 5x1 open, other 5x1 stock | 129 | 0.006 | -0.43 | 3.00 | -0.003 |
+| the other calls, counter2 throws | my total 2 | risk 0.2-0.3 | 158 | 0.008 | +0.25 | 2.34 | +0.002 |
+| counter2 throws a set, not a single | opp 2 cards | 207 | 0.010 | +0.15 | 1.64 | +0.002 |
+| counter2 throws a set, not a single | set of 1s, single 10+ | 508 | 0.025 | -0.06 | 1.60 | -0.002 |
+| the other throws the higher single | mine 7x1 stock, other 10x1 stock | 305 | 0.015 | +0.08 | 1.93 | +0.001 |
+| same throw, counter2 takes the open card (3-5) | opp 3 cards | 997 | 0.050 | -0.02 | 1.06 | -0.001 |
+| the other calls, counter2 throws | my total 3 | risk 0.2-0.3 | 219 | 0.011 | -0.05 | 2.31 | -0.001 |
+| the other calls, counter2 throws | my total 4 | risk 0.03-0.06 | 118 | 0.006 | +0.08 | 2.40 | +0.000 |
+| same throw, the other takes the open card (0-2) | 121 | 0.006 | -0.05 | 2.59 | -0.000 |
+| counter2 throws the higher single | opp 3 cards | 133 | 0.007 | +0.01 | 1.77 | +0.000 |
+| same throw, counter2 takes the open card (6+) | opp 4 cards | 126 | 0.006 | -0.01 | 2.81 | -0.000 |

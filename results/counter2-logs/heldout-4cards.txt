@@ -1,0 +1,6 @@
+counter2 against counter: margin +1.35 ±0.19, rounds won 56.1% (55.4%-56.8%), my calls caught 373/10668 (3.5%), its calls caught 918/9327 (9.8%); matches 2774-1226 (69.3%, 67.9%-70.8%)  [51s]
+counter2 against public/model/yaniv-net-4cards-yaniv7-handmade.json: margin +0.16 ±0.17, rounds won 51.9% (51.2%-52.6%), my calls caught 471/10194 (4.6%), its calls caught 658/9780 (6.7%); matches 2003-1997 (50.1%, 48.5%-51.6%)  [89s]
+counter2 against public/model/yaniv-net-4cards-yaniv7.json: margin +0.07 ±0.16, rounds won 51.3% (50.7%-52.0%), my calls caught 522/10169 (5.1%), its calls caught 587/9731 (6.0%); matches 2528-1472 (63.2%, 61.7%-64.7%)  [130s]
+counter against counter: margin +0.00 ±0.00, rounds won 50.0% (49.3%-50.7%), my calls caught 614/9989 (6.1%), its calls caught 614/9989 (6.1%); matches 2000-2000 (50.0%, 48.5%-51.5%)  [182s]
+counter against public/model/yaniv-net-4cards-yaniv7-handmade.json: margin -1.32 ±0.17, rounds won 45.4% (44.7%-46.1%), my calls caught 900/9548 (9.4%), its calls caught 425/10436 (4.1%); matches 1248-2752 (31.2%, 29.8%-32.7%)  [237s]
+counter against public/model/yaniv-net-4cards-yaniv7.json: margin -1.26 ±0.17, rounds won 45.8% (45.1%-46.5%), my calls caught 974/9670 (10.1%), its calls caught 460/10327 (4.5%); matches 1516-2484 (37.9%, 36.4%-39.4%)  [292s]

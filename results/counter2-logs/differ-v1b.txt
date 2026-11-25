@@ -1,0 +1,54 @@
+counter2 against counter, 20000 rounds, 140132 decisions; the other player: public/model/yaniv-net-5cards-handmade.json
+gain = result with the other's move minus result with counter2's move, both played out by counter2
+| kind of difference | n | a round | mean gain | ±95% | gain a round |
+|---|---|---|---|---|---|
+| ALL | 15482 | 0.774 | -0.28 | 0.27 | -0.217 |
+| counter2 throws a set, not a single | 1691 | 0.085 | +2.43 | 0.86 | +0.205 |
+| the other throws a set, not a single, other draw too | 1316 | 0.066 | -3.02 | 0.89 | -0.198 |
+| the other calls, counter2 throws | 2283 | 0.114 | -1.67 | 0.84 | -0.191 |
+| same throw, counter2 takes the open card (3-5) | 2750 | 0.138 | -0.63 | 0.67 | -0.087 |
+| the other throws the higher single, other draw too | 391 | 0.020 | +3.75 | 1.86 | +0.073 |
+| another rank of the same points | 3898 | 0.195 | -0.26 | 0.45 | -0.051 |
+| counter2 throws the higher single | 413 | 0.021 | -1.91 | 1.40 | -0.039 |
+| the other throws the higher set | 172 | 0.009 | +3.11 | 2.07 | +0.027 |
+| counter2 throws a set, not a single, other draw too | 78 | 0.004 | +5.97 | 3.69 | +0.023 |
+| counter2 calls, the other throws | 270 | 0.013 | +1.69 | 2.03 | +0.023 |
+| the other throws the higher set, other draw too | 24 | 0.001 | +5.88 | 7.87 | +0.007 |
+| same throw, the other takes the open card (0-2) | 71 | 0.004 | -1.90 | 5.16 | -0.007 |
+| the other throws a set, not a single | 504 | 0.025 | +0.20 | 1.53 | +0.005 |
+| same throw, the other takes the open card (3-5) | 750 | 0.037 | -0.12 | 1.28 | -0.004 |
+| another rank of the same points, other draw too | 84 | 0.004 | -1.04 | 4.39 | -0.004 |
+| same throw, the other takes the open card (6+) | 18 | 0.001 | +3.33 | 7.97 | +0.003 |
+| the other throws the higher single | 299 | 0.015 | -0.11 | 2.09 | -0.002 |
+| same throw, counter2 takes the open card (0-2) | 1 | 0.000 | -11.00 | 0.00 | -0.001 |
+| same throw, counter2 takes the open card (6+) | 382 | 0.019 | +0.02 | 1.12 | +0.000 |
+| counter2 throws the higher single, other draw too | 87 | 0.004 | +0.02 | 3.56 | +0.000 |
+counter2 against counter, 20000 rounds, 140132 decisions; the other player: public/model/yaniv-net.json
+gain = result with the other's move minus result with counter2's move, both played out by counter2
+| kind of difference | n | a round | mean gain | ±95% | gain a round |
+|---|---|---|---|---|---|
+| the other throws the higher single | 2686 | 0.134 | -1.59 | 0.57 | -0.213 |
+| counter2 throws a set, not a single | 2302 | 0.115 | +1.44 | 0.71 | +0.165 |
+| another rank of the same points | 2603 | 0.130 | -0.74 | 0.53 | -0.096 |
+| counter2 calls, the other throws | 1066 | 0.053 | +1.62 | 0.98 | +0.086 |
+| the other throws the higher single, other draw too | 819 | 0.041 | +2.01 | 1.21 | +0.082 |
+| same throw, the other takes the open card (3-5) | 2635 | 0.132 | -0.54 | 0.72 | -0.071 |
+| ALL | 19215 | 0.961 | +0.07 | 0.23 | +0.071 |
+| same throw, counter2 takes the open card (3-5) | 2868 | 0.143 | +0.28 | 0.52 | +0.040 |
+| counter2 throws a set, not a single, other draw too | 148 | 0.007 | +3.47 | 2.97 | +0.026 |
+| counter2 throws the higher set | 243 | 0.012 | +1.79 | 1.53 | +0.022 |
+| the other throws the higher set | 80 | 0.004 | +4.86 | 3.07 | +0.019 |
+| same throw, counter2 takes the open card (6+) | 371 | 0.019 | +0.99 | 1.16 | +0.018 |
+| counter2 throws the higher single | 718 | 0.036 | +0.50 | 1.13 | +0.018 |
+| the other calls, counter2 throws | 1553 | 0.078 | -0.19 | 1.07 | -0.015 |
+| the other throws a set, not a single | 436 | 0.022 | +0.63 | 1.68 | +0.014 |
+| same throw, the other takes the open card (0-2) | 97 | 0.005 | -2.37 | 4.37 | -0.011 |
+| same throw, the other takes the open card (6+) | 164 | 0.008 | -1.25 | 1.97 | -0.010 |
+| the other throws a set, not a single, other draw too | 195 | 0.010 | -0.95 | 2.15 | -0.009 |
+| the other throws the higher set, other draw too | 10 | 0.001 | +13.80 | 17.27 | +0.007 |
+| another rank of the same points, other draw too | 114 | 0.006 | -0.87 | 4.25 | -0.005 |
+| counter2 throws the higher single, other draw too | 29 | 0.001 | +2.97 | 6.58 | +0.004 |
+| counter2 throws the higher set, other draw too | 24 | 0.001 | +0.79 | 5.65 | +0.001 |
+| same throw, counter2 takes the open card (0-2) | 50 | 0.003 | -0.34 | 3.35 | -0.001 |
+| counter2 throws more cards of the same rank, other draw too | 2 | 0.000 | +4.50 | 9.01 | +0.000 |
+| counter2 throws more cards of the same rank | 2 | 0.000 | -2.50 | 3.46 | -0.000 |
