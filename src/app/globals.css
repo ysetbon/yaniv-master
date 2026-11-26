@@ -176,6 +176,21 @@
   }
 }
 
+/* Tips off frees the room the texts took, so the piles and the net's cards grow. */
+@media (width < 64rem) and (orientation: portrait) {
+  .yaniv-sizes[data-tips="off"] {
+    --pile-w: calc(var(--hand-w) * 1.2);
+    --net-w: calc(var(--hand-w) * 0.9);
+  }
+}
+
+@media (width < 64rem) and (orientation: landscape) and (max-height: 540px) {
+  .yaniv-sizes[data-tips="off"] {
+    --pile-w: clamp(2rem, 19dvh, 5rem);
+    --net-w: clamp(1.4rem, 13dvh, 3.75rem);
+  }
+}
+
 @media (width >= 64rem) {
   .yaniv-sizes {
     --hand-w: 6rem;

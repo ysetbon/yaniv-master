@@ -393,7 +393,7 @@ export function Game() {
   const netCards = popcount(state.hands[1]);
 
   return (
-    <Shell handSize={HAND_SIZE}>
+    <Shell handSize={HAND_SIZE} tipsOff={!showTips}>
       {/* Title, scores and menu. On a sideways phone they share one row. */}
       <div className="flex flex-col gap-2 short:flex-row short:items-center short:gap-3 squat:flex-row squat:items-center lg:gap-0">
         <header className="flex items-center justify-between gap-x-3 gap-y-2 short:contents squat:contents lg:flex-wrap lg:gap-x-4 lg:gap-y-3">
@@ -424,7 +424,7 @@ export function Game() {
               }
             >
               {showTips ? <Eye aria-hidden="true" className="size-4" /> : <EyeOff aria-hidden="true" className="size-4" />}
-              <span className="max-[379px]:hidden short:max-[799px]:hidden squat:hidden">Tips</span>
+              <span className="max-[479px]:hidden short:max-[799px]:hidden squat:hidden">Tips</span>
             </button>
             <InfoButton log={log} report={report} handmade={Boolean(gameById(game).net)} />
             <Button
@@ -434,7 +434,7 @@ export function Game() {
               onClick={restart}
             >
               <RotateCcw aria-hidden="true" className="lg:hidden" />
-              <span className="max-[379px]:hidden short:max-[799px]:hidden squat:hidden">New match</span>
+              <span className="max-[479px]:hidden short:max-[799px]:hidden squat:hidden">New match</span>
             </Button>
           </div>
         </header>
@@ -511,7 +511,7 @@ export function Game() {
           </div>
 
           {/* Right on a sideways phone: what happened, your hand and your moves. */}
-          <div className="flex flex-[1.4] flex-col justify-around gap-2 short:justify-evenly lg:flex-none lg:justify-start lg:gap-7">
+          <div className={(showTips ? "flex-[1.4]" : "flex-1") + " flex flex-col justify-around gap-2 short:justify-evenly lg:flex-none lg:justify-start lg:gap-7"}>
             {/* Status line. Hidden with the tips, but kept for screen readers. */}
             <div className={showTips || noteIsHint ? "flex justify-center" : "sr-only"}>
               <p
@@ -654,11 +654,12 @@ export function Game() {
 }
 
 /** On a phone the page is exactly one screen tall and the table stretches to fill it: no scrolling mid-game. */
-function Shell({ children, handSize = 5 }: { children: ReactNode; handSize?: number }) {
+function Shell({ children, handSize = 5, tipsOff = false }: { children: ReactNode; handSize?: number; tipsOff?: boolean }) {
   return (
     <main
       className="yaniv-sizes safe-pad mx-auto flex h-dvh max-w-6xl flex-col lg:h-auto lg:min-h-dvh"
       style={{ "--hand-n": handSize } as CSSProperties}
+      data-tips={tipsOff ? "off" : "on"}
     >
       {children}
     </main>
@@ -1007,7 +1008,7 @@ function InfoButton({ log, report, handmade }: { log: LogLine[]; report: Report 
         className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#f2c75c]/40 px-2.5 text-sm text-[#f6edd9] hover:bg-white/10 max-[339px]:w-8 max-[339px]:justify-center max-[339px]:px-0 lg:hidden"
       >
         <ScrollText aria-hidden="true" className="size-4" />
-        <span className="max-[379px]:hidden short:max-[799px]:hidden squat:hidden">Log</span>
+        <span className="max-[479px]:hidden short:max-[799px]:hidden squat:hidden">Log</span>
       </SheetTrigger>
       <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto border-[#f2c75c]/20 bg-[#1a140f] pb-[max(env(safe-area-inset-bottom),2rem)] text-[#f6edd9]">
         <SheetHeader>
@@ -1031,7 +1032,7 @@ function RulesButton() {
         className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#f2c75c]/40 px-2.5 text-sm text-[#f6edd9] hover:bg-white/10 max-[339px]:w-8 max-[339px]:justify-center max-[339px]:px-0 lg:px-3"
       >
         <BookOpen aria-hidden="true" className="size-4 lg:hidden" />
-        <span className="max-[379px]:hidden short:max-[799px]:hidden squat:hidden">Rules</span>
+        <span className="max-[479px]:hidden short:max-[799px]:hidden squat:hidden">Rules</span>
       </DialogTrigger>
       <DialogContent className="max-h-[85dvh] overflow-y-auto bg-[#fbf6ee] text-[#241c14] sm:max-w-lg">
         <DialogHeader>
