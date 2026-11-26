@@ -3,6 +3,11 @@
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
+/* A phone turned sideways: too short to stack the table, so it is laid out in two columns. */
+@custom-variant short (@media (width < 64rem) and (orientation: landscape) and (max-height: 540px));
+/* A phone held upright with a short screen (an iPhone SE, or any phone once the browser bars are showing):
+   title and score share one row, and the four moves sit in one row. */
+@custom-variant squat (@media (width < 64rem) and (orientation: portrait) and (max-height: 720px));
 
 @theme inline {
   --color-background: var(--background);
@@ -125,6 +130,9 @@
     background: #120e0b;
     color: #f6edd9;
     font-family: var(--font-outfit), sans-serif;
+    /* No double-tap zoom while tapping cards; pinch zoom still works. */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
@@ -135,4 +143,56 @@
 .felt {
   background:
     radial-gradient(ellipse at 50% 38%, #3c9a62 0%, #1d6a42 46%, #0e3f28 100%);
+}
+
+/* Card widths for the table. On a phone they follow the screen, so the whole table fits without scrolling:
+   the hand fills the width (--hand-n is the hand size), or the height left once the labels and buttons are
+   placed, whichever is smaller. The piles and the net's cards scale with the hand. */
+.yaniv-sizes {
+  --hand-n: 5;
+  --hand-w: clamp(2.2rem, min((100vw - 3.5rem) / (var(--hand-n) + 0.25), (100dvh - 26rem) / 3.8), 5.5rem);
+  --pile-w: calc(var(--hand-w) * 0.82);
+  --net-w: calc(var(--hand-w) * 0.6);
+}
+
+@media (width < 64rem) and (orientation: portrait) and (max-height: 720px) {
+  .yaniv-sizes {
+    --hand-w: clamp(2.2rem, min((100vw - 3.5rem) / (var(--hand-n) + 0.25), (100dvh - 18rem) / 3.8), 5.5rem);
+  }
+}
+
+/* A tablet: room for bigger cards. */
+@media (40rem <= width < 64rem) and (min-height: 541px) {
+  .yaniv-sizes {
+    --hand-w: clamp(2.2rem, min((100vw - 5rem) / (var(--hand-n) + 0.25), (100dvh - 27rem) / 3.8), 7.5rem);
+  }
+}
+
+@media (width < 64rem) and (orientation: landscape) and (max-height: 540px) {
+  .yaniv-sizes {
+    --hand-w: clamp(2.1rem, min((58vw - 3rem) / (var(--hand-n) + 0.25), (100dvh - 14.5rem) / 1.66), 5rem);
+    --pile-w: clamp(2rem, 13dvh, 4rem);
+    --net-w: clamp(1.4rem, 9dvh, 3rem);
+  }
+}
+
+@media (width >= 64rem) {
+  .yaniv-sizes {
+    --hand-w: 6rem;
+    --pile-w: 5rem;
+    --net-w: 5rem;
+  }
+}
+
+.safe-pad {
+  padding-top: max(env(safe-area-inset-top), 0.5rem);
+  padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+  padding-left: max(env(safe-area-inset-left), 0.5rem);
+  padding-right: max(env(safe-area-inset-right), 0.5rem);
+}
+
+@media (width >= 64rem) {
+  .safe-pad {
+    padding: 1.5rem;
+  }
 }

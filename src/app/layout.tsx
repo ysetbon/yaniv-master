@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Fraunces, Outfit } from "next/font/google";
 import "./globals.css";
@@ -16,6 +16,16 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: "Yaniv",
   description: "Play Yaniv against a neural network whose weights were written by hand.",
+};
+
+// viewport-fit=cover lets the table run under a phone's notch and home bar; the page pads itself with the
+// safe-area insets (globals.css), so nothing playable sits under them.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#120e0b",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
