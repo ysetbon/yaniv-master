@@ -2,24 +2,28 @@
 
 import { RANK_CHARS, cardLabel } from "@/lib/yaniv/engine";
 
-export type CardSize = "sm" | "md" | "lg";
+/** "fluid" takes its width from the --cw custom property that the surrounding table sets. */
+export type CardSize = "sm" | "md" | "lg" | "fluid";
 
 const SIZES: Record<CardSize, string> = {
   sm: "h-16 w-11 rounded-md",
   md: "h-[5.4rem] w-[3.8rem] rounded-lg sm:h-28 sm:w-20",
   lg: "h-[5.9rem] w-[4.1rem] rounded-lg sm:h-[8.4rem] sm:w-[6rem]",
+  fluid: "h-[calc(var(--cw)*1.4)] w-(--cw) rounded-[calc(var(--cw)*0.1)]",
 };
 
 const CORNER: Record<CardSize, string> = {
   sm: "text-[10px]",
   md: "text-xs sm:text-sm",
   lg: "text-sm sm:text-base",
+  fluid: "text-[length:max(10px,calc(var(--cw)*0.18))]",
 };
 
 const CENTER: Record<CardSize, string> = {
   sm: "text-xl",
   md: "text-3xl sm:text-4xl",
   lg: "text-3xl sm:text-5xl",
+  fluid: "text-[length:calc(var(--cw)*0.5)]",
 };
 
 const SUITS = "♣♦♥♠";
@@ -73,7 +77,7 @@ export function PlayingCard({
   const label = labelFor(card);
   const interactive = onClick ? "cursor-pointer hover:-translate-y-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white " : "";
   const state =
-    (selected ? "-translate-y-4 ring-[3px] ring-[#f2c75c] shadow-[0_10px_22px_rgba(0,0,0,0.45)] " : "shadow-[0_2px_6px_rgba(0,0,0,0.35)] ") +
+    (selected ? (size === "fluid" ? "-translate-y-[calc(var(--cw)*0.22)] " : "-translate-y-4 ") + "ring-[3px] ring-[#f2c75c] shadow-[0_10px_22px_rgba(0,0,0,0.45)] " : "shadow-[0_2px_6px_rgba(0,0,0,0.35)] ") +
     (hinted && !selected ? "ring-[3px] ring-[#8fd3ff] " : "") +
     (dimmed ? "opacity-45 " : "");
 
@@ -91,7 +95,11 @@ export function PlayingCard({
         <span className={`absolute right-1.5 bottom-1 rotate-180 leading-none font-bold ${CORNER[size]}`}>★</span>
         <span className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
           <span className={`leading-none ${CENTER[size]}`}>★</span>
-          {size !== "sm" && <span className="text-[9px] font-semibold tracking-[0.2em] sm:text-[10px]">JOKER</span>}
+          {size === "fluid" ? (
+            <span className="text-[length:max(7px,calc(var(--cw)*0.11))] font-semibold tracking-[0.15em]">JOKER</span>
+          ) : (
+            size !== "sm" && <span className="text-[9px] font-semibold tracking-[0.2em] sm:text-[10px]">JOKER</span>
+          )}
         </span>
         <span className="sr-only">{label}</span>
       </Tag>

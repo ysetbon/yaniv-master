@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { BookOpen, Eye, EyeOff, RotateCcw, ScrollText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -95,6 +96,9 @@ interface Match {
 
 const rng = { random: () => Math.random() };
 
+/** localStorage key for the Tips switch: "on" or "off". */
+const TIPS_KEY = "yaniv-tips";
+
 function mulberry32(seed: number) {
   let state = seed >>> 0;
   return {
@@ -142,11 +146,31 @@ export function Game() {
   const [matchOver, setMatchOver] = useState(false);
   const [sudden, setSudden] = useState(0);
   const [game, setGame] = useState<string>("standard");
+  // Tips are the helper texts around the table (the status line, your points, the throw summary, the net's card
+  // count). They start hidden; the eye button in the menu shows them, and the choice is remembered on this device.
+  const [showTips, setShowTips] = useState(false);
+  // An answer from "Ask the net" shows even with tips hidden: it is what the player asked for.
+  const [noteIsHint, setNoteIsHint] = useState(false);
+
+  function toggleTips() {
+    const next = !showTips;
+    setShowTips(next);
+    try {
+      window.localStorage.setItem(TIPS_KEY, next ? "on" : "off");
+    } catch {
+      // Not remembered, but still switched for this visit.
+    }
+  }
   const small = game !== "standard";
 
   useEffect(() => {
     let cancel = false;
     async function boot() {
+      try {
+        if (window.localStorage.getItem(TIPS_KEY) === "on") setShowTips(true);
+      } catch {
+        // Storage can be blocked (private mode): tips simply start hidden.
+      }
       const wanted = gameById(new URLSearchParams(window.location.search).get("game"));
       setRules(wanted.hand, wanted.yanivAt);
       setGame(wanted.id);
@@ -220,6 +244,7 @@ export function Game() {
         const line = `The net ${sentence.charAt(0).toLowerCase()}${sentence.slice(1)}`;
         setLog((lines) => [{ id, text: line, who: "net" as const }, ...lines].slice(0, 8));
       }
+      setNoteIsHint(false);
       setMatch((current) => ({ ...current, state: next }));
     }, 720);
     return () => window.clearTimeout(timer);
@@ -250,6 +275,7 @@ export function Game() {
     setSelected([]);
     setTopOverride(null);
     setHintCards([]);
+    setNoteIsHint(false);
     setMatch((current) => ({ ...current, state: next }));
   }
 
@@ -275,12 +301,14 @@ export function Game() {
     if (best.kind === "yaniv") {
       setHintCards([]);
       setNote(`The net would call Yaniv on ${points}.`);
+      setNoteIsHint(true);
       return;
     }
     setHintCards(cardsFromMask(best.discardMask));
     setTopOverride(best.top);
     setSelected(cardsFromMask(best.discardMask));
     setNote(`Hint: ${describeAction(humanView, best, ranked)}`);
+    setNoteIsHint(true);
   }
 
   function nextRound() {
@@ -365,202 +393,253 @@ export function Game() {
   const netCards = popcount(state.hands[1]);
 
   return (
-    <Shell>
-      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-        <div className="min-w-0">
-          <h1 className="font-display text-3xl leading-none text-[#f6edd9] sm:text-4xl">
-            Yaniv <span className="text-[#f2c75c]">יניב</span>
-          </h1>
-          <p className="mt-1 text-sm text-[#e7d7b8]/75">
-            {gameById(game).net
-              ? "You against a neural net whose weights were written by hand, not trained."
-              : "You against a neural net that learned the game."}{" "}
-            {rulesSuffix() ? `Small game: ${HAND_SIZE} cards, Yaniv at ${YANIV_LIMIT}.` : null}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <RulesButton />
-          <Button
-            variant="outline"
-            className="h-9 border-[#f2c75c]/40 bg-transparent px-3 text-[#f6edd9] hover:bg-white/10 hover:text-[#f6edd9]"
-            onClick={restart}
-          >
-            New match
-          </Button>
-        </div>
-      </header>
+    <Shell handSize={HAND_SIZE} tipsOff={!showTips}>
+      {/* Title, scores and menu. On a sideways phone they share one row. */}
+      <div className="flex flex-col gap-2 short:flex-row short:items-center short:gap-3 squat:flex-row squat:items-center lg:gap-0">
+        <header className="flex items-center justify-between gap-x-3 gap-y-2 short:contents squat:contents lg:flex-wrap lg:gap-x-4 lg:gap-y-3">
+          <div className="min-w-0 short:order-1 squat:sr-only">
+            <h1 className="font-display text-2xl leading-none whitespace-nowrap text-[#f6edd9] sm:text-3xl lg:text-4xl">
+              Yaniv <span className="text-[#f2c75c]">יניב</span>
+            </h1>
+            <p className="mt-1 hidden text-sm text-[#e7d7b8]/75 lg:block">
+              {gameById(game).net
+                ? "You against a neural net whose weights were written by hand, not trained."
+                : "You against a neural net that learned the game."}{" "}
+              {rulesSuffix() ? `Small game: ${HAND_SIZE} cards, Yaniv at ${YANIV_LIMIT}.` : null}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5 max-[339px]:gap-1 short:order-3 squat:order-3 lg:gap-2">
+            <RulesButton />
+            <button
+              type="button"
+              onClick={toggleTips}
+              aria-pressed={showTips}
+              aria-label={showTips ? "Hide tips" : "Show tips"}
+              title={showTips ? "Hide tips" : "Show tips"}
+              className={
+                "inline-flex h-9 items-center gap-1.5 rounded-lg border px-2.5 text-sm transition max-[339px]:w-8 max-[339px]:justify-center max-[339px]:px-0 lg:px-3 " +
+                (showTips
+                  ? "border-[#f2c75c] bg-[#f2c75c]/15 text-[#f6edd9]"
+                  : "border-[#f2c75c]/40 text-[#f6edd9]/80 hover:bg-white/10")
+              }
+            >
+              {showTips ? <Eye aria-hidden="true" className="size-4" /> : <EyeOff aria-hidden="true" className="size-4" />}
+              <span className="max-[479px]:hidden short:max-[799px]:hidden squat:hidden">Tips</span>
+            </button>
+            <InfoButton log={log} report={report} handmade={Boolean(gameById(game).net)} />
+            <Button
+              variant="outline"
+              aria-label="New match"
+              className="h-9 gap-1.5 border-[#f2c75c]/40 bg-transparent px-2.5 text-[#f6edd9] hover:bg-white/10 hover:text-[#f6edd9] max-[339px]:w-8 max-[339px]:justify-center max-[339px]:px-0 lg:px-3"
+              onClick={restart}
+            >
+              <RotateCcw aria-hidden="true" className="lg:hidden" />
+              <span className="max-[479px]:hidden short:max-[799px]:hidden squat:hidden">New match</span>
+            </Button>
+          </div>
+        </header>
 
-      <ScoreBoard you={state.scores[0]} net={state.scores[1]} round={match.round} />
+        <ScoreBoard you={state.scores[0]} net={state.scores[1]} round={match.round} />
+      </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="mt-2 flex min-h-0 flex-1 flex-col lg:mt-4 lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-4">
         <section
           aria-label="Table"
-          className="felt relative flex flex-col gap-5 overflow-hidden rounded-[1.75rem] border border-[#5a3a1f] px-3 py-5 shadow-[inset_0_0_90px_rgba(0,0,0,0.4),0_20px_50px_rgba(0,0,0,0.35)] sm:gap-7 sm:px-8 sm:py-7"
+          className="felt relative flex min-h-0 flex-1 flex-col justify-between gap-2 overflow-hidden rounded-[1.25rem] border border-[#5a3a1f] px-2 py-3 shadow-[inset_0_0_90px_rgba(0,0,0,0.4),0_20px_50px_rgba(0,0,0,0.35)] short:grid short:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] short:gap-x-3 short:px-3 short:py-2 sm:px-4 lg:justify-start lg:gap-7 lg:rounded-[1.75rem] lg:px-8 lg:py-7"
         >
-          {/* The net */}
-          <div className="flex flex-col items-center gap-2">
-            <div className="flex items-center gap-2 text-sm text-[#f6edd9]">
-              <span className="text-xs font-semibold tracking-[0.18em] text-[#f2c75c] uppercase">The net</span>
-              <span className="text-[#f6edd9]/70">
-                {netCards} {netCards === 1 ? "card" : "cards"}
-              </span>
-              {aiTurn && <ThinkingPill />}
-            </div>
-            <div className="flex justify-center pl-6 sm:pl-8">
-              {Array.from({ length: netCards }, (_, index) => (
-                <PlayingCard key={index} faceDown className="-ml-6 sm:-ml-8" />
-              ))}
-            </div>
-          </div>
-
-          {/* Piles */}
-          <div className="flex items-start justify-center gap-8 sm:gap-14">
-            <PileButton
-              label="Deck"
-              detail={`${state.stock.length} left`}
-              active={canThrow && state.stock.length > 0}
-              disabled={!canThrow || state.stock.length === 0}
-              onClick={() => throwCards("stock")}
-              ariaLabel="Throw the selected cards and draw from the deck"
-            >
-              <div className="relative">
-                {state.stock.length > 2 && (
-                  <div className="absolute top-[6px] left-[6px]" aria-hidden="true">
-                    <PlayingCard faceDown />
-                  </div>
+          {/* Left on a sideways phone: the net and the piles. */}
+          <div className="flex flex-1 flex-col justify-around gap-2 short:justify-evenly lg:flex-none lg:justify-start lg:gap-7">
+            {/* The net */}
+            <div className="flex flex-col items-center gap-1.5 squat:flex-row squat:justify-center squat:gap-3 lg:gap-2">
+              <div className="flex items-center gap-2 text-sm text-[#f6edd9] squat:flex-col squat:items-start squat:gap-0.5">
+                <span className="text-[11px] font-semibold tracking-[0.18em] text-[#f2c75c] uppercase lg:text-xs">The net</span>
+                {showTips && (
+                  <span className="text-xs text-[#f6edd9]/70 lg:text-sm">
+                    {netCards} {netCards === 1 ? "card" : "cards"}
+                  </span>
                 )}
-                {state.stock.length > 1 && (
-                  <div className="absolute top-[3px] left-[3px]" aria-hidden="true">
-                    <PlayingCard faceDown />
-                  </div>
-                )}
-                {state.stock.length > 0 ? (
-                  <PlayingCard faceDown />
-                ) : (
-                  <div className="h-[5.4rem] w-[3.8rem] rounded-lg border-2 border-dashed border-white/25 sm:h-28 sm:w-20" />
-                )}
+                {aiTurn && <ThinkingPill />}
               </div>
-            </PileButton>
-            <PileButton
-              label="Open card"
-              detail={`${cardPoints(openCard)} ${cardPoints(openCard) === 1 ? "point" : "points"}`}
-              active={canThrow}
-              disabled={!canThrow}
-              onClick={() => throwCards("open")}
-              ariaLabel={`Throw the selected cards and take the ${cardName(openCard)}`}
-            >
-              <PlayingCard card={openCard} className="ring-2 ring-[#f2c75c]/70" />
-            </PileButton>
-          </div>
-
-          {/* Status line */}
-          <div className="flex justify-center">
-            <p
-              className="min-h-[2.75rem] max-w-xl rounded-2xl bg-black/25 px-4 py-2.5 text-center text-sm leading-snug text-[#f6edd9] backdrop-blur-[2px]"
-              aria-live="polite"
-            >
-              {aiTurn ? "The net is choosing a throw." : note}
-            </p>
-          </div>
-
-          {/* Your hand */}
-          <div className="flex flex-col items-center gap-3">
-            <div className="flex w-full max-w-xl items-center justify-between gap-3">
-              <span className="text-xs font-semibold tracking-[0.18em] text-[#f2c75c] uppercase">Your hand</span>
-              <span
-                className={
-                  "rounded-full px-3 py-1 text-xs font-medium sm:text-sm " +
-                  (points <= YANIV_LIMIT ? "bg-[#f2c75c] text-[#2a2118]" : "bg-black/30 text-[#f6edd9]")
-                }
-              >
-                {points} {points === 1 ? "point" : "points"} ·{" "}
-                {points <= YANIV_LIMIT ? "Yaniv is open" : `Yaniv at ${YANIV_LIMIT} or less`}
-              </span>
-            </div>
-            <div className="flex justify-center gap-1.5 pt-4 sm:gap-3">
-              {hand.map((card) => (
-                <PlayingCard
-                  key={card}
-                  card={card}
-                  size="lg"
-                  selected={selected.includes(card)}
-                  hinted={hintCards.includes(card)}
-                  onClick={() => toggle(card)}
-                />
-              ))}
-            </div>
-            <p className="min-h-5 text-center text-xs text-[#f6edd9]/80 sm:text-sm">
-              {!yourTurn
-                ? state.terminal
-                  ? "Round over."
-                  : "Wait for the net's throw."
-                : !selected.length
-                  ? "Tap cards to select one card, or two or more of the same rank."
-                  : selectionValid
-                    ? `Throwing ${shed} ${shed === 1 ? "point" : "points"}. ${points - shed} stay in your hand before the draw.`
-                    : "Those cards are not one combination. Pick one card, or cards of the same rank."}
-            </p>
-            {selectionValid && selected.length > 1 && (
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                <span className="text-xs text-[#f6edd9]/80">Leave face up:</span>
-                {selected.map((card) => (
-                  <button
-                    key={card}
-                    type="button"
-                    onClick={() => setTopOverride(card)}
-                    aria-pressed={card === top}
-                    className={
-                      "rounded-full px-3 py-1 text-xs font-medium transition " +
-                      (card === top ? "bg-[#f2c75c] text-[#2a2118]" : "bg-black/30 text-[#f6edd9] hover:bg-black/45")
-                    }
-                  >
-                    {cardName(card)}
-                  </button>
+              <div className="flex justify-center pl-[calc(var(--net-w)*0.4)] [--cw:var(--net-w)]">
+                {Array.from({ length: netCards }, (_, index) => (
+                  <PlayingCard key={index} faceDown size="fluid" className="-ml-[calc(var(--net-w)*0.4)]" />
                 ))}
               </div>
-            )}
+            </div>
+
+            {/* Piles */}
+            <div className="flex items-start justify-center gap-8 [--cw:var(--pile-w)] sm:gap-14">
+              <PileButton
+                label="Deck"
+                detail={`${state.stock.length} left`}
+                active={canThrow && state.stock.length > 0}
+                disabled={!canThrow || state.stock.length === 0}
+                onClick={() => throwCards("stock")}
+                ariaLabel="Throw the selected cards and draw from the deck"
+                showLabel={showTips}
+              >
+                <div className="relative">
+                  {state.stock.length > 2 && (
+                    <div className="absolute top-[6px] left-[6px]" aria-hidden="true">
+                      <PlayingCard faceDown size="fluid" />
+                    </div>
+                  )}
+                  {state.stock.length > 1 && (
+                    <div className="absolute top-[3px] left-[3px]" aria-hidden="true">
+                      <PlayingCard faceDown size="fluid" />
+                    </div>
+                  )}
+                  {state.stock.length > 0 ? (
+                    <PlayingCard faceDown size="fluid" />
+                  ) : (
+                    <div className="h-[calc(var(--cw)*1.4)] w-(--cw) rounded-lg border-2 border-dashed border-white/25" />
+                  )}
+                </div>
+              </PileButton>
+              <PileButton
+                label="Open card"
+                detail={`${cardPoints(openCard)} ${cardPoints(openCard) === 1 ? "point" : "points"}`}
+                active={canThrow}
+                disabled={!canThrow}
+                onClick={() => throwCards("open")}
+                ariaLabel={`Throw the selected cards and take the ${cardName(openCard)}`}
+                showLabel={showTips}
+              >
+                <PlayingCard card={openCard} size="fluid" className="ring-2 ring-[#f2c75c]/70" />
+              </PileButton>
+            </div>
           </div>
 
-          {/* Actions */}
-          <div className="mx-auto grid w-full max-w-2xl grid-cols-2 gap-2 sm:grid-cols-4">
-            <Button
-              className="h-12 bg-[#f6edd9] text-[#1c1916] hover:bg-white"
-              disabled={!canThrow || state.stock.length === 0}
-              onClick={() => throwCards("stock")}
-            >
-              Throw · draw from deck
-            </Button>
-            <Button
-              className="h-12 border border-[#f6edd9]/25 bg-[#0f3a26] text-[#f6edd9] hover:bg-[#15503a]"
-              disabled={!canThrow}
-              onClick={() => throwCards("open")}
-            >
-              Throw · take {cardName(openCard)}
-            </Button>
-            <Button
+          {/* Right on a sideways phone: what happened, your hand and your moves. */}
+          <div className={(showTips ? "flex-[1.4]" : "flex-1") + " flex flex-col justify-around gap-2 short:justify-evenly lg:flex-none lg:justify-start lg:gap-7"}>
+            {/* Status line. Hidden with the tips, but kept for screen readers. */}
+            <div className={showTips || noteIsHint ? "flex justify-center" : "sr-only"}>
+              <p
+                className="flex min-h-[2.5rem] max-w-xl items-center rounded-2xl bg-black/25 px-3 py-1.5 text-center text-[13px] leading-snug text-[#f6edd9] backdrop-blur-[2px] short:min-h-0 short:py-1 short:text-xs lg:min-h-[2.75rem] lg:px-4 lg:py-2.5 lg:text-sm"
+                aria-live="polite"
+              >
+                {aiTurn ? "The net is choosing a throw." : note}
+              </p>
+            </div>
+
+            {/* Your hand */}
+            <div className="flex flex-col items-center gap-1.5 lg:gap-3">
+              <div className="flex w-full max-w-xl items-center justify-between gap-2">
+                <span className="text-[11px] font-semibold tracking-[0.18em] whitespace-nowrap text-[#f2c75c] uppercase lg:text-xs">
+                  Your hand
+                </span>
+                <span
+                  className={
+                    (showTips ? "" : "hidden ") +
+                    "truncate rounded-full px-2.5 py-0.5 text-xs font-medium lg:px-3 lg:py-1 lg:text-sm " +
+                    (points <= YANIV_LIMIT ? "bg-[#f2c75c] text-[#2a2118]" : "bg-black/30 text-[#f6edd9]")
+                  }
+                >
+                  {points} <span className="lg:hidden">{points === 1 ? "pt" : "pts"}</span>
+                  <span className="hidden lg:inline">{points === 1 ? "point" : "points"}</span> ·{" "}
+                  {points <= YANIV_LIMIT ? "Yaniv is open" : `Yaniv at ${YANIV_LIMIT} or less`}
+                </span>
+              </div>
+              <div className="flex justify-center gap-1.5 pt-[calc(var(--hand-w)*0.24)] [--cw:var(--hand-w)] sm:gap-2.5 lg:gap-3">
+                {hand.map((card) => (
+                  <PlayingCard
+                    key={card}
+                    card={card}
+                    size="fluid"
+                    selected={selected.includes(card)}
+                    hinted={hintCards.includes(card)}
+                    onClick={() => toggle(card)}
+                  />
+                ))}
+              </div>
+              {selectionValid && selected.length > 1 ? (
+                <div className="flex min-h-5 flex-wrap items-center justify-center gap-1.5">
+                  <span className="text-xs text-[#f6edd9]/80">Leave face up:</span>
+                  {selected.map((card) => (
+                    <button
+                      key={card}
+                      type="button"
+                      onClick={() => setTopOverride(card)}
+                      aria-pressed={card === top}
+                      className={
+                        "min-h-7 rounded-full px-3 py-0.5 text-xs font-medium transition " +
+                        (card === top ? "bg-[#f2c75c] text-[#2a2118]" : "bg-black/30 text-[#f6edd9] hover:bg-black/45")
+                      }
+                    >
+                      {cardName(card)}
+                    </button>
+                  ))}
+                </div>
+              ) : !showTips ? null : (
+                <p className="min-h-5 text-center text-xs leading-tight text-[#f6edd9]/80 lg:text-sm">
+                  {!yourTurn
+                    ? state.terminal
+                      ? "Round over."
+                      : "Wait for the net's throw."
+                    : !selected.length
+                      ? "Tap one card, or two or more of the same rank."
+                      : selectionValid
+                        ? `Throwing ${shed} ${shed === 1 ? "point" : "points"}. ${points - shed} stay before the draw.`
+                        : "Not one combination. Pick one card, or cards of the same rank."}
+                </p>
+              )}
+            </div>
+
+            {/* Actions. With tips off the two throw buttons are left out: tapping the deck or the open card throws. */}
+            <div
               className={
-                "h-12 font-semibold " +
-                (canCall && !aiTurn
-                  ? "bg-[#f2c75c] text-[#2a2118] shadow-[0_0_0_3px_rgba(242,199,92,0.3)] hover:bg-[#f6d685]"
-                  : "border border-[#f2c75c]/40 bg-transparent text-[#f2c75c]")
+                "mx-auto grid w-full grid-cols-2 gap-2 short:gap-1.5 squat:gap-1.5 " +
+                (showTips
+                  ? "max-w-2xl short:grid-cols-4 squat:grid-cols-4 sm:max-w-3xl sm:grid-cols-4"
+                  : "max-w-md")
               }
-              disabled={!canCall || aiTurn}
-              onClick={callYaniv}
             >
-              Call Yaniv{canCall ? ` · ${points}` : ""}
-            </Button>
-            <Button
-              variant="ghost"
-              className="h-12 text-[#f6edd9] hover:bg-white/10 hover:text-[#f6edd9]"
-              onClick={askNet}
-              disabled={aiTurn || state.turn !== 0}
-            >
-              Ask the net
-            </Button>
+              {showTips && (
+                <Button
+                  className="h-11 px-2 leading-tight whitespace-normal bg-[#f6edd9] text-[#1c1916] hover:bg-white short:h-10 short:text-[13px] squat:text-[13px] lg:h-12"
+                  disabled={!canThrow || state.stock.length === 0}
+                  onClick={() => throwCards("stock")}
+                >
+                  <span>
+                    Throw · <span className="short:hidden squat:hidden">draw from </span>deck
+                  </span>
+                </Button>
+              )}
+              {showTips && (
+                <Button
+                  className="h-11 border border-[#f6edd9]/25 bg-[#0f3a26] px-2 leading-tight whitespace-normal text-[#f6edd9] hover:bg-[#15503a] short:h-10 short:text-[13px] squat:text-[13px] lg:h-12"
+                  disabled={!canThrow}
+                  onClick={() => throwCards("open")}
+                >
+                  Throw · take {cardName(openCard)}
+                </Button>
+              )}
+              <Button
+                className={
+                  "h-11 px-2 leading-tight font-semibold whitespace-normal short:h-10 short:text-[13px] squat:text-[13px] lg:h-12 " +
+                  (canCall && !aiTurn
+                    ? "bg-[#f2c75c] text-[#2a2118] shadow-[0_0_0_3px_rgba(242,199,92,0.3)] hover:bg-[#f6d685]"
+                    : "border border-[#f2c75c]/40 bg-transparent text-[#f2c75c]")
+                }
+                disabled={!canCall || aiTurn}
+                onClick={callYaniv}
+              >
+                Call Yaniv{canCall ? ` · ${points}` : ""}
+              </Button>
+              <Button
+                variant="ghost"
+                className="h-11 px-2 leading-tight whitespace-normal text-[#f6edd9] hover:bg-white/10 hover:text-[#f6edd9] short:h-10 short:text-[13px] squat:text-[13px] lg:h-12"
+                onClick={askNet}
+                disabled={aiTurn || state.turn !== 0}
+              >
+                Ask the net
+              </Button>
+            </div>
           </div>
         </section>
 
-        <aside className="flex flex-col gap-3">
+        {/* On a phone these live behind the Log button instead, so the table fits the screen. */}
+        <aside className="hidden flex-col gap-3 lg:flex">
           <RoundLog log={log} />
           <Dossier report={report} handmade={Boolean(gameById(game).net)} />
         </aside>
@@ -574,8 +653,17 @@ export function Game() {
   );
 }
 
-function Shell({ children }: { children: ReactNode }) {
-  return <main className="mx-auto min-h-dvh max-w-6xl px-3 py-4 sm:px-6 sm:py-6">{children}</main>;
+/** On a phone the page is exactly one screen tall and the table stretches to fill it: no scrolling mid-game. */
+function Shell({ children, handSize = 5, tipsOff = false }: { children: ReactNode; handSize?: number; tipsOff?: boolean }) {
+  return (
+    <main
+      className="yaniv-sizes safe-pad mx-auto flex h-dvh max-w-6xl flex-col lg:h-auto lg:min-h-dvh"
+      style={{ "--hand-n": handSize } as CSSProperties}
+      data-tips={tipsOff ? "off" : "on"}
+    >
+      {children}
+    </main>
+  );
 }
 
 function Status({ title, body, action }: { title: string; body: string; action?: ReactNode }) {
@@ -608,9 +696,12 @@ function PileButton({
   disabled,
   onClick,
   ariaLabel,
+  showLabel,
   children,
 }: {
   label: string;
+  /** With tips off the label is left out: the gold glow shows when the pile can be tapped. */
+  showLabel: boolean;
   detail: string;
   active: boolean;
   disabled: boolean;
@@ -625,14 +716,14 @@ function PileButton({
       onClick={onClick}
       aria-label={ariaLabel}
       className={
-        "group flex flex-col items-center gap-2 rounded-xl p-1.5 text-center transition focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none " +
+        "group flex flex-col items-center gap-1 rounded-xl p-1 text-center lg:gap-2 lg:p-1.5 transition focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none " +
         (active ? "cursor-pointer hover:-translate-y-1" : "cursor-default")
       }
     >
       <span className={"rounded-lg transition " + (active ? "shadow-[0_0_0_3px_rgba(242,199,92,0.55)]" : "")}>{children}</span>
-      <span className="flex flex-col leading-tight">
-        <span className="text-xs font-semibold tracking-[0.14em] text-[#f6edd9] uppercase">{label}</span>
-        <span className="text-xs text-[#f6edd9]/70">{active ? "tap to draw" : detail}</span>
+      <span className={showLabel ? "flex flex-col leading-tight" : "hidden"}>
+        <span className="text-[11px] font-semibold tracking-[0.14em] text-[#f6edd9] uppercase lg:text-xs">{label}</span>
+        <span className="text-[11px] text-[#f6edd9]/70 squat:hidden lg:text-xs">{active ? "tap to draw" : detail}</span>
       </span>
     </button>
   );
@@ -640,27 +731,38 @@ function PileButton({
 
 function ScoreBoard({ you, net, round }: { you: number; net: number; round: number }) {
   return (
-    <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 rounded-2xl border border-[#f2c75c]/15 bg-[#1a140f]/80 px-4 py-3">
+    <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 rounded-2xl border border-[#f2c75c]/15 bg-[#1a140f]/80 px-3 py-2 short:order-2 short:flex-1 short:py-1.5 squat:order-2 squat:min-w-0 squat:flex-1 squat:gap-2 squat:px-2.5 squat:py-1.5 max-[339px]:squat:grid-cols-2 max-[339px]:squat:px-2 lg:mt-4 lg:px-4 lg:py-3">
       <ScoreSide name="You" value={you} />
-      <div className="text-center">
-        <p className="text-[10px] tracking-[0.18em] text-[#f6edd9]/60 uppercase">Round</p>
-        <p className="font-display text-2xl leading-none text-[#f6edd9]">{round}</p>
+      <div className="text-center max-[339px]:squat:hidden">
+        <p className="text-[10px] tracking-[0.18em] text-[#f6edd9]/60 uppercase">
+          <span className="squat:hidden">Round</span>
+          <span className="hidden squat:inline">Rd</span>
+        </p>
+        <p className="font-display text-xl leading-none text-[#f6edd9] lg:text-2xl">{round}</p>
       </div>
-      <ScoreSide name="The net" value={net} alignRight />
+      <ScoreSide
+        name={
+          <>
+            <span className="squat:hidden">The </span>net
+          </>
+        }
+        value={net}
+        alignRight
+      />
     </div>
   );
 }
 
-function ScoreSide({ name, value, alignRight = false }: { name: string; value: number; alignRight?: boolean }) {
+function ScoreSide({ name, value, alignRight = false }: { name: ReactNode; value: number; alignRight?: boolean }) {
   const hot = value >= 80;
   const width = Math.min(100, (value / MATCH_LIMIT) * 100);
   return (
     <div className={"min-w-0 " + (alignRight ? "text-right" : "")}>
-      <div className={"flex items-baseline gap-2 " + (alignRight ? "justify-end" : "")}>
-        <span className="text-xs tracking-[0.14em] text-[#f2c75c] uppercase">{name}</span>
-        <span className={"font-display text-2xl leading-none " + (hot ? "text-[#ff8a7a]" : "text-[#f6edd9]")}>
+      <div className={"flex items-baseline gap-2 max-[339px]:gap-1 " + (alignRight ? "justify-end" : "")}>
+        <span className="truncate text-[11px] max-[339px]:shrink-0 tracking-[0.14em] text-[#f2c75c] uppercase lg:text-xs">{name}</span>
+        <span className={"font-display text-xl leading-none lg:text-2xl " + (hot ? "text-[#ff8a7a]" : "text-[#f6edd9]")}>
           {value}
-          <span className="ml-0.5 font-sans text-xs text-[#f6edd9]/45">/{MATCH_LIMIT}</span>
+          <span className="ml-0.5 font-sans text-xs text-[#f6edd9]/45 max-[339px]:hidden short:max-[799px]:hidden squat:hidden">/{MATCH_LIMIT}</span>
         </span>
       </div>
       <div className={"mt-1.5 flex h-1.5 overflow-hidden rounded-full bg-white/10 " + (alignRight ? "justify-end" : "")}>
@@ -713,18 +815,18 @@ function ResultSheet({
 }) {
   const youWon = result.added[0] === 0 && result.added[1] > 0;
   return (
-    <div className="fixed inset-0 z-40 grid place-items-center bg-black/60 p-4 backdrop-blur-[2px]">
-      <div className="w-full max-w-lg rounded-2xl bg-[#fbf6ee] p-5 text-[#241c14] shadow-2xl sm:p-6">
+    <div className="safe-pad fixed inset-0 z-40 grid place-items-center bg-black/60 backdrop-blur-[2px]">
+      <div className="max-h-full w-full max-w-lg overflow-y-auto rounded-2xl bg-[#fbf6ee] p-4 text-[#241c14] shadow-2xl sm:p-6">
         <p className={"text-xs font-semibold tracking-[0.18em] uppercase " + (youWon ? "text-[#1d6a42]" : "text-[#8a6232]")}>
           {result.assaf ? "Assaf" : result.reason === "showdown" ? "Showdown" : "Yaniv"}
         </p>
-        <h2 className="font-display mt-1 text-2xl leading-tight sm:text-3xl">{resultHeadline(result, 0)}</h2>
-        <p className="mt-2 text-sm text-[#5c5144]">
+        <h2 className="font-display mt-1 text-2xl leading-tight short:text-xl sm:text-3xl">{resultHeadline(result, 0)}</h2>
+        <p className="mt-2 text-sm text-[#5c5144] short:hidden">
           {result.assaf
             ? `A caught call adds your hand plus ${ASSAF_PENALTY}. The player with the lower or equal hand scores 0.`
             : "The lower hand scores 0. The other hand adds its points."}
         </p>
-        <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="mt-4 grid grid-cols-2 gap-3 short:mt-2">
           <Reveal
             title="You"
             cards={cardsFromMask(result.hands[0])}
@@ -742,13 +844,16 @@ function ResultSheet({
             after={scores[1]}
           />
         </div>
-        <Separator className="my-4" />
+        <Separator className="my-4 short:my-2" />
         <p className="text-sm">
           Match score: you <b>{scores[0]}</b>, the net <b>{scores[1]}</b>. The match ends once someone passes {MATCH_LIMIT}.
         </p>
-        <Button className="mt-4 h-11 w-full bg-[#1d6a42] text-[#f6edd9] hover:bg-[#24804f]" onClick={onContinue}>
-          Continue
-        </Button>
+        {/* Pinned to the bottom of the box, so it stays in reach when a sideways phone has to scroll the box. */}
+        <div className="sticky -bottom-4 -mx-4 mt-4 bg-[#fbf6ee] px-4 pb-4 short:mt-2 short:pt-1 sm:static sm:mx-0 sm:px-0 sm:pb-0 short:sm:sticky short:sm:-bottom-6 short:sm:-mx-6 short:sm:px-6 short:sm:pb-6">
+          <Button className="h-11 w-full bg-[#1d6a42] text-[#f6edd9] hover:bg-[#24804f]" onClick={onContinue}>
+            Continue
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -796,8 +901,8 @@ function MatchSheet({ scores, onRestart }: { scores: [number, number]; onRestart
   const youWin = scores[0] < scores[1];
   const tie = scores[0] === scores[1];
   return (
-    <div className="fixed inset-0 z-40 grid place-items-center bg-black/60 p-4 backdrop-blur-[2px]">
-      <div className="w-full max-w-md rounded-2xl bg-[#fbf6ee] p-5 text-[#241c14] shadow-2xl sm:p-6">
+    <div className="safe-pad fixed inset-0 z-40 grid place-items-center bg-black/60 backdrop-blur-[2px]">
+      <div className="max-h-full w-full max-w-md overflow-y-auto rounded-2xl bg-[#fbf6ee] p-4 text-[#241c14] shadow-2xl sm:p-6">
         <h2 className="font-display text-3xl sm:text-4xl">{tie ? "Split match" : youWin ? "You take the match" : "The net takes the match"}</h2>
         <p className="mt-2 text-sm text-[#5c5144]">
           {tie
@@ -812,8 +917,8 @@ function MatchSheet({ scores, onRestart }: { scores: [number, number]; onRestart
   );
 }
 
-function Dossier({ report, handmade = false }: { report: Report | null; handmade?: boolean }) {
-  const body = report ? (
+function DossierBody({ report, handmade = false }: { report: Report | null; handmade?: boolean }) {
+  return report ? (
     <div className="space-y-3 text-sm leading-relaxed text-[#f6edd9]/90">
       {report.config?.copy_from && !report.self_play_iterations ? (
         <p>
@@ -881,35 +986,53 @@ function Dossier({ report, handmade = false }: { report: Report | null; handmade
   ) : (
     <p className="text-sm text-[#f6edd9]/80">The training notes are not in this build.</p>
   );
+}
+
+function Dossier({ report, handmade = false }: { report: Report | null; handmade?: boolean }) {
   return (
-    <>
-      <div className="hidden rounded-2xl border border-[#f2c75c]/15 bg-[#1a140f]/80 p-4 lg:block">
-        <p className="text-xs font-semibold tracking-[0.18em] text-[#f2c75c] uppercase">How it learned</p>
-        <div className="mt-3">{body}</div>
+    <div className="rounded-2xl border border-[#f2c75c]/15 bg-[#1a140f]/80 p-4">
+      <p className="text-xs font-semibold tracking-[0.18em] text-[#f2c75c] uppercase">How it learned</p>
+      <div className="mt-3">
+        <DossierBody report={report} handmade={handmade} />
       </div>
-      <Sheet>
-        <SheetTrigger className="inline-flex h-11 items-center justify-center rounded-xl border border-[#f2c75c]/30 px-3 text-sm text-[#f6edd9] hover:bg-white/5 lg:hidden">
-          How the net learned
-        </SheetTrigger>
-        <SheetContent side="bottom" className="max-h-[80dvh] overflow-y-auto bg-[#1a140f] pb-8 text-[#f6edd9]">
-          <SheetHeader>
-            <SheetTitle className="text-[#f6edd9]">How it learned</SheetTitle>
-            <SheetDescription className="text-[#f6edd9]/70">
-              {report?.recipe === "genetic" ? "Copied a card counter, then evolved a population of nets." : "Copied a card counter, then learned from its own wins."}
-            </SheetDescription>
-          </SheetHeader>
-          <div className="px-4">{body}</div>
-        </SheetContent>
-      </Sheet>
-    </>
+    </div>
+  );
+}
+
+/** Phones only: the round log and the training notes, in a sheet that slides up over the table. */
+function InfoButton({ log, report, handmade }: { log: LogLine[]; report: Report | null; handmade: boolean }) {
+  return (
+    <Sheet>
+      <SheetTrigger
+        aria-label="Round log and how the net learned"
+        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#f2c75c]/40 px-2.5 text-sm text-[#f6edd9] hover:bg-white/10 max-[339px]:w-8 max-[339px]:justify-center max-[339px]:px-0 lg:hidden"
+      >
+        <ScrollText aria-hidden="true" className="size-4" />
+        <span className="max-[479px]:hidden short:max-[799px]:hidden squat:hidden">Log</span>
+      </SheetTrigger>
+      <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto border-[#f2c75c]/20 bg-[#1a140f] pb-[max(env(safe-area-inset-bottom),2rem)] text-[#f6edd9]">
+        <SheetHeader>
+          <SheetTitle className="text-[#f6edd9]">Log</SheetTitle>
+          <SheetDescription className="text-[#f6edd9]/70">This round&apos;s throws, latest first, and how the net learned.</SheetDescription>
+        </SheetHeader>
+        <div className="space-y-4 px-4">
+          <RoundLog log={log} />
+          <Dossier report={report} handmade={handmade} />
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
 function RulesButton() {
   return (
     <Dialog>
-      <DialogTrigger className="inline-flex h-9 items-center rounded-lg border border-[#f2c75c]/40 px-3 text-sm text-[#f6edd9] hover:bg-white/10">
-        Rules
+      <DialogTrigger
+        aria-label="Rules"
+        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#f2c75c]/40 px-2.5 text-sm text-[#f6edd9] hover:bg-white/10 max-[339px]:w-8 max-[339px]:justify-center max-[339px]:px-0 lg:px-3"
+      >
+        <BookOpen aria-hidden="true" className="size-4 lg:hidden" />
+        <span className="max-[479px]:hidden short:max-[799px]:hidden squat:hidden">Rules</span>
       </DialogTrigger>
       <DialogContent className="max-h-[85dvh] overflow-y-auto bg-[#fbf6ee] text-[#241c14] sm:max-w-lg">
         <DialogHeader>
