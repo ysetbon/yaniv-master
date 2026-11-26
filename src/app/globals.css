@@ -3,11 +3,31 @@
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
+/* The game lays itself out from its own frame (.app-frame, a size container named "app"), not from the
+   browser window. A phone in "Desktop site" mode reports a 980px-wide window; the head script in layout.tsx
+   zooms the page back to the phone's real size, and only the frame's size is true after that zoom. */
+/* Tablet width and up. On a computer the frame is not a container, so the media query covers it.
+   Declared first so the phone variants below override it, as they overrode sm: before. */
+@custom-variant tab {
+  @container app (width >= 40rem) {
+    @slot;
+  }
+  @media (width >= 64rem) {
+    @slot;
+  }
+}
 /* A phone turned sideways: too short to stack the table, so it is laid out in two columns. */
-@custom-variant short (@media (width < 64rem) and (orientation: landscape) and (max-height: 540px));
+@custom-variant short (@container app (width < 64rem) and (orientation: landscape) and (height <= 540px));
 /* A phone held upright with a short screen (an iPhone SE, or any phone once the browser bars are showing):
-   title and score share one row, and the four moves sit in one row. */
-@custom-variant squat (@media (width < 64rem) and (orientation: portrait) and (max-height: 720px));
+   title and score share one row, and the menu shows icons. */
+@custom-variant squat (@container app (width < 64rem) and (orientation: portrait) and (height <= 720px));
+/* Narrow phones: menu as icons below 480px, tighter still below 340px (a folded Galaxy Fold). */
+@custom-variant narrow (@container app (width < 480px));
+@custom-variant tiny (@container app (width < 340px));
+/* With short: a sideways phone under 800px wide. */
+@custom-variant slim (@container app (width < 800px));
+/* A computer screen. The same as lg:, but declared after tab: so it wins where both apply. */
+@custom-variant desk (@media (width >= 64rem));
 
 @theme inline {
   --color-background: var(--background);
@@ -145,49 +165,65 @@
     radial-gradient(ellipse at 50% 38%, #3c9a62 0%, #1d6a42 46%, #0e3f28 100%);
 }
 
-/* Card widths for the table. On a phone they follow the screen, so the whole table fits without scrolling:
+/* The frame the game is laid out in: the screen on a phone or tablet. --app-h is set by the head script when
+   it zooms a phone out of desktop mode; otherwise the frame is the dynamic viewport height. On a computer the
+   page scrolls as a normal page, so the frame is not a size container there. */
+.app-frame {
+  container: app / size;
+  width: 100%;
+  height: var(--app-h, 100dvh);
+}
+
+@media (width >= 64rem) {
+  .app-frame {
+    container-type: normal;
+    height: auto;
+  }
+}
+
+/* Card widths for the table. On a phone they follow the frame, so the whole table fits without scrolling:
    the hand fills the width (--hand-n is the hand size), or the height left once the labels and buttons are
    placed, whichever is smaller. The piles and the net's cards scale with the hand. */
 .yaniv-sizes {
   --hand-n: 5;
-  --hand-w: clamp(2.2rem, min((100vw - 3.5rem) / (var(--hand-n) + 0.25), (100dvh - 26rem) / 3.8), 5.5rem);
+  --hand-w: clamp(2.2rem, min((100cqw - 3.5rem) / (var(--hand-n) + 0.25), (100cqh - 26rem) / 3.8), 5.5rem);
   --pile-w: calc(var(--hand-w) * 0.82);
   --net-w: calc(var(--hand-w) * 0.6);
 }
 
-@media (width < 64rem) and (orientation: portrait) and (max-height: 720px) {
+@container app (width < 64rem) and (orientation: portrait) and (height <= 720px) {
   .yaniv-sizes {
-    --hand-w: clamp(2.2rem, min((100vw - 3.5rem) / (var(--hand-n) + 0.25), (100dvh - 18rem) / 3.8), 5.5rem);
+    --hand-w: clamp(2.2rem, min((100cqw - 3.5rem) / (var(--hand-n) + 0.25), (100cqh - 18rem) / 3.8), 5.5rem);
   }
 }
 
 /* A tablet: room for bigger cards. */
-@media (40rem <= width < 64rem) and (min-height: 541px) {
+@container app (40rem <= width < 64rem) and (height > 540px) {
   .yaniv-sizes {
-    --hand-w: clamp(2.2rem, min((100vw - 5rem) / (var(--hand-n) + 0.25), (100dvh - 27rem) / 3.8), 7.5rem);
+    --hand-w: clamp(2.2rem, min((100cqw - 5rem) / (var(--hand-n) + 0.25), (100cqh - 27rem) / 3.8), 7.5rem);
   }
 }
 
-@media (width < 64rem) and (orientation: landscape) and (max-height: 540px) {
+@container app (width < 64rem) and (orientation: landscape) and (height <= 540px) {
   .yaniv-sizes {
-    --hand-w: clamp(2.1rem, min((58vw - 3rem) / (var(--hand-n) + 0.25), (100dvh - 14.5rem) / 1.66), 5rem);
-    --pile-w: clamp(2rem, 13dvh, 4rem);
-    --net-w: clamp(1.4rem, 9dvh, 3rem);
+    --hand-w: clamp(2.1rem, min((58cqw - 3rem) / (var(--hand-n) + 0.25), (100cqh - 14.5rem) / 1.66), 5rem);
+    --pile-w: clamp(2rem, 13cqh, 4rem);
+    --net-w: clamp(1.4rem, 9cqh, 3rem);
   }
 }
 
 /* Tips off frees the room the texts took, so the piles and the net's cards grow. */
-@media (width < 64rem) and (orientation: portrait) {
+@container app (width < 64rem) and (orientation: portrait) {
   .yaniv-sizes[data-tips="off"] {
     --pile-w: calc(var(--hand-w) * 1.2);
     --net-w: calc(var(--hand-w) * 0.9);
   }
 }
 
-@media (width < 64rem) and (orientation: landscape) and (max-height: 540px) {
+@container app (width < 64rem) and (orientation: landscape) and (height <= 540px) {
   .yaniv-sizes[data-tips="off"] {
-    --pile-w: clamp(2rem, 19dvh, 5rem);
-    --net-w: clamp(1.4rem, 13dvh, 3.75rem);
+    --pile-w: clamp(2rem, 19cqh, 5rem);
+    --net-w: clamp(1.4rem, 13cqh, 3.75rem);
   }
 }
 

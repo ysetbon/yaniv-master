@@ -395,20 +395,20 @@ export function Game() {
   return (
     <Shell handSize={HAND_SIZE} tipsOff={!showTips}>
       {/* Title, scores and menu. On a sideways phone they share one row. */}
-      <div className="flex flex-col gap-2 short:flex-row short:items-center short:gap-3 squat:flex-row squat:items-center lg:gap-0">
-        <header className="flex items-center justify-between gap-x-3 gap-y-2 short:contents squat:contents lg:flex-wrap lg:gap-x-4 lg:gap-y-3">
+      <div className="flex flex-col gap-2 short:flex-row short:items-center short:gap-3 squat:flex-row squat:items-center desk:gap-0">
+        <header className="flex items-center justify-between gap-x-3 gap-y-2 short:contents squat:contents desk:flex-wrap desk:gap-x-4 desk:gap-y-3">
           <div className="min-w-0 short:order-1 squat:sr-only">
-            <h1 className="font-display text-2xl leading-none whitespace-nowrap text-[#f6edd9] sm:text-3xl lg:text-4xl">
+            <h1 className="font-display text-2xl leading-none whitespace-nowrap text-[#f6edd9] tab:text-3xl desk:text-4xl">
               Yaniv <span className="text-[#f2c75c]">יניב</span>
             </h1>
-            <p className="mt-1 hidden text-sm text-[#e7d7b8]/75 lg:block">
+            <p className="mt-1 hidden text-sm text-[#e7d7b8]/75 desk:block">
               {gameById(game).net
                 ? "You against a neural net whose weights were written by hand, not trained."
                 : "You against a neural net that learned the game."}{" "}
               {rulesSuffix() ? `Small game: ${HAND_SIZE} cards, Yaniv at ${YANIV_LIMIT}.` : null}
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-1.5 max-[339px]:gap-1 short:order-3 squat:order-3 lg:gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 tiny:gap-1 short:order-3 squat:order-3 desk:gap-2">
             <RulesButton />
             <button
               type="button"
@@ -417,24 +417,24 @@ export function Game() {
               aria-label={showTips ? "Hide tips" : "Show tips"}
               title={showTips ? "Hide tips" : "Show tips"}
               className={
-                "inline-flex h-9 items-center gap-1.5 rounded-lg border px-2.5 text-sm transition max-[339px]:w-8 max-[339px]:justify-center max-[339px]:px-0 lg:px-3 " +
+                "inline-flex h-9 items-center gap-1.5 rounded-lg border px-2.5 text-sm transition tiny:w-8 tiny:justify-center tiny:px-0 desk:px-3 " +
                 (showTips
                   ? "border-[#f2c75c] bg-[#f2c75c]/15 text-[#f6edd9]"
                   : "border-[#f2c75c]/40 text-[#f6edd9]/80 hover:bg-white/10")
               }
             >
               {showTips ? <Eye aria-hidden="true" className="size-4" /> : <EyeOff aria-hidden="true" className="size-4" />}
-              <span className="max-[479px]:hidden short:max-[799px]:hidden squat:hidden">Tips</span>
+              <span className="narrow:hidden short:slim:hidden squat:hidden">Tips</span>
             </button>
             <InfoButton log={log} report={report} handmade={Boolean(gameById(game).net)} />
             <Button
               variant="outline"
               aria-label="New match"
-              className="h-9 gap-1.5 border-[#f2c75c]/40 bg-transparent px-2.5 text-[#f6edd9] hover:bg-white/10 hover:text-[#f6edd9] max-[339px]:w-8 max-[339px]:justify-center max-[339px]:px-0 lg:px-3"
+              className="h-9 gap-1.5 border-[#f2c75c]/40 bg-transparent px-2.5 text-[#f6edd9] hover:bg-white/10 hover:text-[#f6edd9] tiny:w-8 tiny:justify-center tiny:px-0 desk:px-3"
               onClick={restart}
             >
-              <RotateCcw aria-hidden="true" className="lg:hidden" />
-              <span className="max-[479px]:hidden short:max-[799px]:hidden squat:hidden">New match</span>
+              <RotateCcw aria-hidden="true" className="desk:hidden" />
+              <span className="narrow:hidden short:slim:hidden squat:hidden">New match</span>
             </Button>
           </div>
         </header>
@@ -442,19 +442,19 @@ export function Game() {
         <ScoreBoard you={state.scores[0]} net={state.scores[1]} round={match.round} />
       </div>
 
-      <div className="mt-2 flex min-h-0 flex-1 flex-col lg:mt-4 lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-4">
+      <div className="mt-2 flex min-h-0 flex-1 flex-col desk:mt-4 desk:grid desk:grid-cols-[minmax(0,1fr)_320px] desk:gap-4">
         <section
           aria-label="Table"
-          className="felt relative flex min-h-0 flex-1 flex-col justify-between gap-2 overflow-hidden rounded-[1.25rem] border border-[#5a3a1f] px-2 py-3 shadow-[inset_0_0_90px_rgba(0,0,0,0.4),0_20px_50px_rgba(0,0,0,0.35)] short:grid short:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] short:gap-x-3 short:px-3 short:py-2 sm:px-4 lg:justify-start lg:gap-7 lg:rounded-[1.75rem] lg:px-8 lg:py-7"
+          className="felt relative flex min-h-0 flex-1 flex-col justify-between gap-2 overflow-hidden rounded-[1.25rem] border border-[#5a3a1f] px-2 py-3 shadow-[inset_0_0_90px_rgba(0,0,0,0.4),0_20px_50px_rgba(0,0,0,0.35)] short:grid short:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] short:gap-x-3 short:px-3 short:py-2 tab:px-4 desk:justify-start desk:gap-7 desk:rounded-[1.75rem] desk:px-8 desk:py-7"
         >
           {/* Left on a sideways phone: the net and the piles. */}
-          <div className="flex flex-1 flex-col justify-around gap-2 short:justify-evenly lg:flex-none lg:justify-start lg:gap-7">
+          <div className="flex flex-1 flex-col justify-around gap-2 short:justify-evenly desk:flex-none desk:justify-start desk:gap-7">
             {/* The net */}
-            <div className="flex flex-col items-center gap-1.5 squat:flex-row squat:justify-center squat:gap-3 lg:gap-2">
+            <div className="flex flex-col items-center gap-1.5 squat:flex-row squat:justify-center squat:gap-3 desk:gap-2">
               <div className="flex items-center gap-2 text-sm text-[#f6edd9] squat:flex-col squat:items-start squat:gap-0.5">
-                <span className="text-[11px] font-semibold tracking-[0.18em] text-[#f2c75c] uppercase lg:text-xs">The net</span>
+                <span className="text-[11px] font-semibold tracking-[0.18em] text-[#f2c75c] uppercase desk:text-xs">The net</span>
                 {showTips && (
-                  <span className="text-xs text-[#f6edd9]/70 lg:text-sm">
+                  <span className="text-xs text-[#f6edd9]/70 desk:text-sm">
                     {netCards} {netCards === 1 ? "card" : "cards"}
                   </span>
                 )}
@@ -468,7 +468,7 @@ export function Game() {
             </div>
 
             {/* Piles */}
-            <div className="flex items-start justify-center gap-8 [--cw:var(--pile-w)] sm:gap-14">
+            <div className="flex items-start justify-center gap-8 [--cw:var(--pile-w)] tab:gap-14">
               <PileButton
                 label="Deck"
                 detail={`${state.stock.length} left`}
@@ -511,11 +511,11 @@ export function Game() {
           </div>
 
           {/* Right on a sideways phone: what happened, your hand and your moves. */}
-          <div className={(showTips ? "flex-[1.4]" : "flex-1") + " flex flex-col justify-around gap-2 short:justify-evenly lg:flex-none lg:justify-start lg:gap-7"}>
+          <div className={(showTips ? "flex-[1.4]" : "flex-1") + " flex flex-col justify-around gap-2 short:justify-evenly desk:flex-none desk:justify-start desk:gap-7"}>
             {/* Status line. Hidden with the tips, but kept for screen readers. */}
             <div className={showTips || noteIsHint ? "flex justify-center" : "sr-only"}>
               <p
-                className="flex min-h-[2.5rem] max-w-xl items-center rounded-2xl bg-black/25 px-3 py-1.5 text-center text-[13px] leading-snug text-[#f6edd9] backdrop-blur-[2px] short:min-h-0 short:py-1 short:text-xs lg:min-h-[2.75rem] lg:px-4 lg:py-2.5 lg:text-sm"
+                className="flex min-h-[2.5rem] max-w-xl items-center rounded-2xl bg-black/25 px-3 py-1.5 text-center text-[13px] leading-snug text-[#f6edd9] backdrop-blur-[2px] short:min-h-0 short:py-1 short:text-xs desk:min-h-[2.75rem] desk:px-4 desk:py-2.5 desk:text-sm"
                 aria-live="polite"
               >
                 {aiTurn ? "The net is choosing a throw." : note}
@@ -523,24 +523,24 @@ export function Game() {
             </div>
 
             {/* Your hand */}
-            <div className="flex flex-col items-center gap-1.5 lg:gap-3">
+            <div className="flex flex-col items-center gap-1.5 desk:gap-3">
               <div className="flex w-full max-w-xl items-center justify-between gap-2">
-                <span className="text-[11px] font-semibold tracking-[0.18em] whitespace-nowrap text-[#f2c75c] uppercase lg:text-xs">
+                <span className="text-[11px] font-semibold tracking-[0.18em] whitespace-nowrap text-[#f2c75c] uppercase desk:text-xs">
                   Your hand
                 </span>
                 <span
                   className={
                     (showTips ? "" : "hidden ") +
-                    "truncate rounded-full px-2.5 py-0.5 text-xs font-medium lg:px-3 lg:py-1 lg:text-sm " +
+                    "truncate rounded-full px-2.5 py-0.5 text-xs font-medium desk:px-3 desk:py-1 desk:text-sm " +
                     (points <= YANIV_LIMIT ? "bg-[#f2c75c] text-[#2a2118]" : "bg-black/30 text-[#f6edd9]")
                   }
                 >
-                  {points} <span className="lg:hidden">{points === 1 ? "pt" : "pts"}</span>
-                  <span className="hidden lg:inline">{points === 1 ? "point" : "points"}</span> ·{" "}
+                  {points} <span className="desk:hidden">{points === 1 ? "pt" : "pts"}</span>
+                  <span className="hidden desk:inline">{points === 1 ? "point" : "points"}</span> ·{" "}
                   {points <= YANIV_LIMIT ? "Yaniv is open" : `Yaniv at ${YANIV_LIMIT} or less`}
                 </span>
               </div>
-              <div className="flex justify-center gap-1.5 pt-[calc(var(--hand-w)*0.24)] [--cw:var(--hand-w)] sm:gap-2.5 lg:gap-3">
+              <div className="flex justify-center gap-1.5 pt-[calc(var(--hand-w)*0.24)] [--cw:var(--hand-w)] tab:gap-2.5 desk:gap-3">
                 {hand.map((card) => (
                   <PlayingCard
                     key={card}
@@ -571,7 +571,7 @@ export function Game() {
                   ))}
                 </div>
               ) : !showTips ? null : (
-                <p className="min-h-5 text-center text-xs leading-tight text-[#f6edd9]/80 lg:text-sm">
+                <p className="min-h-5 text-center text-xs leading-tight text-[#f6edd9]/80 desk:text-sm">
                   {!yourTurn
                     ? state.terminal
                       ? "Round over."
@@ -590,13 +590,13 @@ export function Game() {
               className={
                 "mx-auto grid w-full grid-cols-2 gap-2 short:gap-1.5 squat:gap-1.5 " +
                 (showTips
-                  ? "max-w-2xl short:grid-cols-4 squat:grid-cols-4 sm:max-w-3xl sm:grid-cols-4"
+                  ? "max-w-2xl short:grid-cols-4 squat:grid-cols-4 tab:max-w-3xl tab:grid-cols-4"
                   : "max-w-md")
               }
             >
               {showTips && (
                 <Button
-                  className="h-11 px-2 leading-tight whitespace-normal bg-[#f6edd9] text-[#1c1916] hover:bg-white short:h-10 short:text-[13px] squat:text-[13px] lg:h-12"
+                  className="h-11 px-2 leading-tight whitespace-normal bg-[#f6edd9] text-[#1c1916] hover:bg-white short:h-10 short:text-[13px] squat:text-[13px] desk:h-12"
                   disabled={!canThrow || state.stock.length === 0}
                   onClick={() => throwCards("stock")}
                 >
@@ -607,7 +607,7 @@ export function Game() {
               )}
               {showTips && (
                 <Button
-                  className="h-11 border border-[#f6edd9]/25 bg-[#0f3a26] px-2 leading-tight whitespace-normal text-[#f6edd9] hover:bg-[#15503a] short:h-10 short:text-[13px] squat:text-[13px] lg:h-12"
+                  className="h-11 border border-[#f6edd9]/25 bg-[#0f3a26] px-2 leading-tight whitespace-normal text-[#f6edd9] hover:bg-[#15503a] short:h-10 short:text-[13px] squat:text-[13px] desk:h-12"
                   disabled={!canThrow}
                   onClick={() => throwCards("open")}
                 >
@@ -616,7 +616,7 @@ export function Game() {
               )}
               <Button
                 className={
-                  "h-11 px-2 leading-tight font-semibold whitespace-normal short:h-10 short:text-[13px] squat:text-[13px] lg:h-12 " +
+                  "h-11 px-2 leading-tight font-semibold whitespace-normal short:h-10 short:text-[13px] squat:text-[13px] desk:h-12 " +
                   (canCall && !aiTurn
                     ? "bg-[#f2c75c] text-[#2a2118] shadow-[0_0_0_3px_rgba(242,199,92,0.3)] hover:bg-[#f6d685]"
                     : "border border-[#f2c75c]/40 bg-transparent text-[#f2c75c]")
@@ -628,7 +628,7 @@ export function Game() {
               </Button>
               <Button
                 variant="ghost"
-                className="h-11 px-2 leading-tight whitespace-normal text-[#f6edd9] hover:bg-white/10 hover:text-[#f6edd9] short:h-10 short:text-[13px] squat:text-[13px] lg:h-12"
+                className="h-11 px-2 leading-tight whitespace-normal text-[#f6edd9] hover:bg-white/10 hover:text-[#f6edd9] short:h-10 short:text-[13px] squat:text-[13px] desk:h-12"
                 onClick={askNet}
                 disabled={aiTurn || state.turn !== 0}
               >
@@ -639,7 +639,7 @@ export function Game() {
         </section>
 
         {/* On a phone these live behind the Log button instead, so the table fits the screen. */}
-        <aside className="hidden flex-col gap-3 lg:flex">
+        <aside className="hidden flex-col gap-3 desk:flex">
           <RoundLog log={log} />
           <Dossier report={report} handmade={Boolean(gameById(game).net)} />
         </aside>
@@ -656,13 +656,15 @@ export function Game() {
 /** On a phone the page is exactly one screen tall and the table stretches to fill it: no scrolling mid-game. */
 function Shell({ children, handSize = 5, tipsOff = false }: { children: ReactNode; handSize?: number; tipsOff?: boolean }) {
   return (
-    <main
-      className="yaniv-sizes safe-pad mx-auto flex h-dvh max-w-6xl flex-col lg:h-auto lg:min-h-dvh"
-      style={{ "--hand-n": handSize } as CSSProperties}
-      data-tips={tipsOff ? "off" : "on"}
-    >
-      {children}
-    </main>
+    <div className="app-frame">
+      <main
+        className="yaniv-sizes safe-pad mx-auto flex h-full max-w-6xl flex-col desk:h-auto desk:min-h-dvh"
+        style={{ "--hand-n": handSize } as CSSProperties}
+        data-tips={tipsOff ? "off" : "on"}
+      >
+        {children}
+      </main>
+    </div>
   );
 }
 
@@ -716,14 +718,14 @@ function PileButton({
       onClick={onClick}
       aria-label={ariaLabel}
       className={
-        "group flex flex-col items-center gap-1 rounded-xl p-1 text-center lg:gap-2 lg:p-1.5 transition focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none " +
+        "group flex flex-col items-center gap-1 rounded-xl p-1 text-center desk:gap-2 desk:p-1.5 transition focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none " +
         (active ? "cursor-pointer hover:-translate-y-1" : "cursor-default")
       }
     >
       <span className={"rounded-lg transition " + (active ? "shadow-[0_0_0_3px_rgba(242,199,92,0.55)]" : "")}>{children}</span>
       <span className={showLabel ? "flex flex-col leading-tight" : "hidden"}>
-        <span className="text-[11px] font-semibold tracking-[0.14em] text-[#f6edd9] uppercase lg:text-xs">{label}</span>
-        <span className="text-[11px] text-[#f6edd9]/70 squat:hidden lg:text-xs">{active ? "tap to draw" : detail}</span>
+        <span className="text-[11px] font-semibold tracking-[0.14em] text-[#f6edd9] uppercase desk:text-xs">{label}</span>
+        <span className="text-[11px] text-[#f6edd9]/70 squat:hidden desk:text-xs">{active ? "tap to draw" : detail}</span>
       </span>
     </button>
   );
@@ -731,14 +733,14 @@ function PileButton({
 
 function ScoreBoard({ you, net, round }: { you: number; net: number; round: number }) {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 rounded-2xl border border-[#f2c75c]/15 bg-[#1a140f]/80 px-3 py-2 short:order-2 short:flex-1 short:py-1.5 squat:order-2 squat:min-w-0 squat:flex-1 squat:gap-2 squat:px-2.5 squat:py-1.5 max-[339px]:squat:grid-cols-2 max-[339px]:squat:px-2 lg:mt-4 lg:px-4 lg:py-3">
+    <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 rounded-2xl border border-[#f2c75c]/15 bg-[#1a140f]/80 px-3 py-2 short:order-2 short:flex-1 short:py-1.5 squat:order-2 squat:min-w-0 squat:flex-1 squat:gap-2 squat:px-2.5 squat:py-1.5 tiny:squat:grid-cols-2 tiny:squat:px-2 desk:mt-4 desk:px-4 desk:py-3">
       <ScoreSide name="You" value={you} />
-      <div className="text-center max-[339px]:squat:hidden">
+      <div className="text-center tiny:squat:hidden">
         <p className="text-[10px] tracking-[0.18em] text-[#f6edd9]/60 uppercase">
           <span className="squat:hidden">Round</span>
           <span className="hidden squat:inline">Rd</span>
         </p>
-        <p className="font-display text-xl leading-none text-[#f6edd9] lg:text-2xl">{round}</p>
+        <p className="font-display text-xl leading-none text-[#f6edd9] desk:text-2xl">{round}</p>
       </div>
       <ScoreSide
         name={
@@ -758,11 +760,11 @@ function ScoreSide({ name, value, alignRight = false }: { name: ReactNode; value
   const width = Math.min(100, (value / MATCH_LIMIT) * 100);
   return (
     <div className={"min-w-0 " + (alignRight ? "text-right" : "")}>
-      <div className={"flex items-baseline gap-2 max-[339px]:gap-1 " + (alignRight ? "justify-end" : "")}>
-        <span className="truncate text-[11px] max-[339px]:shrink-0 tracking-[0.14em] text-[#f2c75c] uppercase lg:text-xs">{name}</span>
-        <span className={"font-display text-xl leading-none lg:text-2xl " + (hot ? "text-[#ff8a7a]" : "text-[#f6edd9]")}>
+      <div className={"flex items-baseline gap-2 tiny:gap-1 " + (alignRight ? "justify-end" : "")}>
+        <span className="truncate text-[11px] tiny:shrink-0 tracking-[0.14em] text-[#f2c75c] uppercase desk:text-xs">{name}</span>
+        <span className={"font-display text-xl leading-none desk:text-2xl " + (hot ? "text-[#ff8a7a]" : "text-[#f6edd9]")}>
           {value}
-          <span className="ml-0.5 font-sans text-xs text-[#f6edd9]/45 max-[339px]:hidden short:max-[799px]:hidden squat:hidden">/{MATCH_LIMIT}</span>
+          <span className="ml-0.5 font-sans text-xs text-[#f6edd9]/45 tiny:hidden short:slim:hidden squat:hidden">/{MATCH_LIMIT}</span>
         </span>
       </div>
       <div className={"mt-1.5 flex h-1.5 overflow-hidden rounded-full bg-white/10 " + (alignRight ? "justify-end" : "")}>
@@ -816,11 +818,11 @@ function ResultSheet({
   const youWon = result.added[0] === 0 && result.added[1] > 0;
   return (
     <div className="safe-pad fixed inset-0 z-40 grid place-items-center bg-black/60 backdrop-blur-[2px]">
-      <div className="max-h-full w-full max-w-lg overflow-y-auto rounded-2xl bg-[#fbf6ee] p-4 text-[#241c14] shadow-2xl sm:p-6">
+      <div className="max-h-full w-full max-w-lg overflow-y-auto rounded-2xl bg-[#fbf6ee] p-4 text-[#241c14] shadow-2xl tab:p-6">
         <p className={"text-xs font-semibold tracking-[0.18em] uppercase " + (youWon ? "text-[#1d6a42]" : "text-[#8a6232]")}>
           {result.assaf ? "Assaf" : result.reason === "showdown" ? "Showdown" : "Yaniv"}
         </p>
-        <h2 className="font-display mt-1 text-2xl leading-tight short:text-xl sm:text-3xl">{resultHeadline(result, 0)}</h2>
+        <h2 className="font-display mt-1 text-2xl leading-tight short:text-xl tab:text-3xl">{resultHeadline(result, 0)}</h2>
         <p className="mt-2 text-sm text-[#5c5144] short:hidden">
           {result.assaf
             ? `A caught call adds your hand plus ${ASSAF_PENALTY}. The player with the lower or equal hand scores 0.`
@@ -849,7 +851,7 @@ function ResultSheet({
           Match score: you <b>{scores[0]}</b>, the net <b>{scores[1]}</b>. The match ends once someone passes {MATCH_LIMIT}.
         </p>
         {/* Pinned to the bottom of the box, so it stays in reach when a sideways phone has to scroll the box. */}
-        <div className="sticky -bottom-4 -mx-4 mt-4 bg-[#fbf6ee] px-4 pb-4 short:mt-2 short:pt-1 sm:static sm:mx-0 sm:px-0 sm:pb-0 short:sm:sticky short:sm:-bottom-6 short:sm:-mx-6 short:sm:px-6 short:sm:pb-6">
+        <div className="sticky -bottom-4 -mx-4 mt-4 bg-[#fbf6ee] px-4 pb-4 short:mt-2 short:pt-1 tab:static tab:mx-0 tab:px-0 tab:pb-0 short:tab:sticky short:tab:-bottom-6 short:tab:-mx-6 short:tab:px-6 short:tab:pb-6">
           <Button className="h-11 w-full bg-[#1d6a42] text-[#f6edd9] hover:bg-[#24804f]" onClick={onContinue}>
             Continue
           </Button>
@@ -902,8 +904,8 @@ function MatchSheet({ scores, onRestart }: { scores: [number, number]; onRestart
   const tie = scores[0] === scores[1];
   return (
     <div className="safe-pad fixed inset-0 z-40 grid place-items-center bg-black/60 backdrop-blur-[2px]">
-      <div className="max-h-full w-full max-w-md overflow-y-auto rounded-2xl bg-[#fbf6ee] p-4 text-[#241c14] shadow-2xl sm:p-6">
-        <h2 className="font-display text-3xl sm:text-4xl">{tie ? "Split match" : youWin ? "You take the match" : "The net takes the match"}</h2>
+      <div className="max-h-full w-full max-w-md overflow-y-auto rounded-2xl bg-[#fbf6ee] p-4 text-[#241c14] shadow-2xl tab:p-6">
+        <h2 className="font-display text-3xl tab:text-4xl">{tie ? "Split match" : youWin ? "You take the match" : "The net takes the match"}</h2>
         <p className="mt-2 text-sm text-[#5c5144]">
           {tie
             ? `Both finish on ${scores[0]}.`
@@ -1005,12 +1007,12 @@ function InfoButton({ log, report, handmade }: { log: LogLine[]; report: Report 
     <Sheet>
       <SheetTrigger
         aria-label="Round log and how the net learned"
-        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#f2c75c]/40 px-2.5 text-sm text-[#f6edd9] hover:bg-white/10 max-[339px]:w-8 max-[339px]:justify-center max-[339px]:px-0 lg:hidden"
+        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#f2c75c]/40 px-2.5 text-sm text-[#f6edd9] hover:bg-white/10 tiny:w-8 tiny:justify-center tiny:px-0 desk:hidden"
       >
         <ScrollText aria-hidden="true" className="size-4" />
-        <span className="max-[479px]:hidden short:max-[799px]:hidden squat:hidden">Log</span>
+        <span className="narrow:hidden short:slim:hidden squat:hidden">Log</span>
       </SheetTrigger>
-      <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto border-[#f2c75c]/20 bg-[#1a140f] pb-[max(env(safe-area-inset-bottom),2rem)] text-[#f6edd9]">
+      <SheetContent side="bottom" className="max-h-[calc(var(--app-h,100dvh)*0.85)] overflow-y-auto border-[#f2c75c]/20 bg-[#1a140f] pb-[max(env(safe-area-inset-bottom),2rem)] text-[#f6edd9]">
         <SheetHeader>
           <SheetTitle className="text-[#f6edd9]">Log</SheetTitle>
           <SheetDescription className="text-[#f6edd9]/70">This round&apos;s throws, latest first, and how the net learned.</SheetDescription>
@@ -1029,12 +1031,12 @@ function RulesButton() {
     <Dialog>
       <DialogTrigger
         aria-label="Rules"
-        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#f2c75c]/40 px-2.5 text-sm text-[#f6edd9] hover:bg-white/10 max-[339px]:w-8 max-[339px]:justify-center max-[339px]:px-0 lg:px-3"
+        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#f2c75c]/40 px-2.5 text-sm text-[#f6edd9] hover:bg-white/10 tiny:w-8 tiny:justify-center tiny:px-0 desk:px-3"
       >
-        <BookOpen aria-hidden="true" className="size-4 lg:hidden" />
-        <span className="max-[479px]:hidden short:max-[799px]:hidden squat:hidden">Rules</span>
+        <BookOpen aria-hidden="true" className="size-4 desk:hidden" />
+        <span className="narrow:hidden short:slim:hidden squat:hidden">Rules</span>
       </DialogTrigger>
-      <DialogContent className="max-h-[85dvh] overflow-y-auto bg-[#fbf6ee] text-[#241c14] sm:max-w-lg">
+      <DialogContent className="max-h-[calc(var(--app-h,100dvh)*0.85)] overflow-y-auto bg-[#fbf6ee] text-[#241c14] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">How this table plays</DialogTitle>
           <DialogDescription>Two players, one deck with two jokers. Lowest score wins.</DialogDescription>
