@@ -476,6 +476,7 @@ export function Game() {
                 disabled={!canThrow || state.stock.length === 0}
                 onClick={() => throwCards("stock")}
                 ariaLabel="Throw the selected cards and draw from the deck"
+                showLabel={showTips}
               >
                 <div className="relative">
                   {state.stock.length > 2 && (
@@ -502,6 +503,7 @@ export function Game() {
                 disabled={!canThrow}
                 onClick={() => throwCards("open")}
                 ariaLabel={`Throw the selected cards and take the ${cardName(openCard)}`}
+                showLabel={showTips}
               >
                 <PlayingCard card={openCard} size="fluid" className="ring-2 ring-[#f2c75c]/70" />
               </PileButton>
@@ -583,24 +585,35 @@ export function Game() {
               )}
             </div>
 
-            {/* Actions */}
-            <div className="mx-auto grid w-full max-w-2xl grid-cols-2 gap-2 short:grid-cols-4 short:gap-1.5 squat:grid-cols-4 squat:gap-1.5 sm:max-w-3xl sm:grid-cols-4">
-              <Button
-                className="h-11 px-2 leading-tight whitespace-normal bg-[#f6edd9] text-[#1c1916] hover:bg-white short:h-10 short:text-[13px] squat:text-[13px] lg:h-12"
-                disabled={!canThrow || state.stock.length === 0}
-                onClick={() => throwCards("stock")}
-              >
-                <span>
-                  Throw · <span className="short:hidden squat:hidden">draw from </span>deck
-                </span>
-              </Button>
-              <Button
-                className="h-11 border border-[#f6edd9]/25 bg-[#0f3a26] px-2 leading-tight whitespace-normal text-[#f6edd9] hover:bg-[#15503a] short:h-10 short:text-[13px] squat:text-[13px] lg:h-12"
-                disabled={!canThrow}
-                onClick={() => throwCards("open")}
-              >
-                Throw · take {cardName(openCard)}
-              </Button>
+            {/* Actions. With tips off the two throw buttons are left out: tapping the deck or the open card throws. */}
+            <div
+              className={
+                "mx-auto grid w-full grid-cols-2 gap-2 short:gap-1.5 squat:gap-1.5 " +
+                (showTips
+                  ? "max-w-2xl short:grid-cols-4 squat:grid-cols-4 sm:max-w-3xl sm:grid-cols-4"
+                  : "max-w-md")
+              }
+            >
+              {showTips && (
+                <Button
+                  className="h-11 px-2 leading-tight whitespace-normal bg-[#f6edd9] text-[#1c1916] hover:bg-white short:h-10 short:text-[13px] squat:text-[13px] lg:h-12"
+                  disabled={!canThrow || state.stock.length === 0}
+                  onClick={() => throwCards("stock")}
+                >
+                  <span>
+                    Throw · <span className="short:hidden squat:hidden">draw from </span>deck
+                  </span>
+                </Button>
+              )}
+              {showTips && (
+                <Button
+                  className="h-11 border border-[#f6edd9]/25 bg-[#0f3a26] px-2 leading-tight whitespace-normal text-[#f6edd9] hover:bg-[#15503a] short:h-10 short:text-[13px] squat:text-[13px] lg:h-12"
+                  disabled={!canThrow}
+                  onClick={() => throwCards("open")}
+                >
+                  Throw · take {cardName(openCard)}
+                </Button>
+              )}
               <Button
                 className={
                   "h-11 px-2 leading-tight font-semibold whitespace-normal short:h-10 short:text-[13px] squat:text-[13px] lg:h-12 " +
@@ -682,9 +695,12 @@ function PileButton({
   disabled,
   onClick,
   ariaLabel,
+  showLabel,
   children,
 }: {
   label: string;
+  /** With tips off the label is left out: the gold glow shows when the pile can be tapped. */
+  showLabel: boolean;
   detail: string;
   active: boolean;
   disabled: boolean;
@@ -704,7 +720,7 @@ function PileButton({
       }
     >
       <span className={"rounded-lg transition " + (active ? "shadow-[0_0_0_3px_rgba(242,199,92,0.55)]" : "")}>{children}</span>
-      <span className="flex flex-col leading-tight">
+      <span className={showLabel ? "flex flex-col leading-tight" : "hidden"}>
         <span className="text-[11px] font-semibold tracking-[0.14em] text-[#f6edd9] uppercase lg:text-xs">{label}</span>
         <span className="text-[11px] text-[#f6edd9]/70 squat:hidden lg:text-xs">{active ? "tap to draw" : detail}</span>
       </span>
